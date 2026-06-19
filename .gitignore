@@ -1,16 +1,19 @@
 # Dependencies
 node_modules/
+.pnpm-store/
 
 # Build output
 dist/
 build/
 .next/
 .turbo/
+*.tsbuildinfo
 
 # Test and coverage output
 coverage/
 playwright-report/
 test-results/
+.eslintcache
 
 # Environment files
 .env

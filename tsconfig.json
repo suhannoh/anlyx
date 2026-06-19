@@ -1,0 +1,26 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/core"
+    },
+    {
+      "path": "./packages/cli"
+    },
+    {
+      "path": "./packages/ui"
+    },
+    {
+      "path": "./packages/adapter-spring"
+    },
+    {
+      "path": "./packages/adapter-next"
+    },
+    {
+      "path": "./packages/adapter-openapi"
+    },
+    {
+      "path": "./packages/capture"
+    }
+  ]
+}

@@ -49,3 +49,9 @@ v0.1 will focus on the Spring Boot + Next.js App Router combination first. Other
 This repository follows documentation-first development. The implementation starts only after the v0.1 planning documents, contracts, adapter rules, fixture expectations, design direction, and acceptance checklist are reviewed.
 
 No CLI, packages, UI, adapter implementation, or scanner implementation exists yet.
+
+## Development Setup
+
+Anlyx uses a pnpm workspace with TypeScript, ESLint, Prettier, and Vitest. The current
+workspace contains tooling and package skeletons only; CLI commands, scanners, adapters,
+capture, and UI behavior are not implemented yet.
