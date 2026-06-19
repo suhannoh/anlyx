@@ -6,10 +6,12 @@ Visual flow maps for modern web apps.
 
 Anlyx is an open-source developer tool that turns frontend pages, backend endpoints, services, repositories, and database flows into interactive flow maps and page storyboards.
 
-> Status: v0.1.1 patch release preparation.
+> Status: v0.1.2 patch release preparation.
 
 Anlyx `0.1.0` is planned to be deprecated because it was published with unresolved
-`workspace:*` dependencies. `0.1.1` is the first patch release intended for normal
+`workspace:*` dependencies. Anlyx `0.1.1` is planned to be deprecated because the
+published CLI entrypoint can trigger an unsettled top-level await warning and exit
+before running commands. `0.1.2` is the patch release intended for normal
 `npm install anlyx` usage after the approved pnpm-based publish.
 
 ## Problem
@@ -57,7 +59,7 @@ npx anlyx scan
 npx anlyx dev
 ```
 
-Use `anlyx@0.1.1` or newer. Until the 0.1.1 publish is approved and complete, run
+Use `anlyx@0.1.2` or newer. Until the 0.1.2 publish is approved and complete, run
 the local workspace CLI during development.
 
 ```bash

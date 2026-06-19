@@ -1,6 +1,6 @@
 {
   "name": "@anlyx/capture",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Playwright capture adapter for Anlyx page storyboards.",
   "license": "MIT",
   "type": "module",

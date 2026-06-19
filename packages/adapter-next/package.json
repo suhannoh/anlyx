@@ -1,6 +1,6 @@
 {
   "name": "@anlyx/adapter-next",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Next.js App Router page discovery adapter for Anlyx.",
   "license": "MIT",
   "type": "module",

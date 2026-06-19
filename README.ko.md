@@ -4,9 +4,9 @@
 
 Anlyx는 프론트 페이지부터 백엔드 엔드포인트, 서비스 레이어, Repository, 데이터베이스까지 이어지는 흐름을 시각적인 플로우 맵과 스토리보드로 보여주는 오픈소스 개발자 도구입니다.
 
-> 현재 상태: v0.1.1 patch release 준비 단계입니다.
+> 현재 상태: v0.1.2 patch release 준비 단계입니다.
 
-Anlyx `0.1.0`은 `workspace:*` dependency가 남아 있는 상태로 배포되어 deprecated 처리 예정입니다. 승인된 pnpm 기반 publish 이후에는 `0.1.1`부터 일반 `npm install anlyx`로 설치 가능한 버전으로 안내합니다.
+Anlyx `0.1.0`은 `workspace:*` dependency가 남아 있는 상태로 배포되어 deprecated 처리 예정입니다. Anlyx `0.1.1`은 배포된 CLI entrypoint가 unsettled top-level await 경고를 내고 명령 실행 전에 종료될 수 있어 deprecated 처리 예정입니다. 승인된 pnpm 기반 publish 이후에는 `0.1.2`부터 일반 `npm install anlyx`로 설치 가능한 버전으로 안내합니다.
 
 ## 해결하려는 문제
 
@@ -53,7 +53,7 @@ npx anlyx scan
 npx anlyx dev
 ```
 
-`anlyx@0.1.1` 이상을 사용합니다. 0.1.1 배포가 승인되고 완료되기 전에는 로컬 workspace CLI를 사용합니다.
+`anlyx@0.1.2` 이상을 사용합니다. 0.1.2 배포가 승인되고 완료되기 전에는 로컬 workspace CLI를 사용합니다.
 
 ```bash
 corepack pnpm install
@@ -80,7 +80,7 @@ corepack pnpm --filter anlyx exec anlyx dev
 
 이 저장소는 문서 우선 개발 방식을 따릅니다. v0.1 구현은 scope lock, 데이터 계약, Adapter 규칙, Fixture expected output, 디자인 기준, Acceptance 체크리스트에 의해 제한됩니다.
 
-현재는 `anlyx init`으로 기본 `anlyx.config.ts`를 생성하고, `anlyx scan`으로 로컬 scan JSON 출력을 만들 수 있으며, `anlyx dev`로 로컬 UI를 확인할 수 있습니다. 0.1.1 실제 npm 배포는 별도 승인 후 진행합니다.
+현재는 `anlyx init`으로 기본 `anlyx.config.ts`를 생성하고, `anlyx scan`으로 로컬 scan JSON 출력을 만들 수 있으며, `anlyx dev`로 로컬 UI를 확인할 수 있습니다. 0.1.2 실제 npm 배포는 별도 승인 후 진행합니다.
 
 npm 배포 전 포장 점검은 로컬 build와 pack dry-run으로 확인합니다. 자세한 항목은 [`docs/release/npm-publish-preflight.md`](./docs/release/npm-publish-preflight.md)를 참고합니다.
 수동 릴리스 순서는 [`docs/release/v0.1-release-runbook.md`](./docs/release/v0.1-release-runbook.md)에 정리되어 있습니다.
