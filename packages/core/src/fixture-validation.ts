@@ -27,9 +27,7 @@ export type FixtureExpectedData = {
   reportData: unknown;
 };
 
-export function validateFixtureExpectedData(
-  data: FixtureExpectedData
-): FixtureValidationResult {
+export function validateFixtureExpectedData(data: FixtureExpectedData): FixtureValidationResult {
   const issues: FixtureValidationIssue[] = [];
   const endpoints = parsePart("endpoints", data.endpoints, endpointSchema.array(), issues);
   const flows = parsePart("flows", data.flows, endpointFlowSchema.array(), issues);
@@ -57,7 +55,9 @@ type ParsedFixtureData = {
 function parsePart<T>(
   partName: "endpoints" | "flows" | "pages" | "reportData",
   value: unknown,
-  schema: { safeParse(input: unknown): { success: true; data: T } | { success: false; error: Error } },
+  schema: {
+    safeParse(input: unknown): { success: true; data: T } | { success: false; error: Error };
+  },
   issues: FixtureValidationIssue[]
 ): T | null {
   const result = schema.safeParse(value);
@@ -75,7 +75,10 @@ function parsePart<T>(
   return null;
 }
 
-function validateAggregateEquality(data: ParsedFixtureData, issues: FixtureValidationIssue[]): void {
+function validateAggregateEquality(
+  data: ParsedFixtureData,
+  issues: FixtureValidationIssue[]
+): void {
   if (!deepEqual(data.reportData.endpoints, data.endpoints)) {
     issues.push({
       code: "report_endpoints_mismatch",

@@ -117,7 +117,13 @@ function buildEndpointFlow(
   const controllerNode = controller
     ? createClassNode(controller, "controller", endpoint.handler)
     : createUnknownNode("controller", endpoint.controller ?? "missing");
-  addMainStep(endpointNode, { node: controllerNode, edgeKind: "main", confidence: "high" }, nodes, edges, mainPath);
+  addMainStep(
+    endpointNode,
+    { node: controllerNode, edgeKind: "main", confidence: "high" },
+    nodes,
+    edges,
+    mainPath
+  );
 
   if (!controller || mainPath.length > maxMainDepth + 1) {
     return { endpointId: endpoint.id, nodes, edges, mainPath, subFlows };
@@ -235,7 +241,12 @@ function resolveFirstCallStep(options: {
     }
 
     return {
-      node: createClassNode(resolution.javaClass, options.nodeType, call.methodName, resolution.confidence),
+      node: createClassNode(
+        resolution.javaClass,
+        options.nodeType,
+        call.methodName,
+        resolution.confidence
+      ),
       edgeKind: options.edgeKind,
       confidence: resolution.confidence
     };
@@ -443,7 +454,9 @@ function classifyJavaClass(input: {
   annotations: string[];
   declarationTail: string;
 }): JavaKind {
-  if (input.annotations.some((annotation) => ["RestController", "Controller"].includes(annotation))) {
+  if (
+    input.annotations.some((annotation) => ["RestController", "Controller"].includes(annotation))
+  ) {
     return "controller";
   }
 
@@ -727,7 +740,8 @@ function addUniqueNode(nodes: FlowNode[], node: FlowNode): void {
 }
 
 function getClassFromNode(node: FlowNode, index: Map<string, JavaClass>): JavaClass | undefined {
-  const className = typeof node.metadata?.className === "string" ? node.metadata.className : undefined;
+  const className =
+    typeof node.metadata?.className === "string" ? node.metadata.className : undefined;
 
   return className ? index.get(className) : undefined;
 }
@@ -738,7 +752,10 @@ function readClassMethodName(node: FlowNode): string | undefined {
 
 function readAnnotationBlockBefore(content: string, index: number): string {
   const beforeDeclaration = content.slice(0, index);
-  const lastBoundary = Math.max(beforeDeclaration.lastIndexOf("}"), beforeDeclaration.lastIndexOf(";"));
+  const lastBoundary = Math.max(
+    beforeDeclaration.lastIndexOf("}"),
+    beforeDeclaration.lastIndexOf(";")
+  );
 
   return beforeDeclaration.slice(lastBoundary + 1);
 }
@@ -760,9 +777,8 @@ function readImplementsNames(declarationTail: string): string[] {
 }
 
 function readRepositoryEntity(declarationTail: string): string | undefined {
-  const repositoryMatch = /(?:JpaRepository|CrudRepository|Repository)\s*<\s*([A-Za-z_]\w*)\s*,/.exec(
-    declarationTail
-  );
+  const repositoryMatch =
+    /(?:JpaRepository|CrudRepository|Repository)\s*<\s*([A-Za-z_]\w*)\s*,/.exec(declarationTail);
 
   return repositoryMatch?.[1];
 }
@@ -774,12 +790,14 @@ function readTableName(annotationBlock: string): string | undefined {
 }
 
 function cleanTypeName(typeName: string): string {
-  return typeName
-    .trim()
-    .replace(/<[\s\S]*>$/, "")
-    .split(".")
-    .at(-1)
-    ?.trim() ?? typeName.trim();
+  return (
+    typeName
+      .trim()
+      .replace(/<[\s\S]*>$/, "")
+      .split(".")
+      .at(-1)
+      ?.trim() ?? typeName.trim()
+  );
 }
 
 function toSnakeCase(value: string): string {

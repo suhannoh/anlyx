@@ -15,13 +15,8 @@
       "lineNumber": 24,
       "responseSchema": "BenefitDetailResponse",
       "authRequired": false,
-      "tags": [
-        "benefits",
-        "public"
-      ],
-      "usedByPageIds": [
-        "page:benefit-detail"
-      ],
+      "tags": ["benefits", "public"],
+      "usedByPageIds": ["page:benefit-detail"],
       "confidence": "high"
     },
     {
@@ -36,13 +31,8 @@
       "lineNumber": 18,
       "responseSchema": "BenefitSummaryListResponse",
       "authRequired": false,
-      "tags": [
-        "benefits",
-        "public"
-      ],
-      "usedByPageIds": [
-        "page:benefits-list"
-      ],
+      "tags": ["benefits", "public"],
+      "usedByPageIds": ["page:benefits-list"],
       "confidence": "high"
     }
   ],

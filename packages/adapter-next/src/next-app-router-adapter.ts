@@ -43,9 +43,7 @@ export async function scanNextAppRouterPages(
   return pages;
 }
 
-export function createNextFrontendAdapter(
-  options: NextAppRouterAdapterOptions
-): FrontendAdapter {
+export function createNextFrontendAdapter(options: NextAppRouterAdapterOptions): FrontendAdapter {
   return {
     name: "next",
     async scanPages() {

@@ -6,22 +6,22 @@ This document fixes how `FlowNode` and `FlowEdge` types should be represented in
 
 ## Node Styles
 
-| Type | Required Style |
-| --- | --- |
-| `page` | Screenshot thumbnail card with route label |
-| `endpoint` | Method badge and path |
-| `controller` | White card with blue accent border |
-| `service` | White card with violet accent border |
-| `repository` | White card with emerald accent border |
-| `database` | Table or cylinder-like card with database accent |
-| `dto` | Document card |
-| `schema` | Document card with schema label |
-| `externalApi` | External-link card |
-| `cache` | Small memory/cache card |
-| `utility` | Small secondary card |
-| `validator` | Small secondary card |
-| `mapper` | Small secondary card |
-| `unknown` | Gray warning card |
+| Type          | Required Style                                   |
+| ------------- | ------------------------------------------------ |
+| `page`        | Screenshot thumbnail card with route label       |
+| `endpoint`    | Method badge and path                            |
+| `controller`  | White card with blue accent border               |
+| `service`     | White card with violet accent border             |
+| `repository`  | White card with emerald accent border            |
+| `database`    | Table or cylinder-like card with database accent |
+| `dto`         | Document card                                    |
+| `schema`      | Document card with schema label                  |
+| `externalApi` | External-link card                               |
+| `cache`       | Small memory/cache card                          |
+| `utility`     | Small secondary card                             |
+| `validator`   | Small secondary card                             |
+| `mapper`      | Small secondary card                             |
+| `unknown`     | Gray warning card                                |
 
 ## Node Content
 
@@ -36,17 +36,17 @@ Nodes MUST NOT show large amounts of code inline. Detailed code and metadata bel
 
 ## Edge Styles
 
-| Edge | Required Style |
-| --- | --- |
-| Main Flow | Solid 2px line |
-| Sub Flow | Dashed 1px line |
-| Inferred | Dashed line with confidence badge |
-| Unknown | Gray dotted line |
-| Request | Animated dot moving forward |
-| Response | Animated dot moving backward; in v0.1 this is derived from `mainPath` reverse traversal unless an explicit response edge exists |
-| DB | Solid line ending at database node |
-| External | Dashed line to external node |
-| Cache | Dashed or secondary line |
+| Edge      | Required Style                                                                                                                  |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Main Flow | Solid 2px line                                                                                                                  |
+| Sub Flow  | Dashed 1px line                                                                                                                 |
+| Inferred  | Dashed line with confidence badge                                                                                               |
+| Unknown   | Gray dotted line                                                                                                                |
+| Request   | Animated dot moving forward                                                                                                     |
+| Response  | Animated dot moving backward; in v0.1 this is derived from `mainPath` reverse traversal unless an explicit response edge exists |
+| DB        | Solid line ending at database node                                                                                              |
+| External  | Dashed line to external node                                                                                                    |
+| Cache     | Dashed or secondary line                                                                                                        |
 
 ## Main Flow Rules
 

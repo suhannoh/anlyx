@@ -6,10 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { endpointSchema } from "@anlyx/core";
 
-import {
-  createSpringBackendAdapter,
-  scanSpringEndpoints
-} from "./spring-endpoint-scanner.js";
+import { createSpringBackendAdapter, scanSpringEndpoints } from "./spring-endpoint-scanner.js";
 
 describe("Spring Boot Endpoint Scanner", () => {
   let sourceDir: string;
@@ -317,9 +314,9 @@ describe("Spring Boot Endpoint Scanner", () => {
   });
 
   it("missing sourceDir throws clear error", async () => {
-    await expect(
-      scanSpringEndpoints({ sourceDir: join(sourceDir, "missing") })
-    ).rejects.toThrow("Spring source directory not found");
+    await expect(scanSpringEndpoints({ sourceDir: join(sourceDir, "missing") })).rejects.toThrow(
+      "Spring source directory not found"
+    );
   });
 
   it("generated endpoints pass core endpointSchema", async () => {

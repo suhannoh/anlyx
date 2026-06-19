@@ -6,10 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { pageStoryboardSchema } from "@anlyx/core";
 
-import {
-  createNextFrontendAdapter,
-  scanNextAppRouterPages
-} from "./next-app-router-adapter.js";
+import { createNextFrontendAdapter, scanNextAppRouterPages } from "./next-app-router-adapter.js";
 
 describe("Next.js App Router Adapter", () => {
   let projectRoot: string;
@@ -74,10 +71,7 @@ describe("Next.js App Router Adapter", () => {
 
     const pages = await scanNextAppRouterPages({ sourceDir: projectRoot });
 
-    expect(pages.map((page) => page.route)).toEqual([
-      "/archive/[[...slug]]",
-      "/docs/[...slug]"
-    ]);
+    expect(pages.map((page) => page.route)).toEqual(["/archive/[[...slug]]", "/docs/[...slug]"]);
   });
 
   it("special files are ignored", async () => {

@@ -61,9 +61,8 @@ describe("Anlyx data schema", () => {
   });
 
   it("invalid captureStatus fails", () => {
-    const [page] = readFixture<[Record<string, unknown>, ...Record<string, unknown>[]]>(
-      "pages.json"
-    );
+    const [page] =
+      readFixture<[Record<string, unknown>, ...Record<string, unknown>[]]>("pages.json");
 
     expect(() => parsePageStoryboard({ ...page, captureStatus: "hidden" })).toThrow();
   });

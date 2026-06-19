@@ -21,10 +21,7 @@ export function CanvasPlaceholder({ endpoint }: CanvasPlaceholderProps): JSX.Ele
         ) : null}
       </header>
 
-      <section
-        className="anlyx-canvas-placeholder"
-        aria-label="Endpoint map canvas placeholder"
-      >
+      <section className="anlyx-canvas-placeholder" aria-label="Endpoint map canvas placeholder">
         <div className="anlyx-canvas-placeholder__content">
           <p className="anlyx-eyebrow">Canvas</p>
           <h2>Endpoint Map will render here</h2>

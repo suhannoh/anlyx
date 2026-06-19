@@ -2,10 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { pageStoryboardSchema } from "@anlyx/core";
 
-import {
-  createManualFrontendAdapter,
-  scanManualPages
-} from "./manual-frontend-adapter.js";
+import { createManualFrontendAdapter, scanManualPages } from "./manual-frontend-adapter.js";
 
 describe("Manual Frontend Adapter", () => {
   it("manual urls create page storyboards", () => {

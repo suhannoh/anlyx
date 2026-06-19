@@ -164,7 +164,10 @@ function missingSampleParams(route: string): RouteResolution {
 }
 
 function encodeCatchAllValue(value: string): string[] {
-  return value.split("/").filter(Boolean).map((segment) => encodeURIComponent(segment));
+  return value
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment));
 }
 
 function ensureTrailingSlash(value: string): string {
@@ -176,7 +179,5 @@ function toPosixPath(value: string): string {
 }
 
 function slugifyPageId(pageId: string): string {
-  return pageId
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  return pageId.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }

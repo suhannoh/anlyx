@@ -2,11 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { pageStoryboardSchema, type PageStoryboard } from "@anlyx/core";
 
-import {
-  capturePages,
-  createCaptureAdapter,
-  type CaptureDriver
-} from "./capture-adapter.js";
+import { capturePages, createCaptureAdapter, type CaptureDriver } from "./capture-adapter.js";
 
 describe("Capture Adapter", () => {
   it("successful capture updates screenshots and captureStatus", async () => {

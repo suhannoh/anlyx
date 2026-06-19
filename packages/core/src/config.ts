@@ -122,7 +122,9 @@ export type NormalizedSpringBackendConfig = SpringBackendConfig & {
 };
 
 export type NormalizedOpenApiBackendConfig = OpenApiBackendConfig;
-export type NormalizedBackendConfig = NormalizedSpringBackendConfig | NormalizedOpenApiBackendConfig;
+export type NormalizedBackendConfig =
+  | NormalizedSpringBackendConfig
+  | NormalizedOpenApiBackendConfig;
 
 export type NormalizedNextFrontendConfig = Omit<NextFrontendConfig, "viewport" | "capture"> & {
   viewport: ViewportConfig;

@@ -87,7 +87,9 @@ describe("Spring Boot Flow Scanner", () => {
 
     const [flow] = await scanFlows();
 
-    expect(flow?.nodes.find((node) => node.id === "repository:BenefitRepository")?.metadata).toMatchObject({
+    expect(
+      flow?.nodes.find((node) => node.id === "repository:BenefitRepository")?.metadata
+    ).toMatchObject({
       entityName: "Benefit"
     });
   });
@@ -319,7 +321,10 @@ describe("Spring Boot Flow Scanner", () => {
       `
     });
 
-    const [flow] = await scanSpringFlows({ sourceDir, maxMainDepth: 2 }, await scanSpringEndpoints({ sourceDir }));
+    const [flow] = await scanSpringFlows(
+      { sourceDir, maxMainDepth: 2 },
+      await scanSpringEndpoints({ sourceDir })
+    );
 
     expect(flow?.mainPath.length).toBeLessThanOrEqual(3);
   });
@@ -345,15 +350,16 @@ describe("Spring Boot Flow Scanner", () => {
     return scanSpringFlows({ sourceDir }, endpoints);
   }
 
-  async function writeBenefitFlow(options: {
-    tableAnnotation?: string;
-    serviceFieldType?: string;
-    serviceClassDeclaration?: string;
-    serviceBody?: string;
-  } = {}): Promise<void> {
+  async function writeBenefitFlow(
+    options: {
+      tableAnnotation?: string;
+      serviceFieldType?: string;
+      serviceClassDeclaration?: string;
+      serviceBody?: string;
+    } = {}
+  ): Promise<void> {
     const serviceFieldType = options.serviceFieldType ?? "PublicBenefitService";
-    const serviceClassDeclaration =
-      options.serviceClassDeclaration ?? "class PublicBenefitService";
+    const serviceClassDeclaration = options.serviceClassDeclaration ?? "class PublicBenefitService";
     const serviceBody =
       options.serviceBody ??
       `

@@ -68,9 +68,7 @@ export async function scanSpringEndpoints(
   return endpoints;
 }
 
-export function createSpringBackendAdapter(
-  options: SpringEndpointScannerOptions
-): BackendAdapter {
+export function createSpringBackendAdapter(options: SpringEndpointScannerOptions): BackendAdapter {
   return {
     name: "spring",
     async scanEndpoints() {
@@ -154,12 +152,12 @@ function extractControllerClasses(content: string, filePath: string): Controller
       continue;
     }
 
-      controllers.push({
-        className,
-        classPath: readClassMappingPath(annotationBlock) ?? "",
-        filePath,
-        body: content.slice(bodyStart + 1, bodyEnd),
-        bodyStartIndex: bodyStart + 1
+    controllers.push({
+      className,
+      classPath: readClassMappingPath(annotationBlock) ?? "",
+      filePath,
+      body: content.slice(bodyStart + 1, bodyEnd),
+      bodyStartIndex: bodyStart + 1
     });
   }
 
@@ -234,9 +232,7 @@ function readAnnotationBlockBefore(content: string, index: number): string {
 }
 
 function readClassMappingPath(annotationBlock: string): string | undefined {
-  const requestMappingMatch = /@RequestMapping\b\s*(?:\(([\s\S]*?)\))?/.exec(
-    annotationBlock
-  );
+  const requestMappingMatch = /@RequestMapping\b\s*(?:\(([\s\S]*?)\))?/.exec(annotationBlock);
 
   if (!requestMappingMatch) {
     return undefined;
@@ -290,9 +286,7 @@ function readHttpMethod(mapping: MappingAnnotation): HttpMethod | undefined {
     return MAPPING_METHODS[mapping.annotationName];
   }
 
-  const requestMethodMatch = /RequestMethod\.(GET|POST|PUT|PATCH|DELETE)\b/.exec(
-    mapping.content
-  );
+  const requestMethodMatch = /RequestMethod\.(GET|POST|PUT|PATCH|DELETE)\b/.exec(mapping.content);
   const method = requestMethodMatch?.[1] as HttpMethod | undefined;
 
   if (method && SUPPORTED_REQUEST_METHODS.has(method)) {
@@ -387,9 +381,7 @@ function cleanTypeName(typeName: string | undefined): string | undefined {
 }
 
 function normalizePath(basePath: string, methodPath: string): string {
-  const combinedPath = `/${basePath}/${methodPath}`
-    .replace(/\/+/g, "/")
-    .replace(/\/$/, "");
+  const combinedPath = `/${basePath}/${methodPath}`.replace(/\/+/g, "/").replace(/\/$/, "");
 
   return combinedPath || "/";
 }
@@ -424,7 +416,12 @@ function findMatchingBrace(value: string, openBraceIndex: number): number {
   return findMatchingPair(value, openBraceIndex, "{", "}");
 }
 
-function findMatchingPair(value: string, openIndex: number, openChar: string, closeChar: string): number {
+function findMatchingPair(
+  value: string,
+  openIndex: number,
+  openChar: string,
+  closeChar: string
+): number {
   let depth = 0;
 
   for (let index = openIndex; index < value.length; index += 1) {

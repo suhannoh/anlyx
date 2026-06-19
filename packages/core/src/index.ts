@@ -68,14 +68,9 @@ export {
   viewportConfigSchema
 } from "./config.js";
 
-export {
-  validateFixtureExpectedData
-} from "./fixture-validation.js";
+export { validateFixtureExpectedData } from "./fixture-validation.js";
 
-export {
-  aggregateReportData,
-  matchApiCallToEndpoint
-} from "./report-aggregation.js";
+export { aggregateReportData, matchApiCallToEndpoint } from "./report-aggregation.js";
 
 export {
   apiCallSchema,

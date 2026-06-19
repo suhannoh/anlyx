@@ -4,11 +4,13 @@ import { cwd } from "node:process";
 
 import { describe, expect, it } from "vitest";
 
+import { aggregateReportData, matchApiCallToEndpoint } from "./report-aggregation.js";
 import {
-  aggregateReportData,
-  matchApiCallToEndpoint
-} from "./report-aggregation.js";
-import { scanResultSchema, type Endpoint, type EndpointFlow, type PageStoryboard } from "./schema.js";
+  scanResultSchema,
+  type Endpoint,
+  type EndpointFlow,
+  type PageStoryboard
+} from "./schema.js";
 
 const fixtureRoot = resolve(cwd(), "fixtures/spring-next-sample/expected");
 
@@ -122,10 +124,9 @@ describe("report data aggregation", () => {
 
   it("query string is ignored for endpoint matching", () => {
     expect(
-      matchApiCallToEndpoint(
-        { method: "GET", path: "/api/public/benefits?id=1&sort=latest" },
-        [listEndpoint]
-      )
+      matchApiCallToEndpoint({ method: "GET", path: "/api/public/benefits?id=1&sort=latest" }, [
+        listEndpoint
+      ])
     ).toEqual(listEndpoint);
   });
 
@@ -143,9 +144,7 @@ describe("report data aggregation", () => {
     });
 
     expect(result.scanResult.pages[0]?.apiCalls[0]).not.toHaveProperty("endpointId");
-    expect(result.issues).toContainEqual(
-      expect.objectContaining({ code: "api_call_unmatched" })
-    );
+    expect(result.issues).toContainEqual(expect.objectContaining({ code: "api_call_unmatched" }));
   });
 
   it("ambiguous apiCall match does not pick arbitrary endpoint and records issue", () => {
@@ -160,9 +159,7 @@ describe("report data aggregation", () => {
     });
 
     expect(result.scanResult.pages[0]?.apiCalls[0]).not.toHaveProperty("endpointId");
-    expect(result.issues).toContainEqual(
-      expect.objectContaining({ code: "api_call_ambiguous" })
-    );
+    expect(result.issues).toContainEqual(expect.objectContaining({ code: "api_call_ambiguous" }));
   });
 
   it("existing valid endpointId is preserved", () => {
@@ -202,7 +199,11 @@ describe("report data aggregation", () => {
       captureStatus: "failed",
       errorMessage: "Login required"
     };
-    const result = aggregateReportData({ endpoints: [endpoint], flows: [flow], pages: [failedPage] });
+    const result = aggregateReportData({
+      endpoints: [endpoint],
+      flows: [flow],
+      pages: [failedPage]
+    });
 
     expect(result.scanResult.pages[0]).toEqual(failedPage);
   });
@@ -215,7 +216,11 @@ describe("report data aggregation", () => {
       captureStatus: "pending",
       errorMessage: "Missing sampleParams"
     };
-    const result = aggregateReportData({ endpoints: [endpoint], flows: [flow], pages: [pendingPage] });
+    const result = aggregateReportData({
+      endpoints: [endpoint],
+      flows: [flow],
+      pages: [pendingPage]
+    });
 
     expect(result.scanResult.pages[0]).toEqual(pendingPage);
   });
