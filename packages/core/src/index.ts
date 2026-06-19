@@ -27,6 +27,13 @@ export type {
 } from "./fixture-validation.js";
 
 export type {
+  AggregateReportDataInput,
+  ReportAggregationIssue,
+  ReportAggregationResult,
+  ReportAggregationWarning
+} from "./report-aggregation.js";
+
+export type {
   ApiCall,
   CaptureResult,
   CaptureStatus,
@@ -64,6 +71,11 @@ export {
 export {
   validateFixtureExpectedData
 } from "./fixture-validation.js";
+
+export {
+  aggregateReportData,
+  matchApiCallToEndpoint
+} from "./report-aggregation.js";
 
 export {
   apiCallSchema,
