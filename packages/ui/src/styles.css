@@ -177,7 +177,8 @@
   background: var(--anlyx-color-panel);
 }
 
-.anlyx-endpoint-button {
+.anlyx-endpoint-button,
+.anlyx-page-button {
   display: grid;
   width: 100%;
   gap: 6px;
@@ -190,7 +191,8 @@
   cursor: pointer;
 }
 
-.anlyx-endpoint-button[aria-current="true"] .anlyx-list-item__primary {
+.anlyx-endpoint-button[aria-current="true"] .anlyx-list-item__primary,
+.anlyx-page-button[aria-current="true"] .anlyx-list-item__primary {
   color: #1d4ed8;
 }
 
@@ -382,6 +384,194 @@
   color: var(--anlyx-color-text-secondary);
 }
 
+.anlyx-page-storyboard {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  margin: 20px;
+}
+
+.anlyx-page-summary,
+.anlyx-storyboard-panel,
+.anlyx-capture-state,
+.anlyx-storyboard-empty {
+  border: 1px solid var(--anlyx-color-border);
+  border-radius: var(--anlyx-radius);
+  background: var(--anlyx-color-panel);
+  box-shadow: var(--anlyx-shadow-panel);
+}
+
+.anlyx-page-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.6fr) auto;
+  gap: 16px;
+  padding: 16px;
+}
+
+.anlyx-page-summary h2,
+.anlyx-page-summary p {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.anlyx-page-summary h2 {
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.anlyx-storyboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.8fr);
+  gap: 16px;
+  min-width: 0;
+}
+
+.anlyx-storyboard-panel {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+  padding: 16px;
+}
+
+.anlyx-storyboard-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.anlyx-storyboard-section-heading h2,
+.anlyx-capture-state h2 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.anlyx-storyboard-section-heading span {
+  color: var(--anlyx-color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.anlyx-segment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.anlyx-segment-card {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--anlyx-color-border);
+  border-left: 4px solid #3b82f6;
+  border-radius: var(--anlyx-radius);
+  background: var(--anlyx-color-panel);
+}
+
+.anlyx-segment-card__image {
+  display: grid;
+  min-height: 120px;
+  place-items: center;
+  overflow: hidden;
+  border-bottom: 1px solid var(--anlyx-color-border);
+  background: var(--anlyx-color-background);
+  color: var(--anlyx-color-text-secondary);
+}
+
+.anlyx-segment-card__image img {
+  width: 100%;
+  min-height: 120px;
+  object-fit: cover;
+}
+
+.anlyx-segment-card__body {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.anlyx-segment-card__body h3,
+.anlyx-segment-card__body p {
+  margin: 0;
+}
+
+.anlyx-segment-card__body code,
+.anlyx-api-call__endpoint {
+  overflow-wrap: anywhere;
+  color: var(--anlyx-color-text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+
+.anlyx-segment-card__meta,
+.anlyx-api-call__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.anlyx-segment-card__meta span {
+  color: var(--anlyx-color-text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.anlyx-api-call-list {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.anlyx-api-call {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--anlyx-color-border);
+  border-radius: var(--anlyx-radius);
+}
+
+.anlyx-api-call__line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.anlyx-api-call__path {
+  overflow-wrap: anywhere;
+  font-weight: 650;
+}
+
+.anlyx-capture-state {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-left: 4px solid var(--anlyx-color-method-update);
+}
+
+.anlyx-capture-state--failed {
+  border-left-color: var(--anlyx-color-method-delete);
+}
+
+.anlyx-capture-state p {
+  margin: 0;
+  color: var(--anlyx-color-text-secondary);
+}
+
+.anlyx-storyboard-empty {
+  display: grid;
+  min-height: 360px;
+  place-items: center;
+  color: var(--anlyx-color-text-secondary);
+}
+
+.anlyx-empty-inline {
+  margin: 0;
+  color: var(--anlyx-color-text-secondary);
+}
+
 .anlyx-inspector {
   grid-row: 1 / span 2;
   min-width: 0;
@@ -522,5 +712,10 @@
   .anlyx-generated-at {
     position: static;
     padding: 12px 20px;
+  }
+
+  .anlyx-page-summary,
+  .anlyx-storyboard-grid {
+    grid-template-columns: 1fr;
   }
 }

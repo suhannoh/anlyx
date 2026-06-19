@@ -1,15 +1,27 @@
-import type { Endpoint, ScanResult } from "@anlyx/core";
+import type { Endpoint, PageStoryboard, ScanResult } from "@anlyx/core";
 
 import { EndpointList } from "./EndpointList.js";
 import { PageList } from "./PageList.js";
 
 type SidebarProps = {
   data: ScanResult;
+  activeView: "endpoint" | "pages" | "replay";
   selectedEndpointId: string | undefined;
+  selectedPageId: string | undefined;
+  onSelectView: (view: "endpoint" | "pages" | "replay") => void;
   onSelectEndpoint: (endpoint: Endpoint) => void;
+  onSelectPage: (page: PageStoryboard) => void;
 };
 
-export function Sidebar({ data, selectedEndpointId, onSelectEndpoint }: SidebarProps): JSX.Element {
+export function Sidebar({
+  data,
+  activeView,
+  selectedEndpointId,
+  selectedPageId,
+  onSelectView,
+  onSelectEndpoint,
+  onSelectPage
+}: SidebarProps): JSX.Element {
   return (
     <aside className="anlyx-sidebar" aria-label="Primary navigation">
       <div className="anlyx-brand">
@@ -23,13 +35,25 @@ export function Sidebar({ data, selectedEndpointId, onSelectEndpoint }: SidebarP
       </div>
 
       <nav className="anlyx-tabs" aria-label="Views">
-        <button className="anlyx-tab anlyx-tab--active" type="button">
+        <button
+          className={activeView === "endpoint" ? "anlyx-tab anlyx-tab--active" : "anlyx-tab"}
+          type="button"
+          onClick={() => onSelectView("endpoint")}
+        >
           Endpoint
         </button>
-        <button className="anlyx-tab" type="button">
+        <button
+          className={activeView === "pages" ? "anlyx-tab anlyx-tab--active" : "anlyx-tab"}
+          type="button"
+          onClick={() => onSelectView("pages")}
+        >
           Pages
         </button>
-        <button className="anlyx-tab" type="button">
+        <button
+          className={activeView === "replay" ? "anlyx-tab anlyx-tab--active" : "anlyx-tab"}
+          type="button"
+          onClick={() => onSelectView("replay")}
+        >
           Replay
         </button>
       </nav>
@@ -44,7 +68,7 @@ export function Sidebar({ data, selectedEndpointId, onSelectEndpoint }: SidebarP
         selectedEndpointId={selectedEndpointId}
         onSelectEndpoint={onSelectEndpoint}
       />
-      <PageList pages={data.pages} />
+      <PageList pages={data.pages} selectedPageId={selectedPageId} onSelectPage={onSelectPage} />
     </aside>
   );
 }

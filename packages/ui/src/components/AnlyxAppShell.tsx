@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type { EndpointFlow, FlowNode, ScanResult } from "@anlyx/core";
 
+import { CanvasPlaceholder } from "./CanvasPlaceholder.js";
 import { EndpointMapCanvas } from "./EndpointMapCanvas.js";
 import { InspectorPanel } from "./InspectorPanel.js";
+import { PageStoryboardView } from "./PageStoryboardView.js";
 import { ReplayControls } from "./ReplayControls.js";
 import { Sidebar } from "./Sidebar.js";
 
@@ -10,10 +12,15 @@ export type AnlyxAppShellProps = {
   data: ScanResult;
 };
 
+type ViewMode = "endpoint" | "pages" | "replay";
+
 export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
+  const [activeView, setActiveView] = useState<ViewMode>("endpoint");
   const [selectedEndpointId, setSelectedEndpointId] = useState(data.endpoints[0]?.id);
+  const [selectedPageId, setSelectedPageId] = useState(data.pages[0]?.id);
   const selectedEndpoint =
     data.endpoints.find((endpoint) => endpoint.id === selectedEndpointId) ?? data.endpoints[0];
+  const selectedPage = data.pages.find((page) => page.id === selectedPageId) ?? data.pages[0];
   const selectedFlow = useMemo(
     () => data.flows.find((flow) => flow.endpointId === selectedEndpoint?.id),
     [data.flows, selectedEndpoint?.id]
@@ -28,6 +35,12 @@ export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
   }, [data.endpoints]);
 
   useEffect(() => {
+    setSelectedPageId((current) =>
+      data.pages.some((page) => page.id === current) ? current : data.pages[0]?.id
+    );
+  }, [data.pages]);
+
+  useEffect(() => {
     setSelectedNodeId(findDefaultNode(selectedFlow)?.id);
   }, [selectedFlow]);
 
@@ -35,16 +48,30 @@ export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
     <div className="anlyx-shell" role="application" aria-label="Anlyx application shell">
       <Sidebar
         data={data}
+        activeView={activeView}
         selectedEndpointId={selectedEndpoint?.id}
-        onSelectEndpoint={(endpoint) => setSelectedEndpointId(endpoint.id)}
+        selectedPageId={selectedPage?.id}
+        onSelectView={setActiveView}
+        onSelectEndpoint={(endpoint) => {
+          setSelectedEndpointId(endpoint.id);
+          setActiveView("endpoint");
+        }}
+        onSelectPage={(page) => {
+          setSelectedPageId(page.id);
+          setActiveView("pages");
+        }}
       />
       <div className="anlyx-main">
-        <EndpointMapCanvas
-          endpoint={selectedEndpoint}
-          flow={selectedFlow}
-          selectedNodeId={selectedNode?.id}
-          onSelectNode={(node) => setSelectedNodeId(node.id)}
-        />
+        {activeView === "endpoint" ? (
+          <EndpointMapCanvas
+            endpoint={selectedEndpoint}
+            flow={selectedFlow}
+            selectedNodeId={selectedNode?.id}
+            onSelectNode={(node) => setSelectedNodeId(node.id)}
+          />
+        ) : null}
+        {activeView === "pages" ? <PageStoryboardView page={selectedPage} /> : null}
+        {activeView === "replay" ? <CanvasPlaceholder endpoint={selectedEndpoint} /> : null}
         <ReplayControls />
       </div>
       <InspectorPanel data={data} selectedFlow={selectedFlow} selectedNode={selectedNode} />
