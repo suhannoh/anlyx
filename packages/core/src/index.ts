@@ -1,4 +1,26 @@
 export type {
+  AnlyxConfig,
+  BackendConfig,
+  CaptureConfig,
+  FrontendConfig,
+  ManualFrontendConfig,
+  NextFrontendConfig,
+  NormalizedAnlyxConfig,
+  NormalizedBackendConfig,
+  NormalizedCaptureConfig,
+  NormalizedFrontendConfig,
+  NormalizedManualFrontendConfig,
+  NormalizedNextFrontendConfig,
+  NormalizedOpenApiBackendConfig,
+  NormalizedServerConfig,
+  NormalizedSpringBackendConfig,
+  OpenApiBackendConfig,
+  ServerConfig,
+  SpringBackendConfig,
+  ViewportConfig
+} from "./config.js";
+
+export type {
   ApiCall,
   CaptureResult,
   CaptureStatus,
@@ -15,6 +37,23 @@ export type {
   SupportLevel,
   Viewport
 } from "./schema.js";
+
+export {
+  ConfigValidationError,
+  anlyxConfigSchema,
+  backendConfigSchema,
+  captureConfigSchema,
+  defineConfig,
+  frontendConfigSchema,
+  manualFrontendConfigSchema,
+  nextFrontendConfigSchema,
+  normalizeConfig,
+  openApiBackendConfigSchema,
+  parseConfig,
+  serverConfigSchema,
+  springBackendConfigSchema,
+  viewportConfigSchema
+} from "./config.js";
 
 export {
   apiCallSchema,

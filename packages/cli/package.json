@@ -13,5 +13,9 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
+  },
+  "dependencies": {
+    "@anlyx/core": "workspace:*",
+    "jiti": "^2.7.0"
   }
 }

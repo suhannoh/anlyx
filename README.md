@@ -53,5 +53,5 @@ No CLI commands, UI, adapter implementation, or scanner implementation exists ye
 ## Development Setup
 
 Anlyx uses a pnpm workspace with TypeScript, ESLint, Prettier, and Vitest. The current
-workspace contains tooling, package skeletons, and Core data validation only; CLI commands,
-scanners, adapters, capture, and UI behavior are not implemented yet.
+workspace contains tooling, package skeletons, Core data/config validation, and a config loader
+utility only; CLI commands, scanners, adapters, capture, and UI behavior are not implemented yet.
