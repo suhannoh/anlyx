@@ -11,6 +11,7 @@ Adapters MUST NOT depend on UI components, React Flow, browser state outside cap
 - `SpringBackendAdapter`
 - `OpenApiBackendAdapter`
 - `NextFrontendAdapter`
+- `ManualFrontendAdapter`
 - `CaptureAdapter`
 
 No other framework adapter is required for v0.1.
@@ -57,8 +58,10 @@ type FrontendAdapter = {
 Rules:
 
 - Next.js App Router pages MUST be represented as route templates.
+- Manual frontend URLs MUST be represented as explicit page routes.
 - `scanPages` MUST NOT capture screenshots. Capture is handled by `CaptureAdapter`.
 - Dynamic routes without `sampleParams` MUST be returned with `captureStatus = "pending"`.
+- The Core scan pipeline MUST consume `FrontendAdapter.scanPages()` results regardless of frontend type.
 
 ## CaptureAdapter
 
@@ -131,6 +134,34 @@ Limits:
 - MUST collect actual page files only.
 - MUST NOT collect components, hooks, utility files, stories, tests, or API routes as pages.
 
+## ManualFrontendAdapter
+
+Input:
+
+- `frontend.type = "manual"`
+- `baseUrl`
+- `urls`
+- Optional viewport and capture settings
+
+Output:
+
+- `PageStoryboard[]` created from `frontend.urls`
+
+Rules:
+
+- Each manual URL MUST become one `PageStoryboard`.
+- `route` MUST use the configured URL path.
+- `filePath` MUST remain omitted unless a later explicit mapping is added.
+- `screenshots` and `apiCalls` MUST start as empty arrays before capture.
+- `captureStatus` SHOULD start as `pending` before capture.
+- Manual URL pages MAY be passed to `CaptureAdapter`.
+- OpenAPI-only backend plus manual frontend is the official v0.1 Basic Support path.
+
+Limits:
+
+- MUST NOT infer frontend source files.
+- MUST NOT provide React Router or general SPA route discovery.
+
 ## CaptureAdapter
 
 Input:
@@ -157,7 +188,7 @@ The v0.1 scan pipeline SHOULD be:
 
 1. Backend adapter scans endpoints.
 2. Backend adapter scans flows.
-3. Frontend adapter scans pages.
+3. Frontend adapter scans pages. For `frontend.type = "manual"`, this means `ManualFrontendAdapter.scanPages()` converts `frontend.urls` into `PageStoryboard[]`.
 4. Capture adapter captures pages and API calls.
 5. Core links page API calls to endpoint IDs.
 6. Core emits `ScanResult`.

@@ -119,12 +119,7 @@
       "controller:PublicBenefitController#getDetail",
       "service:PublicBenefitService#getBenefitDetail",
       "repository:BenefitRepository#findById",
-      "database:benefits",
-      "repository:BenefitRepository#findById",
-      "service:PublicBenefitService#getBenefitDetail",
-      "controller:PublicBenefitController#getDetail",
-      "endpoint:get:/api/public/benefits/{id}",
-      "page:benefit-detail"
+      "database:benefits"
     ],
     "subFlows": [
       {

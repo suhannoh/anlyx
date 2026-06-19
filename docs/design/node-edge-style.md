@@ -43,7 +43,7 @@ Nodes MUST NOT show large amounts of code inline. Detailed code and metadata bel
 | Inferred | Dashed line with confidence badge |
 | Unknown | Gray dotted line |
 | Request | Animated dot moving forward |
-| Response | Animated dot moving backward |
+| Response | Animated dot moving backward; in v0.1 this is derived from `mainPath` reverse traversal unless an explicit response edge exists |
 | DB | Solid line ending at database node |
 | External | Dashed line to external node |
 | Cache | Dashed or secondary line |
@@ -65,4 +65,4 @@ The UI MUST NOT present low-confidence inferred edges as certain.
 
 ## Replay Styling
 
-Replay Lite MAY animate request and response dots on Main Flow edges only. Sub Flow replay is out of v0.1 scope.
+Replay Lite MAY animate request and response dots on Main Flow edges only. Request motion uses `mainPath` forward traversal. Response motion uses `mainPath` reverse traversal and is not required to have stored `response` edges in v0.1 fixtures. Sub Flow replay is out of v0.1 scope.

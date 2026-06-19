@@ -81,7 +81,10 @@ type ManualFrontendConfig = {
 Rules:
 
 - `frontend.type = "next"` with `router = "app"` is the v0.1 Deep Support frontend path.
-- `frontend.type = "manual"` MAY be used with OpenAPI-only projects for Basic Support page capture.
+- `frontend.type = "manual"` is handled by `ManualFrontendAdapter`.
+- `ManualFrontendAdapter` MUST read `frontend.urls` and create one `PageStoryboard` per URL.
+- Manual page storyboards MAY be captured by `CaptureAdapter`.
+- OpenAPI-only backend plus manual frontend is the official v0.1 Basic Support path.
 - React Router Deep Support MUST NOT be added in v0.1.
 
 ## Capture Config
@@ -216,3 +219,5 @@ export default defineConfig({
   }
 });
 ```
+
+In this example, `ManualFrontendAdapter.scanPages()` MUST convert `/`, `/dashboard`, and `/items` into `PageStoryboard[]` entries. Because manual URLs do not identify source files, their `filePath` fields MUST be omitted unless a future explicit mapping feature is added.

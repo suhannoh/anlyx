@@ -80,6 +80,10 @@ The failed page MUST remain in `pages.json` and `report-data.json`.
 - `expected/pages.json` MUST contain `PageStoryboard[]`.
 - `expected/report-data.json` MUST contain `ScanResult`.
 - JSON MUST match `docs/contracts/data-contract.md`.
+- `report-data.json.endpoints` MUST embed the same endpoint objects as `endpoints.json`.
+- `report-data.json.flows` MUST embed the same flow objects as `flows.json`.
+- `report-data.json.pages` MUST embed the same page storyboard objects as `pages.json`.
+- Aggregate report data MUST NOT drop metadata, confidence, file paths, line numbers, or optional fields from split expected files.
 - Expected output MUST NOT require actual fixture source files during the planning phase.
 
 ## Completion Criteria

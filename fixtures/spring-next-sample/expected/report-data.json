@@ -15,8 +15,13 @@
       "lineNumber": 24,
       "responseSchema": "BenefitDetailResponse",
       "authRequired": false,
-      "tags": ["benefits", "public"],
-      "usedByPageIds": ["page:benefit-detail"],
+      "tags": [
+        "benefits",
+        "public"
+      ],
+      "usedByPageIds": [
+        "page:benefit-detail"
+      ],
       "confidence": "high"
     },
     {
@@ -31,8 +36,13 @@
       "lineNumber": 18,
       "responseSchema": "BenefitSummaryListResponse",
       "authRequired": false,
-      "tags": ["benefits", "public"],
-      "usedByPageIds": ["page:benefits-list"],
+      "tags": [
+        "benefits",
+        "public"
+      ],
+      "usedByPageIds": [
+        "page:benefits-list"
+      ],
       "confidence": "high"
     }
   ],
@@ -61,7 +71,11 @@
           "label": "PublicBenefitController#getDetail",
           "filePath": "backend/src/main/java/com/zup/benefit/PublicBenefitController.java",
           "lineNumber": 24,
-          "confidence": "high"
+          "confidence": "high",
+          "metadata": {
+            "className": "PublicBenefitController",
+            "methodName": "getDetail"
+          }
         },
         {
           "id": "service:PublicBenefitService#getBenefitDetail",
@@ -69,7 +83,11 @@
           "label": "PublicBenefitService#getBenefitDetail",
           "filePath": "backend/src/main/java/com/zup/benefit/PublicBenefitService.java",
           "lineNumber": 82,
-          "confidence": "high"
+          "confidence": "high",
+          "metadata": {
+            "className": "PublicBenefitService",
+            "methodName": "getBenefitDetail"
+          }
         },
         {
           "id": "repository:BenefitRepository#findById",
@@ -149,12 +167,7 @@
         "controller:PublicBenefitController#getDetail",
         "service:PublicBenefitService#getBenefitDetail",
         "repository:BenefitRepository#findById",
-        "database:benefits",
-        "repository:BenefitRepository#findById",
-        "service:PublicBenefitService#getBenefitDetail",
-        "controller:PublicBenefitController#getDetail",
-        "endpoint:get:/api/public/benefits/{id}",
-        "page:benefit-detail"
+        "database:benefits"
       ],
       "subFlows": [
         {

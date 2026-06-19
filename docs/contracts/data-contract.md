@@ -135,6 +135,8 @@ type FlowEdge = {
 };
 ```
 
+`kind = "response"` is reserved for future or explicit response edges. v0.1 fixtures are not required to store response edges because Replay Lite derives response movement from `EndpointFlow.mainPath` in reverse order.
+
 JSON example:
 
 ```json
@@ -199,6 +201,8 @@ type EndpointFlow = {
   subFlows: SubFlow[];
 };
 ```
+
+`mainPath` MUST represent the one-way request path in display order. Replay Lite MUST use `mainPath` forward for request animation and `mainPath` reversed for response animation. v0.1 implementations SHOULD find existing adjacent edges for rendering; if an explicit reverse edge is absent, the UI MAY render the same edge geometry in reverse.
 
 JSON example:
 
@@ -359,3 +363,5 @@ Fixture expected output MUST mirror the same top-level structures:
 - `flows.json` contains `EndpointFlow[]`
 - `pages.json` contains `PageStoryboard[]`
 - `report-data.json` contains `ScanResult`
+
+`report-data.json` is the final aggregate UI output, not a summary. Its `endpoints`, `flows`, and `pages` arrays MUST embed the exact objects from the split expected files without dropping metadata, confidence, file paths, line numbers, or optional fields.

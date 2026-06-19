@@ -32,6 +32,12 @@ v0.1 MUST provide:
 
 Replay Lite MUST use `EndpointFlow.mainPath` and matching `FlowNode` / `FlowEdge` entries.
 
+Request animation MUST traverse `EndpointFlow.mainPath` in forward order.
+
+Response animation MUST traverse `EndpointFlow.mainPath` in reverse order.
+
+The UI MUST use each adjacent node pair in `mainPath` to find an existing edge. When rendering the response path, the UI SHOULD reuse the existing edge geometry in reverse. `FlowEdge.kind = "response"` may remain in the Data Contract for explicit future response edges, but v0.1 fixtures are not required to store response edges.
+
 If required nodes are missing, the UI MUST show an unavailable or unknown state rather than inventing a path.
 
 ## Explicit Non-goals
