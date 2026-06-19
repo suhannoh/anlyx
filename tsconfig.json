@@ -20,6 +20,9 @@
       "path": "./packages/adapter-openapi"
     },
     {
+      "path": "./packages/adapter-manual"
+    },
+    {
       "path": "./packages/capture"
     }
   ]
