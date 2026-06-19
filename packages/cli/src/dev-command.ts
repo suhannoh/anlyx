@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -7,6 +8,8 @@ import { scanResultSchema, type NormalizedAnlyxConfig, type ScanResult } from "@
 import { createServer, type ViteDevServer } from "vite";
 
 import { loadConfig } from "./config-loader.js";
+
+const require = createRequire(import.meta.url);
 
 export type DevCommandOptions = {
   cwd?: string;
@@ -184,7 +187,11 @@ function getConfiguredPort(config: NormalizedAnlyxConfig): number {
 }
 
 function getViewerRoot(): string {
-  return dirname(fileURLToPath(new URL("../../ui/src/viewer/viewer.html", import.meta.url)));
+  try {
+    return dirname(require.resolve("@anlyx/ui/viewer"));
+  } catch {
+    return dirname(fileURLToPath(new URL("../../ui/dist/viewer/viewer.html", import.meta.url)));
+  }
 }
 
 function getOpenBrowserCommand(url: string): { command: string; args: string[] } {

@@ -17,6 +17,14 @@ export default [
       ".anlyx/**"
     ]
   },
+  {
+    files: ["scripts/**/*.mjs", "packages/*/scripts/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        process: "readonly"
+      }
+    }
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended
 ];

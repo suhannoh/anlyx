@@ -58,6 +58,8 @@ npx anlyx dev
 Until npm publishing is complete, run the local workspace CLI during development.
 
 ```bash
+corepack pnpm install
+corepack pnpm build
 corepack pnpm --filter anlyx exec anlyx init
 corepack pnpm --filter anlyx exec anlyx scan
 corepack pnpm --filter anlyx exec anlyx dev
@@ -85,3 +87,6 @@ This repository follows documentation-first development. v0.1 implementation is 
 Anlyx uses a pnpm workspace with TypeScript, ESLint, Prettier, and Vitest. The current
 workspace contains tooling, package skeletons, Core data/config validation, adapter utilities,
 capture primitives, UI components, and the `anlyx init` / `anlyx scan` / `anlyx dev` commands.
+
+Before npm publication, release packaging is checked with local build and pack dry-runs. See
+[`docs/release/npm-publish-preflight.md`](./docs/release/npm-publish-preflight.md).

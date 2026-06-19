@@ -1,10 +1,28 @@
 {
   "name": "anlyx",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "CLI for Anlyx, visual flow maps for modern web apps.",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/clean-package-dist.mjs . && tsc -p tsconfig.build.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/suhannoh/anlyx.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/suhannoh/anlyx#readme",
+  "bugs": {
+    "url": "https://github.com/suhannoh/anlyx/issues"
+  },
   "bin": {
     "anlyx": "./dist/index.js"
   },

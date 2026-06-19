@@ -1,15 +1,37 @@
 {
   "name": "@anlyx/ui",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "React UI components and local viewer shell for Anlyx.",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/clean-package-dist.mjs . && tsc -p tsconfig.build.json && node ./scripts/copy-viewer-assets.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/suhannoh/anlyx.git",
+    "directory": "packages/ui"
+  },
+  "homepage": "https://github.com/suhannoh/anlyx#readme",
+  "bugs": {
+    "url": "https://github.com/suhannoh/anlyx/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./viewer": "./dist/viewer/viewer.html"
   },
   "dependencies": {
     "@anlyx/core": "workspace:*",

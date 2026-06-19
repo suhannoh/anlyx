@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 export { defineConfig } from "@anlyx/core";
@@ -279,7 +280,7 @@ function isCliEntrypoint(): boolean {
     return false;
   }
 
-  return fileURLToPath(import.meta.url) === process.argv[1];
+  return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]);
 }
 
 function parseScanArgs(args: string[]): {

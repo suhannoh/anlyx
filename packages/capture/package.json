@@ -1,10 +1,31 @@
 {
   "name": "@anlyx/capture",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "Playwright capture adapter for Anlyx page storyboards.",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/clean-package-dist.mjs . && tsc -p tsconfig.build.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/suhannoh/anlyx.git",
+    "directory": "packages/capture"
+  },
+  "homepage": "https://github.com/suhannoh/anlyx#readme",
+  "bugs": {
+    "url": "https://github.com/suhannoh/anlyx/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

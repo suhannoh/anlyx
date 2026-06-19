@@ -56,6 +56,8 @@ npx anlyx dev
 npm 배포 전에는 로컬 workspace CLI를 사용합니다.
 
 ```bash
+corepack pnpm install
+corepack pnpm build
 corepack pnpm --filter anlyx exec anlyx init
 corepack pnpm --filter anlyx exec anlyx scan
 corepack pnpm --filter anlyx exec anlyx dev
@@ -79,3 +81,5 @@ corepack pnpm --filter anlyx exec anlyx dev
 이 저장소는 문서 우선 개발 방식을 따릅니다. v0.1 구현은 scope lock, 데이터 계약, Adapter 규칙, Fixture expected output, 디자인 기준, Acceptance 체크리스트에 의해 제한됩니다.
 
 현재는 `anlyx init`으로 기본 `anlyx.config.ts`를 생성하고, `anlyx scan`으로 로컬 scan JSON 출력을 만들 수 있으며, `anlyx dev`로 로컬 UI를 확인할 수 있습니다. npm 패키지 배포는 아직 진행하지 않습니다.
+
+npm 배포 전 포장 점검은 로컬 build와 pack dry-run으로 확인합니다. 자세한 항목은 [`docs/release/npm-publish-preflight.md`](./docs/release/npm-publish-preflight.md)를 참고합니다.
