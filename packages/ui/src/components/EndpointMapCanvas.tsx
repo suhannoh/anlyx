@@ -22,7 +22,9 @@ export type EndpointMapCanvasProps = {
   selectedNodeId: string | undefined;
   title?: string;
   eyebrow?: string;
+  variant?: "structure" | "process";
   replayState?: ReplayLiteState;
+  toolbar?: JSX.Element;
   onSelectNode: (node: FlowNode) => void;
 };
 
@@ -32,7 +34,9 @@ export function EndpointMapCanvas({
   selectedNodeId,
   title,
   eyebrow = "Backend Endpoint Map",
+  variant = "structure",
   replayState,
+  toolbar,
   onSelectNode
 }: EndpointMapCanvasProps): JSX.Element {
   const model = useMemo(() => (flow ? buildReactFlowModel(flow) : undefined), [flow]);
@@ -53,11 +57,21 @@ export function EndpointMapCanvas({
     () =>
       model?.edges.map((edge) => {
         const isReplayActive = isReplayEdgeActive(edge, replayState?.activeEdge);
+        const replayClass =
+          isReplayActive && replayState?.phase === "response"
+            ? "anlyx-flow-edge--replay-response"
+            : isReplayActive
+              ? "anlyx-flow-edge--replay-request"
+              : "";
         const edgeData = edge.data!;
 
         return {
           ...edge,
-          className: [edge.className, isReplayActive ? "anlyx-flow-edge--replay-active" : ""]
+          className: [
+            edge.className,
+            isReplayActive ? "anlyx-flow-edge--replay-active" : "",
+            replayClass
+          ]
             .filter(Boolean)
             .join(" "),
           data: {
@@ -72,7 +86,7 @@ export function EndpointMapCanvas({
   );
 
   return (
-    <main className="anlyx-workspace">
+    <main className={`anlyx-workspace anlyx-workspace--${variant}`}>
       <header className="anlyx-workspace-header">
         <div>
           <p className="anlyx-eyebrow">{eyebrow}</p>
@@ -80,14 +94,21 @@ export function EndpointMapCanvas({
             {title ?? (endpoint ? `${endpoint.method} ${endpoint.path}` : "No endpoint selected")}
           </h1>
         </div>
-        {endpoint ? (
-          <StatusBadge tone={endpoint.confidence ?? "unknown"}>
-            {endpoint.confidence ?? "unknown"}
-          </StatusBadge>
-        ) : null}
+        <div className="anlyx-workspace-actions">
+          {toolbar}
+          {endpoint ? (
+            <StatusBadge tone={endpoint.confidence ?? "unknown"}>
+              {endpoint.confidence ?? "unknown"}
+            </StatusBadge>
+          ) : null}
+        </div>
       </header>
 
-      <section className="anlyx-endpoint-map" role="region" aria-label="Endpoint Map">
+      <section
+        className={`anlyx-endpoint-map anlyx-endpoint-map--${variant}`}
+        role="region"
+        aria-label={variant === "process" ? "Process Flow map" : "Endpoint Map"}
+      >
         {flow && model && model.nodes.length > 0 ? (
           <>
             <FlowLegend />

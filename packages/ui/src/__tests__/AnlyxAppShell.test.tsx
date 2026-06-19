@@ -7,6 +7,7 @@ import { mockScanResult } from "../mock-data.js";
 
 afterEach(() => {
   cleanup();
+  window.localStorage.clear();
 });
 
 describe("AnlyxAppShell", () => {
@@ -30,7 +31,7 @@ describe("AnlyxAppShell", () => {
   it("renders page list", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
 
     const pageList = screen.getByRole("list", { name: "Page list" });
     expect(within(pageList).getByText("/benefit/[brandSlug]/[benefitSlugWithId]")).toBeTruthy();
@@ -42,6 +43,8 @@ describe("AnlyxAppShell", () => {
 
     expect(screen.getByRole("region", { name: "Endpoint Map" })).toBeTruthy();
     expect(screen.getAllByText("GET /api/public/benefits/{id}").length).toBeGreaterThan(0);
+    expect(screen.getByText("Backend API Structure")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Fit view" })).toBeTruthy();
   });
 
   it("renders inspector", () => {
@@ -58,20 +61,62 @@ describe("AnlyxAppShell", () => {
   it("renders replay controls", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Replay" }));
+    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
 
-    const replay = screen.getByRole("region", { name: "Replay Lite controls" });
+    const replay = screen.getByRole("region", { name: "Process Flow controls" });
     expect(within(replay).getByRole("button", { name: "Play" })).toBeTruthy();
     expect(within(replay).getByRole("button", { name: "Pause" })).toBeTruthy();
     expect(within(replay).getByRole("button", { name: "Restart" })).toBeTruthy();
     expect(within(replay).getByRole("button", { name: "Loop off" })).toBeTruthy();
+    expect(within(replay).getByRole("combobox", { name: "Replay speed" })).toBeTruthy();
     expect(within(replay).getByText("Main Flow only")).toBeTruthy();
+  });
+
+  it("renders the renamed product view tabs", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    expect(screen.getByRole("button", { name: "Structure" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Connected Frontend" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Process Flow" })).toBeTruthy();
+  });
+
+  it("renders process flow timeline", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
+
+    const timeline = screen.getByRole("region", { name: "Process Flow timeline" });
+    expect(within(timeline).getByText("Inferred request path")).toBeTruthy();
+    expect(within(timeline).getAllByText("Controller").length).toBeGreaterThan(0);
+    expect(within(timeline).getAllByText("Response").length).toBeGreaterThan(0);
+  });
+
+  it("panel collapse state works", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Collapse navigation panel" }));
+
+    expect(screen.getByRole("button", { name: "Expand navigation panel" })).toBeTruthy();
+    expect(screen.getByText("Nav")).toBeTruthy();
+  });
+
+  it("panel resize state works", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    const separator = screen.getByRole("separator", { name: "Resize navigation panel" });
+    fireEvent.pointerDown(separator, { clientX: 300 });
+    fireEvent.pointerMove(window, { clientX: 360 });
+    fireEvent.pointerUp(window);
+
+    expect(
+      screen.getByRole("application", { name: "Anlyx application shell" }).getAttribute("style")
+    ).toContain("360px");
   });
 
   it("displays failed page status", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
 
     expect(screen.getByText("failed")).toBeTruthy();
     expect(screen.getByText("Login required")).toBeTruthy();
@@ -80,16 +125,23 @@ describe("AnlyxAppShell", () => {
   it("displays pending page status", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "/preview/[slug] pending 0 API calls 0 screenshots" })
+    );
 
-    expect(screen.getByText("pending")).toBeTruthy();
-    expect(screen.getByText("Missing sampleParams")).toBeTruthy();
+    expect(screen.getAllByText("pending").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Missing sampleParams").length).toBeGreaterThan(0);
+    expect(screen.getByText("Capture was skipped.")).toBeTruthy();
+    expect(
+      screen.getByText("Dynamic routes may require `sampleParams` in `anlyx.config.ts`.")
+    ).toBeTruthy();
   });
 
-  it("uses a contextual page inspector in the Pages tab", () => {
+  it("uses a contextual page inspector in the Connected Frontend tab", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
 
     const inspector = screen.getByRole("complementary", { name: "Inspector" });
     expect(within(inspector).getByText("Frontend Page")).toBeTruthy();

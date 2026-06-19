@@ -9,6 +9,7 @@ import { mockScanResult } from "../mock-data.js";
 
 afterEach(() => {
   cleanup();
+  window.localStorage.clear();
   vi.useRealTimers();
 });
 
@@ -16,9 +17,9 @@ describe("Replay Lite", () => {
   it("ReplayControls renders play/pause/restart/loop", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Replay" }));
+    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
 
-    const controls = screen.getByRole("region", { name: "Replay Lite controls" });
+    const controls = screen.getByRole("region", { name: "Process Flow controls" });
     expect(within(controls).getByRole("button", { name: "Play" })).toBeTruthy();
     expect(within(controls).getByRole("button", { name: "Pause" })).toBeTruthy();
     expect(within(controls).getByRole("button", { name: "Restart" })).toBeTruthy();
@@ -26,20 +27,21 @@ describe("Replay Lite", () => {
     expect(within(controls).getByText("Main Flow only")).toBeTruthy();
   });
 
-  it("Replay tab shows a replay-capable canvas, not a placeholder", () => {
+  it("Process Flow tab shows a replay-capable canvas, not a placeholder", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Replay" }));
+    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
 
-    expect(screen.getByRole("region", { name: "Endpoint Map" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Process Flow map" })).toBeTruthy();
     expect(screen.queryByText("Endpoint Map will render here")).toBeNull();
-    expect(screen.getByRole("region", { name: "Replay Lite controls" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Process Flow controls" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Process Flow timeline" })).toBeTruthy();
   });
 
   it("active node is highlighted after play", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Replay" }));
+    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
     fireEvent.click(screen.getByRole("button", { name: "Play" }));
 
     expect(
@@ -53,7 +55,7 @@ describe("Replay Lite", () => {
     vi.useFakeTimers();
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Replay" }));
+    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
     fireEvent.click(screen.getByRole("button", { name: "Play" }));
     act(() => {
       vi.advanceTimersByTime(800);
@@ -70,13 +72,13 @@ describe("Replay Lite", () => {
     vi.useFakeTimers();
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Replay" }));
+    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
     fireEvent.click(screen.getByRole("button", { name: "Play" }));
     act(() => {
       vi.advanceTimersByTime(4_800);
     });
 
-    const controls = screen.getByRole("region", { name: "Replay Lite controls" });
+    const controls = screen.getByRole("region", { name: "Process Flow controls" });
     expect(within(controls).getByText("Phase: response")).toBeTruthy();
     expect(
       screen.getByTestId("replay-edge-repository:BenefitRepository#findById-database:benefits")
@@ -90,10 +92,12 @@ describe("Replay Lite", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "GET /api/public/brands BrandController#list" })
     );
-    fireEvent.click(screen.getByRole("button", { name: "Replay" }));
+    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
 
     expect(
-      screen.getByText("Replay is unavailable because this endpoint has no main flow.")
+      screen.getByText(
+        "Process Flow is unavailable because this endpoint has no scanned main path."
+      )
     ).toBeTruthy();
     expect((screen.getByRole("button", { name: "Play" }) as HTMLButtonElement).disabled).toBe(true);
   });

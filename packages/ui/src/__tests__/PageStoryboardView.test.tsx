@@ -9,19 +9,20 @@ import { mockScanResult } from "../mock-data.js";
 
 afterEach(() => {
   cleanup();
+  window.localStorage.clear();
 });
 
-describe("Page Storyboard view", () => {
-  it("renders Page Storyboard view from the Pages tab", () => {
+describe("Connected Frontend view", () => {
+  it("renders Connected Frontend view from the tab", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
 
     expect(screen.getByRole("region", { name: "Page Storyboard" })).toBeTruthy();
     expect(
       screen.getAllByRole("heading", { name: "/benefit/[brandSlug]/[benefitSlugWithId]" }).length
     ).toBeGreaterThan(0);
-    expect(screen.getByText("Frontend Page Storyboard")).toBeTruthy();
+    expect(screen.getAllByText("Connected Frontend").length).toBeGreaterThan(0);
   });
 
   it("page tab switches from Endpoint Map to Page Storyboard", () => {
@@ -29,7 +30,7 @@ describe("Page Storyboard view", () => {
 
     expect(screen.getByRole("region", { name: "Endpoint Map" })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
 
     expect(screen.queryByRole("region", { name: "Endpoint Map" })).toBeNull();
     expect(screen.getByRole("region", { name: "Page Storyboard" })).toBeTruthy();
@@ -38,7 +39,7 @@ describe("Page Storyboard view", () => {
   it("page list click changes selected page", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
     fireEvent.click(
       screen.getByRole("button", { name: "/admin/benefits failed 0 API calls 0 screenshots" })
     );
@@ -50,7 +51,7 @@ describe("Page Storyboard view", () => {
   it("selected page route and filePath are visible", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
 
     const storyboard = screen.getByRole("region", { name: "Page Storyboard" });
     expect(within(storyboard).getByText("/benefit/[brandSlug]/[benefitSlugWithId]")).toBeTruthy();
@@ -62,7 +63,7 @@ describe("Page Storyboard view", () => {
   it("screenshot segments and metadata are rendered without requiring files", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
 
     const storyboard = screen.getByRole("region", { name: "Page Storyboard" });
     expect(within(storyboard).getByText("Segment 1")).toBeTruthy();
@@ -75,7 +76,7 @@ describe("Page Storyboard view", () => {
   it("API calls are rendered with linked and unmatched states", () => {
     render(<AnlyxAppShell data={withUnmatchedApiCall(mockScanResult)} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
 
     const storyboard = screen.getByRole("region", { name: "Page Storyboard" });
     expect(within(storyboard).getByText("/api/public/benefits/123")).toBeTruthy();
@@ -84,10 +85,20 @@ describe("Page Storyboard view", () => {
     expect(within(storyboard).getByText("Unmatched")).toBeTruthy();
   });
 
+  it("renders page to endpoint relationship panel", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
+
+    const relationship = screen.getByRole("region", { name: "Page to endpoint relationship" });
+    expect(within(relationship).getByText("Page to Endpoint")).toBeTruthy();
+    expect(within(relationship).getByText("/api/public/benefits/{id}")).toBeTruthy();
+  });
+
   it("failed page status and errorMessage are visible", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
     fireEvent.click(
       screen.getByRole("button", { name: "/admin/benefits failed 0 API calls 0 screenshots" })
     );
@@ -100,30 +111,33 @@ describe("Page Storyboard view", () => {
   it("pending page status and errorMessage are visible", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
     fireEvent.click(
       screen.getByRole("button", { name: "/preview/[slug] pending 0 API calls 0 screenshots" })
     );
 
-    expect(screen.getByText("Capture pending")).toBeTruthy();
+    expect(screen.getByText("Capture was skipped.")).toBeTruthy();
     expect(screen.getByText("Reason: Missing sampleParams")).toBeTruthy();
+    expect(
+      screen.getByText("Dynamic routes may require `sampleParams` in `anlyx.config.ts`.")
+    ).toBeTruthy();
   });
 
   it("empty page list shows empty state", () => {
     render(<AnlyxAppShell data={{ ...mockScanResult, pages: [] }} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
 
     expect(screen.getByText("No pages available yet.")).toBeTruthy();
   });
 
-  it("Replay tab shows the replay-capable Endpoint Map", () => {
+  it("Process Flow tab shows the replay-capable Endpoint Map", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Replay" }));
+    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
 
-    expect(screen.getByRole("region", { name: "Endpoint Map" })).toBeTruthy();
-    expect(screen.getByRole("region", { name: "Replay Lite controls" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Process Flow map" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Process Flow controls" })).toBeTruthy();
     expect(screen.queryByText("Endpoint Map will render here")).toBeNull();
   });
 });

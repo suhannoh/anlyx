@@ -6,9 +6,9 @@ This document fixes the v0.1 UI screens and layout. Implementation MUST NOT repl
 
 ## v0.1 Screens
 
-1. Endpoint Map
-2. Page Storyboard
-3. Replay Lite
+1. Structure
+2. Connected Frontend
+3. Process Flow
 
 ## Global Layout
 
@@ -21,13 +21,13 @@ Anlyx SHOULD use a three-panel developer-tool layout:
 
 The default product UI MUST be Clean Light. Dark treatment is reserved for optional mode and Dark Replay demo assets.
 
-## Endpoint Map
+## Structure
 
 Left sidebar MUST include:
 
 - Project name
 - Technology badges
-- Endpoint / Pages / Replay tabs
+- Structure / Connected Frontend / Process Flow tabs
 - Search input
 - Endpoint list with method badges
 
@@ -35,7 +35,7 @@ Center MUST include:
 
 - Selected endpoint header
 - Flow canvas
-- Frontend Page to Endpoint to Controller to Service to Repository to Database flow
+- Endpoint to Controller to Service to Repository to Database structure
 - Main Flow and Sub Flow distinction
 - Zoom, pan, and fit controls
 
@@ -51,15 +51,15 @@ Right inspector MUST include:
 - DB tables
 - Request and response schema information
 
-Bottom MUST include:
+When Process Flow is active, bottom or lower-center controls MUST include:
 
-- Replay Lite controls
+- Process Flow replay controls
 - Current active node
 - Main Flow progress state
 
-## Page Storyboard
+## Connected Frontend
 
-Page Storyboard MUST include:
+Connected Frontend MUST include:
 
 - Page route
 - File path
@@ -67,13 +67,14 @@ Page Storyboard MUST include:
 - Screenshot segments
 - API calls
 - Linked endpoint IDs when available
+- Page to Endpoint relationship panel
 - Failed capture empty state with the reason
 
 The failed capture state MUST be visible. It MUST NOT be hidden behind a generic empty state.
 
-## Replay Lite
+## Process Flow
 
-Replay Lite screen or mode MUST reuse the selected Endpoint Map data and focus on the Main Flow. It MUST NOT introduce a separate advanced timeline in v0.1.
+Process Flow MUST reuse the selected scanned `EndpointFlow` data and focus on the Main Flow. It MAY show a lightweight step rail derived from `EndpointFlow.mainPath`, but it MUST NOT introduce runtime event tracing or a separate advanced event timeline in v0.1.
 
 ## Screen Boundaries
 

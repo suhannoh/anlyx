@@ -5,10 +5,12 @@ import { PageList } from "./PageList.js";
 
 type SidebarProps = {
   data: ScanResult;
-  activeView: "endpoint" | "pages" | "replay";
+  activeView: "structure" | "frontend" | "process";
+  collapsed: boolean;
   selectedEndpointId: string | undefined;
   selectedPageId: string | undefined;
-  onSelectView: (view: "endpoint" | "pages" | "replay") => void;
+  onSelectView: (view: "structure" | "frontend" | "process") => void;
+  onToggleCollapsed: () => void;
   onSelectEndpoint: (endpoint: Endpoint) => void;
   onSelectPage: (page: PageStoryboard) => void;
 };
@@ -16,12 +18,30 @@ type SidebarProps = {
 export function Sidebar({
   data,
   activeView,
+  collapsed,
   selectedEndpointId,
   selectedPageId,
   onSelectView,
+  onToggleCollapsed,
   onSelectEndpoint,
   onSelectPage
 }: SidebarProps): JSX.Element {
+  if (collapsed) {
+    return (
+      <aside className="anlyx-sidebar anlyx-sidebar--collapsed" aria-label="Primary navigation">
+        <button
+          className="anlyx-panel-toggle"
+          type="button"
+          aria-label="Expand navigation panel"
+          onClick={onToggleCollapsed}
+        >
+          Open
+        </button>
+        <span className="anlyx-collapsed-label">Nav</span>
+      </aside>
+    );
+  }
+
   return (
     <aside className="anlyx-sidebar" aria-label="Primary navigation">
       <div className="anlyx-brand">
@@ -32,29 +52,37 @@ export function Sidebar({
           <div className="anlyx-brand__name">Anlyx</div>
           <div className="anlyx-brand__project">{data.projectName}</div>
         </div>
+        <button
+          className="anlyx-panel-toggle"
+          type="button"
+          aria-label="Collapse navigation panel"
+          onClick={onToggleCollapsed}
+        >
+          Collapse
+        </button>
       </div>
 
       <nav className="anlyx-tabs" aria-label="Views">
         <button
-          className={activeView === "endpoint" ? "anlyx-tab anlyx-tab--active" : "anlyx-tab"}
+          className={activeView === "structure" ? "anlyx-tab anlyx-tab--active" : "anlyx-tab"}
           type="button"
-          onClick={() => onSelectView("endpoint")}
+          onClick={() => onSelectView("structure")}
         >
-          Endpoint
+          Structure
         </button>
         <button
-          className={activeView === "pages" ? "anlyx-tab anlyx-tab--active" : "anlyx-tab"}
+          className={activeView === "frontend" ? "anlyx-tab anlyx-tab--active" : "anlyx-tab"}
           type="button"
-          onClick={() => onSelectView("pages")}
+          onClick={() => onSelectView("frontend")}
         >
-          Pages
+          Connected Frontend
         </button>
         <button
-          className={activeView === "replay" ? "anlyx-tab anlyx-tab--active" : "anlyx-tab"}
+          className={activeView === "process" ? "anlyx-tab anlyx-tab--active" : "anlyx-tab"}
           type="button"
-          onClick={() => onSelectView("replay")}
+          onClick={() => onSelectView("process")}
         >
-          Replay
+          Process Flow
         </button>
       </nav>
 
@@ -64,7 +92,7 @@ export function Sidebar({
       </label>
 
       <div className="anlyx-sidebar__list-region">
-        {activeView === "pages" ? (
+        {activeView === "frontend" ? (
           <PageList
             pages={data.pages}
             selectedPageId={selectedPageId}

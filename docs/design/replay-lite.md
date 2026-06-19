@@ -1,8 +1,8 @@
-# Replay Lite
+# Replay Lite / Process Flow
 
 ## Purpose
 
-Replay Lite helps users understand request and response movement through the Main Flow. It is intentionally small in v0.1.
+Replay Lite powers the Process Flow view. It helps users understand request and response movement through the scanned Main Flow. It is intentionally small in v0.1 and MUST NOT imply live runtime tracing.
 
 ## v0.1 Behavior
 
@@ -27,6 +27,8 @@ v0.1 MUST provide:
 - Restart
 - Loop on/off
 - Main Flow only mode
+- Basic replay speed selection
+- A lightweight step rail derived from `EndpointFlow.mainPath`
 
 ## Data Source
 
@@ -44,7 +46,6 @@ If required nodes are missing, the UI MUST show an unavailable or unknown state 
 
 v0.1 MUST NOT implement:
 
-- Speed control
 - Step-by-step debugging
 - Sub Flow replay
 - Timeline event log

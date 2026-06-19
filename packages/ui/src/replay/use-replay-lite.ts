@@ -18,6 +18,7 @@ export type UseReplayLiteOptions = {
 
 export type UseReplayLiteResult = {
   state: ReplayLiteState;
+  steps: ReplayStep[];
   loop: boolean;
   play: () => void;
   pause: () => void;
@@ -114,6 +115,7 @@ export function useReplayLite({
       isPlaying,
       phase
     }),
+    steps,
     loop,
     play,
     pause,

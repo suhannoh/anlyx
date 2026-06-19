@@ -5,27 +5,61 @@ import { StatusBadge } from "./StatusBadge.js";
 
 type InspectorPanelProps = {
   data: ScanResult;
-  activeView: "endpoint" | "pages" | "replay";
+  activeView: "structure" | "frontend" | "process";
+  collapsed: boolean;
   selectedFlow: EndpointFlow | undefined;
   selectedNode: FlowNode | undefined;
   selectedPage: PageStoryboard | undefined;
   replayState: ReplayLiteState;
+  onToggleCollapsed: () => void;
 };
 
 export function InspectorPanel({
   data,
   activeView,
+  collapsed,
   selectedFlow,
   selectedNode,
   selectedPage,
-  replayState
+  replayState,
+  onToggleCollapsed
 }: InspectorPanelProps): JSX.Element {
-  if (activeView === "pages") {
+  if (collapsed) {
+    return (
+      <aside
+        className="anlyx-inspector anlyx-inspector--collapsed"
+        role="complementary"
+        aria-label="Inspector"
+      >
+        <button
+          className="anlyx-panel-toggle"
+          type="button"
+          aria-label="Expand inspector panel"
+          onClick={onToggleCollapsed}
+        >
+          Open
+        </button>
+        <span className="anlyx-collapsed-label">Inspector</span>
+      </aside>
+    );
+  }
+
+  if (activeView === "frontend") {
     return (
       <aside className="anlyx-inspector" role="complementary" aria-label="Inspector">
         <div className="anlyx-panel-heading">
-          <p className="anlyx-eyebrow">Inspector</p>
-          <h2>Frontend Page</h2>
+          <div>
+            <p className="anlyx-eyebrow">Inspector</p>
+            <h2>Frontend Page</h2>
+          </div>
+          <button
+            className="anlyx-panel-toggle"
+            type="button"
+            aria-label="Collapse inspector panel"
+            onClick={onToggleCollapsed}
+          >
+            Collapse
+          </button>
         </div>
 
         {selectedPage ? (
@@ -59,18 +93,29 @@ export function InspectorPanel({
   return (
     <aside className="anlyx-inspector" role="complementary" aria-label="Inspector">
       <div className="anlyx-panel-heading">
-        <p className="anlyx-eyebrow">Inspector</p>
-        <h2>{activeView === "replay" ? "Replay Step" : "Backend Node"}</h2>
+        <div>
+          <p className="anlyx-eyebrow">Inspector</p>
+          <h2>{activeView === "process" ? "Process Step" : "Backend Node"}</h2>
+        </div>
+        <button
+          className="anlyx-panel-toggle"
+          type="button"
+          aria-label="Collapse inspector panel"
+          onClick={onToggleCollapsed}
+        >
+          Collapse
+        </button>
       </div>
 
       {selectedNode ? (
         <div className="anlyx-inspector-stack">
-          {activeView === "replay" ? (
+          {activeView === "process" ? (
             <section className="anlyx-inspector-group" aria-label="Replay state">
-              <h3>Replay state</h3>
+              <h3>Process replay</h3>
               <p>Phase: {replayState.phase}</p>
               <p>Step: {replayState.currentStepIndex + 1}</p>
               <p>Active node: {replayState.activeNodeId ?? "none"}</p>
+              <p>Source: scanned static flow graph</p>
             </section>
           ) : null}
           <Field label="Type" value={selectedNode.type} />

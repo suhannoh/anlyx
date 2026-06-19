@@ -22,7 +22,12 @@ export function FlowNodeCard({ data, selected }: NodeProps<AnlyxReactFlowNode>):
       data-testid={`flow-node-${data.node.id}`}
     >
       <Handle className="anlyx-flow-handle" position={Position.Left} type="target" />
-      <span className="anlyx-flow-node__type">{data.type}</span>
+      <span className="anlyx-flow-node__header">
+        <span className="anlyx-flow-node__icon" aria-hidden="true">
+          {formatTypeMark(data.type)}
+        </span>
+        <span className="anlyx-flow-node__type">{data.type}</span>
+      </span>
       <span className="anlyx-flow-node__label">{data.label}</span>
       <StatusBadge tone={confidence} label="confidence">
         {confidence}
@@ -30,4 +35,21 @@ export function FlowNodeCard({ data, selected }: NodeProps<AnlyxReactFlowNode>):
       <Handle className="anlyx-flow-handle" position={Position.Right} type="source" />
     </button>
   );
+}
+
+function formatTypeMark(type: string): string {
+  switch (type) {
+    case "endpoint":
+      return "EP";
+    case "controller":
+      return "C";
+    case "service":
+      return "S";
+    case "repository":
+      return "R";
+    case "database":
+      return "DB";
+    default:
+      return "U";
+  }
 }

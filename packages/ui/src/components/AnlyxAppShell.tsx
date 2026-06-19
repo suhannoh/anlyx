@@ -1,10 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction
+} from "react";
 import type { EndpointFlow, FlowNode, ScanResult } from "@anlyx/core";
 
 import { EndpointMapCanvas } from "./EndpointMapCanvas.js";
 import { InspectorPanel } from "./InspectorPanel.js";
 import { PageStoryboardView } from "./PageStoryboardView.js";
-import { ReplayControls } from "./ReplayControls.js";
+import { ProcessFlowView } from "./ProcessFlowView.js";
 import { Sidebar } from "./Sidebar.js";
 import { useReplayLite } from "../replay/use-replay-lite.js";
 
@@ -12,12 +19,34 @@ export type AnlyxAppShellProps = {
   data: ScanResult;
 };
 
-type ViewMode = "endpoint" | "pages" | "replay";
+export type ViewMode = "structure" | "frontend" | "process";
+
+const DEFAULT_LEFT_WIDTH = 300;
+const DEFAULT_RIGHT_WIDTH = 360;
+const LEFT_WIDTH_RANGE = { min: 240, max: 420 };
+const RIGHT_WIDTH_RANGE = { min: 300, max: 520 };
+const STORAGE_KEYS = {
+  leftCollapsed: "anlyx:ui:leftCollapsed",
+  leftWidth: "anlyx:ui:leftWidth",
+  rightCollapsed: "anlyx:ui:rightCollapsed",
+  rightWidth: "anlyx:ui:rightWidth"
+} as const;
 
 export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
-  const [activeView, setActiveView] = useState<ViewMode>("endpoint");
+  const [activeView, setActiveView] = useState<ViewMode>("structure");
   const [selectedEndpointId, setSelectedEndpointId] = useState(data.endpoints[0]?.id);
   const [selectedPageId, setSelectedPageId] = useState(data.pages[0]?.id);
+  const [leftWidth, setLeftWidth] = usePersistentNumber(STORAGE_KEYS.leftWidth, DEFAULT_LEFT_WIDTH);
+  const [rightWidth, setRightWidth] = usePersistentNumber(
+    STORAGE_KEYS.rightWidth,
+    DEFAULT_RIGHT_WIDTH
+  );
+  const [leftCollapsed, setLeftCollapsed] = usePersistentBoolean(STORAGE_KEYS.leftCollapsed, false);
+  const [rightCollapsed, setRightCollapsed] = usePersistentBoolean(
+    STORAGE_KEYS.rightCollapsed,
+    false
+  );
+  const [replaySpeed, setReplaySpeed] = useState(800);
   const selectedEndpoint =
     data.endpoints.find((endpoint) => endpoint.id === selectedEndpointId) ?? data.endpoints[0];
   const selectedPage = data.pages.find((page) => page.id === selectedPageId) ?? data.pages[0];
@@ -29,7 +58,7 @@ export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
     () => getReplayMainPath(selectedFlow, selectedEndpoint?.id),
     [selectedEndpoint?.id, selectedFlow]
   );
-  const replay = useReplayLite({ mainPath: replayMainPath });
+  const replay = useReplayLite({ intervalMs: replaySpeed, mainPath: replayMainPath });
   const replayUnavailable = replayMainPath.length === 0;
   const [selectedNodeId, setSelectedNodeId] = useState(() => findDefaultNode(selectedFlow)?.id);
   const selectedNode = findFlowNode(selectedFlow, selectedNodeId) ?? findDefaultNode(selectedFlow);
@@ -50,74 +79,153 @@ export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
     setSelectedNodeId(findDefaultNode(selectedFlow)?.id);
   }, [selectedFlow]);
 
+  const startPanelResize = useCallback(
+    (panel: "left" | "right", pointerClientX: number) => {
+      const startWidth = panel === "left" ? leftWidth : rightWidth;
+
+      const onPointerMove = (event: PointerEvent) => {
+        const delta =
+          panel === "left" ? event.clientX - pointerClientX : pointerClientX - event.clientX;
+        const range = panel === "left" ? LEFT_WIDTH_RANGE : RIGHT_WIDTH_RANGE;
+        const nextWidth = clamp(startWidth + delta, range.min, range.max);
+
+        if (panel === "left") {
+          setLeftCollapsed(false);
+          setLeftWidth(nextWidth);
+        } else {
+          setRightCollapsed(false);
+          setRightWidth(nextWidth);
+        }
+      };
+
+      const onPointerUp = () => {
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", onPointerUp);
+      };
+
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+    },
+    [leftWidth, rightWidth, setLeftCollapsed, setLeftWidth, setRightCollapsed, setRightWidth]
+  );
+
+  const shellColumns = [
+    leftCollapsed ? "52px" : `${leftWidth}px`,
+    "8px",
+    "minmax(0, 1fr)",
+    "8px",
+    rightCollapsed ? "52px" : `${rightWidth}px`
+  ].join(" ");
+
   return (
-    <div className="anlyx-shell" role="application" aria-label="Anlyx application shell">
+    <div
+      className="anlyx-shell"
+      role="application"
+      aria-label="Anlyx application shell"
+      style={{ gridTemplateColumns: shellColumns }}
+    >
       <Sidebar
         data={data}
         activeView={activeView}
+        collapsed={leftCollapsed}
         selectedEndpointId={selectedEndpoint?.id}
         selectedPageId={selectedPage?.id}
         onSelectView={setActiveView}
+        onToggleCollapsed={() => setLeftCollapsed((current) => !current)}
         onSelectEndpoint={(endpoint) => {
           setSelectedEndpointId(endpoint.id);
-          setActiveView("endpoint");
+          setActiveView("structure");
         }}
         onSelectPage={(page) => {
           setSelectedPageId(page.id);
-          setActiveView("pages");
+          setActiveView("frontend");
         }}
       />
       <div
-        className={activeView === "replay" ? "anlyx-main anlyx-main--replay" : "anlyx-main"}
+        aria-label="Resize navigation panel"
+        className="anlyx-resize-handle anlyx-resize-handle--left"
+        role="separator"
+        tabIndex={0}
+        onPointerDown={(event) => startPanelResize("left", event.clientX)}
+      >
+        <span aria-hidden="true" />
+      </div>
+      <div
+        className={activeView === "process" ? "anlyx-main anlyx-main--process" : "anlyx-main"}
         aria-live="polite"
       >
-        {activeView === "endpoint" ? (
+        {activeView === "structure" ? (
           <EndpointMapCanvas
+            eyebrow="Backend API Structure"
             endpoint={selectedEndpoint}
             flow={selectedFlow}
             replayState={replay.state}
             selectedNodeId={selectedNode?.id}
+            toolbar={<StructureToolbar />}
             onSelectNode={(node) => setSelectedNodeId(node.id)}
           />
         ) : null}
-        {activeView === "pages" ? <PageStoryboardView page={selectedPage} /> : null}
-        {activeView === "replay" ? (
-          <>
-            <ReplayControls
-              disabled={replayUnavailable}
-              loop={replay.loop}
-              state={replay.state}
-              unavailableReason="Replay is unavailable because this endpoint has no main flow."
-              onPause={replay.pause}
-              onPlay={replay.play}
-              onRestart={replay.restart}
-              onToggleLoop={replay.toggleLoop}
-            />
-            <EndpointMapCanvas
-              eyebrow="Replay Lite"
-              endpoint={selectedEndpoint}
-              flow={selectedFlow}
-              replayState={replay.state}
-              selectedNodeId={selectedNode?.id}
-              title={
-                selectedEndpoint
-                  ? `Replay ${selectedEndpoint.method} ${selectedEndpoint.path}`
-                  : "Replay Lite"
-              }
-              onSelectNode={(node) => setSelectedNodeId(node.id)}
-            />
-          </>
+        {activeView === "frontend" ? (
+          <PageStoryboardView data={data} page={selectedPage} onViewProcessFlow={setActiveView} />
         ) : null}
+        {activeView === "process" ? (
+          <ProcessFlowView
+            endpoint={selectedEndpoint}
+            flow={selectedFlow}
+            replayDisabled={replayUnavailable}
+            replayLoop={replay.loop}
+            replaySpeed={replaySpeed}
+            replayState={replay.state}
+            replaySteps={replay.steps}
+            selectedNodeId={selectedNode?.id}
+            onPause={replay.pause}
+            onPlay={replay.play}
+            onRestart={replay.restart}
+            onSelectNode={(node) => setSelectedNodeId(node.id)}
+            onSpeedChange={setReplaySpeed}
+            onToggleLoop={replay.toggleLoop}
+            onViewStructure={() => setActiveView("structure")}
+          />
+        ) : null}
+      </div>
+      <div
+        aria-label="Resize inspector panel"
+        className="anlyx-resize-handle anlyx-resize-handle--right"
+        role="separator"
+        tabIndex={0}
+        onPointerDown={(event) => startPanelResize("right", event.clientX)}
+      >
+        <span aria-hidden="true" />
       </div>
       <InspectorPanel
         activeView={activeView}
+        collapsed={rightCollapsed}
         data={data}
         replayState={replay.state}
         selectedFlow={selectedFlow}
         selectedNode={selectedNode}
         selectedPage={selectedPage}
+        onToggleCollapsed={() => setRightCollapsed((current) => !current)}
       />
       <div className="anlyx-generated-at">Generated {data.generatedAt}</div>
+    </div>
+  );
+}
+
+function StructureToolbar(): JSX.Element {
+  return (
+    <div className="anlyx-toolbar" aria-label="Structure view actions">
+      <button className="anlyx-toolbar-button" type="button">
+        Fit view
+      </button>
+      <select aria-label="Zoom level" className="anlyx-toolbar-select" defaultValue="100">
+        <option value="75">75%</option>
+        <option value="100">100%</option>
+        <option value="125">125%</option>
+      </select>
+      <button className="anlyx-toolbar-button anlyx-toolbar-button--icon" type="button">
+        More
+      </button>
     </div>
   );
 }
@@ -161,4 +269,67 @@ function findFlowNode(
     flow.nodes.find((node) => node.id === nodeId) ??
     flow.subFlows.flatMap((subFlow) => subFlow.nodes).find((node) => node.id === nodeId)
   );
+}
+
+function usePersistentNumber(
+  key: string,
+  defaultValue: number
+): [number, Dispatch<SetStateAction<number>>] {
+  const [value, setValue] = useState(() => {
+    const storedValue = readLocalStorage(key);
+    const parsedValue = storedValue ? Number(storedValue) : Number.NaN;
+
+    return Number.isFinite(parsedValue) ? parsedValue : defaultValue;
+  });
+
+  useEffect(() => {
+    writeLocalStorage(key, String(value));
+  }, [key, value]);
+
+  return [value, setValue];
+}
+
+function usePersistentBoolean(
+  key: string,
+  defaultValue: boolean
+): [boolean, Dispatch<SetStateAction<boolean>>] {
+  const [value, setValue] = useState(() => {
+    const storedValue = readLocalStorage(key);
+
+    if (storedValue === "true") {
+      return true;
+    }
+
+    if (storedValue === "false") {
+      return false;
+    }
+
+    return defaultValue;
+  });
+
+  useEffect(() => {
+    writeLocalStorage(key, String(value));
+  }, [key, value]);
+
+  return [value, setValue];
+}
+
+function readLocalStorage(key: string): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window.localStorage.getItem(key);
+}
+
+function writeLocalStorage(key: string, value: string): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(key, value);
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
 }

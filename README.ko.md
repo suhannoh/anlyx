@@ -133,9 +133,9 @@ npx anlyx dev --no-open
 
 [http://localhost:4777](http://localhost:4777)을 엽니다. 뷰어는 세 개의 주요 탭으로 구성됩니다.
 
-- Endpoint: 중앙에는 backend endpoint map, 오른쪽에는 node inspector
-- Pages: 중앙에는 frontend page storyboard, 오른쪽에는 page inspector
-- Replay: 중앙 Endpoint Map 위에 Replay Lite controls와 step 정보
+- Structure: Endpoint에서 Controller, Service, Repository, Database로 이어지는 backend API structure
+- Connected Frontend: frontend page storyboard, capture status, API calls, linked backend endpoints
+- Process Flow: scanned static flow graph에서 파생한 request/response replay, inferred request path, branch calls, return path
 
 ### Capture mode
 

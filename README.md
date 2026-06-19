@@ -137,9 +137,9 @@ npx anlyx dev --no-open
 
 Open [http://localhost:4777](http://localhost:4777). The viewer has three main tabs:
 
-- Endpoint: backend endpoint map in the center with a right-side node inspector
-- Pages: frontend page storyboard in the center with a page inspector
-- Replay: Endpoint Map with Replay Lite controls and step details
+- Structure: backend API structure from Endpoint to Controller, Service, Repository, and Database
+- Connected Frontend: frontend page storyboard, capture status, API calls, and linked backend endpoints
+- Process Flow: request/response replay from the scanned static flow graph, including inferred request path, branch calls, and return path
 
 ### Capture Mode
 
