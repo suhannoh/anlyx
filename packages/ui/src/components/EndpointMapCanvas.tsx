@@ -1,6 +1,16 @@
 import type { Endpoint, EndpointFlow, FlowNode } from "@anlyx/core";
-import { Background, BackgroundVariant, Controls, ReactFlow, type NodeTypes } from "@xyflow/react";
-import { useMemo } from "react";
+import {
+  Background,
+  BackgroundVariant,
+  BaseEdge,
+  Controls,
+  ReactFlow,
+  getSmoothStepPath,
+  type EdgeProps,
+  type EdgeTypes,
+  type NodeTypes
+} from "@xyflow/react";
+import { useEffect, useMemo, useState } from "react";
 
 import { FlowLegend } from "./FlowLegend.js";
 import { FlowNodeCard } from "./FlowNodeCard.js";
@@ -10,11 +20,16 @@ import {
   type AnlyxReactFlowEdge,
   type AnlyxReactFlowNode
 } from "../flow/build-react-flow-model.js";
+import { layoutWithElk } from "../flow/layout/elk-layout.js";
 import type { ReplayLiteState } from "../replay/use-replay-lite.js";
 
 const nodeTypes = {
   anlyxNode: FlowNodeCard
 } satisfies NodeTypes;
+
+const edgeTypes = {
+  anlyxEdge: FlowEdgeLine
+} satisfies EdgeTypes;
 
 export type EndpointMapCanvasProps = {
   endpoint: Endpoint | undefined;
@@ -39,7 +54,38 @@ export function EndpointMapCanvas({
   toolbar,
   onSelectNode
 }: EndpointMapCanvasProps): JSX.Element {
-  const model = useMemo(() => (flow ? buildReactFlowModel(flow) : undefined), [flow]);
+  const fallbackModel = useMemo(
+    () => (flow ? buildReactFlowModel(flow, { variant }) : undefined),
+    [flow, variant]
+  );
+  const [layoutedModel, setLayoutedModel] = useState(fallbackModel);
+  const model = layoutedModel ?? fallbackModel;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setLayoutedModel(fallbackModel);
+
+    if (!fallbackModel || isUnitTestRuntime()) {
+      return;
+    }
+
+    void layoutWithElk(fallbackModel, { variant })
+      .then((nextModel) => {
+        if (!cancelled) {
+          setLayoutedModel(isUsableLayout(nextModel, variant) ? nextModel : fallbackModel);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLayoutedModel(fallbackModel);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fallbackModel, variant]);
   const nodes = useMemo(
     () =>
       model?.nodes.map((node) => ({
@@ -65,6 +111,14 @@ export function EndpointMapCanvas({
               : "";
         const edgeData = edge.data!;
 
+        const nextData = {
+          edge: edgeData.edge,
+          flowRole: edgeData.flowRole,
+          ...(edgeData.confidence ? { confidence: edgeData.confidence } : {}),
+          isReplayActive,
+          ...(replayState?.phase ? { replayPhase: replayState.phase } : {})
+        };
+
         return {
           ...edge,
           className: [
@@ -74,12 +128,7 @@ export function EndpointMapCanvas({
           ]
             .filter(Boolean)
             .join(" "),
-          data: {
-            edge: edgeData.edge,
-            flowRole: edgeData.flowRole,
-            ...(edgeData.confidence ? { confidence: edgeData.confidence } : {}),
-            isReplayActive
-          }
+          data: nextData
         };
       }) ?? [],
     [model, replayState?.activeEdge]
@@ -153,6 +202,7 @@ export function EndpointMapCanvas({
               nodes={nodes}
               nodesConnectable={false}
               nodesDraggable={false}
+              edgeTypes={edgeTypes}
               nodeTypes={nodeTypes}
               onNodeClick={(_, node) => onSelectNode(node.data.node)}
               panOnScroll
@@ -171,6 +221,77 @@ export function EndpointMapCanvas({
         )}
       </section>
     </main>
+  );
+}
+
+function isUnitTestRuntime(): boolean {
+  return typeof process !== "undefined" && process.env.NODE_ENV === "test";
+}
+
+function isUsableLayout(model: { nodes: AnlyxReactFlowNode[] }, variant: "structure" | "process") {
+  const positions = model.nodes.map((node) => node.position);
+  const minY = Math.min(...positions.map((position) => position.y));
+  const maxY = Math.max(...positions.map((position) => position.y));
+  const minX = Math.min(...positions.map((position) => position.x));
+  const maxX = Math.max(...positions.map((position) => position.x));
+  const height = maxY - minY;
+  const width = maxX - minX;
+
+  if (!Number.isFinite(height) || !Number.isFinite(width)) {
+    return false;
+  }
+
+  const maxHeight = variant === "process" ? 360 : 300;
+
+  return height <= maxHeight && width > 0;
+}
+
+function FlowEdgeLine({
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  style,
+  data
+}: EdgeProps<AnlyxReactFlowEdge>): JSX.Element {
+  const [edgePath] = getSmoothStepPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition
+  });
+  const isReplayActive = Boolean(data?.isReplayActive);
+  const flowRole = data?.flowRole ?? "secondary";
+  const particleRole = data?.replayPhase === "response" ? "response" : flowRole;
+  const className = [
+    "anlyx-flow-edge",
+    `anlyx-flow-edge--${flowRole}`,
+    isReplayActive ? "anlyx-flow-edge--replay-active" : "",
+    isReplayActive && data?.replayPhase === "response"
+      ? "anlyx-flow-edge--replay-response"
+      : isReplayActive
+        ? "anlyx-flow-edge--replay-request"
+        : ""
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <>
+      <BaseEdge className={className} path={edgePath} style={style} />
+      {isReplayActive ? (
+        <circle
+          className={`anlyx-flow-particle anlyx-flow-particle--${particleRole}`}
+          r={flowRole === "sub" ? 4 : 5}
+        >
+          <animateMotion dur="1.25s" repeatCount="indefinite" path={edgePath} />
+        </circle>
+      ) : null}
+    </>
   );
 }
 

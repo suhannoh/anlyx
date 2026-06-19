@@ -139,6 +139,15 @@ npx anlyx dev --no-open
 
 v0.1 viewer는 request-centric architecture viewer입니다. 하나의 endpoint가 어떻게 구성되어 있고, 어떤 frontend page와 연결되며, scan된 request flow가 애플리케이션 안에서 어떻게 이동하는지 보여줍니다.
 
+뷰어는 React Flow를 그래프 엔진으로 유지하고, 그 위에 필요한 시각 시스템만 얹습니다.
+
+- `elkjs`: left-to-right graph layout과 deterministic fallback 배치.
+- `motion`: active node pulse, replay step transition, 절제된 flow movement.
+- `react-resizable-panels`: resize/collapse 가능한 3-panel shell.
+- `lucide-react`: endpoint, service, repository, database, replay, panel icon 통일.
+
+이 라이브러리들은 diagram readability를 높이기 위한 것이며 runtime tracing, Java agent, OpenTelemetry, 새 graph engine을 추가하지 않습니다.
+
 ### Capture mode
 
 프론트엔드 앱을 먼저 실행한 뒤 `--skip-capture` 없이 scan합니다.

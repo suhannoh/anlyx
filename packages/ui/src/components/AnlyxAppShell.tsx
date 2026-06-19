@@ -1,12 +1,6 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type Dispatch,
-  type SetStateAction
-} from "react";
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import type { EndpointFlow, FlowNode, ScanResult } from "@anlyx/core";
+import { Group, Panel, Separator, usePanelRef } from "react-resizable-panels";
 
 import { EndpointMapCanvas } from "./EndpointMapCanvas.js";
 import { InspectorPanel } from "./InspectorPanel.js";
@@ -21,18 +15,19 @@ export type AnlyxAppShellProps = {
 
 export type ViewMode = "structure" | "frontend" | "process";
 
-const DEFAULT_LEFT_WIDTH = 300;
-const DEFAULT_RIGHT_WIDTH = 360;
-const LEFT_WIDTH_RANGE = { min: 240, max: 420 };
-const RIGHT_WIDTH_RANGE = { min: 300, max: 520 };
 const STORAGE_KEYS = {
   leftCollapsed: "anlyx:ui:leftCollapsed",
-  leftWidth: "anlyx:ui:leftWidth",
+  panelLayout: "anlyx:ui:panelLayout",
   rightCollapsed: "anlyx:ui:rightCollapsed",
-  rightWidth: "anlyx:ui:rightWidth",
   selectedEndpointId: "anlyx:ui:selectedEndpointId",
   selectedPageId: "anlyx:ui:selectedPageId"
 } as const;
+
+const DEFAULT_PANEL_LAYOUT = {
+  left: 22,
+  center: 52,
+  right: 26
+};
 
 export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
   const [activeView, setActiveView] = useState<ViewMode>("structure");
@@ -44,16 +39,14 @@ export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
     STORAGE_KEYS.selectedPageId,
     data.pages[0]?.id
   );
-  const [leftWidth, setLeftWidth] = usePersistentNumber(STORAGE_KEYS.leftWidth, DEFAULT_LEFT_WIDTH);
-  const [rightWidth, setRightWidth] = usePersistentNumber(
-    STORAGE_KEYS.rightWidth,
-    DEFAULT_RIGHT_WIDTH
-  );
+  const leftPanelRef = usePanelRef();
+  const rightPanelRef = usePanelRef();
   const [leftCollapsed, setLeftCollapsed] = usePersistentBoolean(STORAGE_KEYS.leftCollapsed, false);
   const [rightCollapsed, setRightCollapsed] = usePersistentBoolean(
     STORAGE_KEYS.rightCollapsed,
     false
   );
+  const panelLayout = useMemo(() => readPanelLayout(), []);
   const [replaySpeed, setReplaySpeed] = useState(800);
   const selectedEndpoint =
     data.endpoints.find((endpoint) => endpoint.id === selectedEndpointId) ?? data.endpoints[0];
@@ -89,134 +82,149 @@ export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
     setSelectedNodeId(findDefaultNode(selectedFlow)?.id);
   }, [selectedFlow]);
 
-  const startPanelResize = useCallback(
-    (panel: "left" | "right", pointerClientX: number) => {
-      const startWidth = panel === "left" ? leftWidth : rightWidth;
+  useEffect(() => {
+    if (leftCollapsed) {
+      leftPanelRef.current?.collapse();
+    }
+  }, [leftCollapsed, leftPanelRef]);
 
-      const onPointerMove = (event: PointerEvent) => {
-        const delta =
-          panel === "left" ? event.clientX - pointerClientX : pointerClientX - event.clientX;
-        const range = panel === "left" ? LEFT_WIDTH_RANGE : RIGHT_WIDTH_RANGE;
-        const nextWidth = clamp(startWidth + delta, range.min, range.max);
+  useEffect(() => {
+    if (rightCollapsed) {
+      rightPanelRef.current?.collapse();
+    }
+  }, [rightCollapsed, rightPanelRef]);
 
-        if (panel === "left") {
-          setLeftCollapsed(false);
-          setLeftWidth(nextWidth);
-        } else {
-          setRightCollapsed(false);
-          setRightWidth(nextWidth);
-        }
-      };
+  const toggleLeftPanel = () => {
+    if (leftCollapsed) {
+      leftPanelRef.current?.expand();
+      setLeftCollapsed(false);
+    } else {
+      leftPanelRef.current?.collapse();
+      setLeftCollapsed(true);
+    }
+  };
 
-      const onPointerUp = () => {
-        window.removeEventListener("pointermove", onPointerMove);
-        window.removeEventListener("pointerup", onPointerUp);
-      };
-
-      window.addEventListener("pointermove", onPointerMove);
-      window.addEventListener("pointerup", onPointerUp);
-    },
-    [leftWidth, rightWidth, setLeftCollapsed, setLeftWidth, setRightCollapsed, setRightWidth]
-  );
-
-  const shellColumns = [
-    leftCollapsed ? "52px" : `${leftWidth}px`,
-    "8px",
-    "minmax(0, 1fr)",
-    "8px",
-    rightCollapsed ? "52px" : `${rightWidth}px`
-  ].join(" ");
+  const toggleRightPanel = () => {
+    if (rightCollapsed) {
+      rightPanelRef.current?.expand();
+      setRightCollapsed(false);
+    } else {
+      rightPanelRef.current?.collapse();
+      setRightCollapsed(true);
+    }
+  };
 
   return (
-    <div
-      className="anlyx-shell"
-      role="application"
-      aria-label="Anlyx application shell"
-      style={{ gridTemplateColumns: shellColumns }}
-    >
-      <Sidebar
-        data={data}
-        activeView={activeView}
-        collapsed={leftCollapsed}
-        selectedEndpointId={selectedEndpoint?.id}
-        selectedPageId={selectedPage?.id}
-        onSelectView={setActiveView}
-        onToggleCollapsed={() => setLeftCollapsed((current) => !current)}
-        onSelectEndpoint={(endpoint) => {
-          setSelectedEndpointId(endpoint.id);
-          setActiveView("structure");
-        }}
-        onSelectPage={(page) => {
-          setSelectedPageId(page.id);
-          setActiveView("frontend");
-        }}
-      />
-      <div
-        aria-label="Resize navigation panel"
-        className="anlyx-resize-handle anlyx-resize-handle--left"
-        role="separator"
-        tabIndex={0}
-        onPointerDown={(event) => startPanelResize("left", event.clientX)}
+    <div className="anlyx-shell" role="application" aria-label="Anlyx application shell">
+      <Group
+        className="anlyx-panel-group"
+        defaultLayout={panelLayout}
+        id="anlyx-main-panels"
+        orientation="horizontal"
+        onLayoutChanged={(layout) =>
+          writeLocalStorage(STORAGE_KEYS.panelLayout, JSON.stringify(layout))
+        }
       >
-        <span aria-hidden="true" />
-      </div>
-      <div
-        className={activeView === "process" ? "anlyx-main anlyx-main--process" : "anlyx-main"}
-        aria-live="polite"
-      >
-        {activeView === "structure" ? (
-          <EndpointMapCanvas
-            eyebrow="Backend API Structure"
-            endpoint={selectedEndpoint}
-            flow={selectedFlow}
-            replayState={replay.state}
-            selectedNodeId={selectedNode?.id}
-            toolbar={<StructureToolbar />}
-            onSelectNode={(node) => setSelectedNodeId(node.id)}
+        <Panel
+          className="anlyx-panel anlyx-panel--sidebar"
+          collapsedSize="52px"
+          collapsible
+          defaultSize="300px"
+          id="left"
+          maxSize="420px"
+          minSize="240px"
+          panelRef={leftPanelRef}
+        >
+          <Sidebar
+            data={data}
+            activeView={activeView}
+            collapsed={leftCollapsed}
+            selectedEndpointId={selectedEndpoint?.id}
+            selectedPageId={selectedPage?.id}
+            onSelectView={setActiveView}
+            onToggleCollapsed={toggleLeftPanel}
+            onSelectEndpoint={(endpoint) => {
+              setSelectedEndpointId(endpoint.id);
+              setActiveView("structure");
+            }}
+            onSelectPage={(page) => {
+              setSelectedPageId(page.id);
+              setActiveView("frontend");
+            }}
           />
-        ) : null}
-        {activeView === "frontend" ? (
-          <PageStoryboardView data={data} page={selectedPage} onViewProcessFlow={setActiveView} />
-        ) : null}
-        {activeView === "process" ? (
-          <ProcessFlowView
-            endpoint={selectedEndpoint}
-            flow={selectedFlow}
-            replayDisabled={replayUnavailable}
-            replayLoop={replay.loop}
-            replaySpeed={replaySpeed}
+        </Panel>
+        <Separator aria-label="Resize navigation panel" className="anlyx-resize-handle">
+          <span aria-hidden="true" />
+        </Separator>
+        <Panel className="anlyx-panel anlyx-panel--main" id="center" minSize="420px">
+          <div
+            className={activeView === "process" ? "anlyx-main anlyx-main--process" : "anlyx-main"}
+            aria-live="polite"
+          >
+            {activeView === "structure" ? (
+              <EndpointMapCanvas
+                eyebrow="Backend API Structure"
+                endpoint={selectedEndpoint}
+                flow={selectedFlow}
+                replayState={replay.state}
+                selectedNodeId={selectedNode?.id}
+                toolbar={<StructureToolbar />}
+                onSelectNode={(node) => setSelectedNodeId(node.id)}
+              />
+            ) : null}
+            {activeView === "frontend" ? (
+              <PageStoryboardView
+                data={data}
+                page={selectedPage}
+                onViewProcessFlow={setActiveView}
+              />
+            ) : null}
+            {activeView === "process" ? (
+              <ProcessFlowView
+                endpoint={selectedEndpoint}
+                flow={selectedFlow}
+                replayDisabled={replayUnavailable}
+                replayLoop={replay.loop}
+                replaySpeed={replaySpeed}
+                replayState={replay.state}
+                replaySteps={replay.steps}
+                selectedNodeId={selectedNode?.id}
+                onPause={replay.pause}
+                onPlay={replay.play}
+                onRestart={replay.restart}
+                onSelectNode={(node) => setSelectedNodeId(node.id)}
+                onSpeedChange={setReplaySpeed}
+                onToggleLoop={replay.toggleLoop}
+                onViewStructure={() => setActiveView("structure")}
+              />
+            ) : null}
+          </div>
+        </Panel>
+        <Separator aria-label="Resize inspector panel" className="anlyx-resize-handle">
+          <span aria-hidden="true" />
+        </Separator>
+        <Panel
+          className="anlyx-panel anlyx-panel--inspector"
+          collapsedSize="52px"
+          collapsible
+          defaultSize="360px"
+          id="right"
+          maxSize="520px"
+          minSize="300px"
+          panelRef={rightPanelRef}
+        >
+          <InspectorPanel
+            activeView={activeView}
+            collapsed={rightCollapsed}
+            data={data}
             replayState={replay.state}
-            replaySteps={replay.steps}
-            selectedNodeId={selectedNode?.id}
-            onPause={replay.pause}
-            onPlay={replay.play}
-            onRestart={replay.restart}
-            onSelectNode={(node) => setSelectedNodeId(node.id)}
-            onSpeedChange={setReplaySpeed}
-            onToggleLoop={replay.toggleLoop}
-            onViewStructure={() => setActiveView("structure")}
+            selectedFlow={selectedFlow}
+            selectedNode={selectedNode}
+            selectedPage={selectedPage}
+            onToggleCollapsed={toggleRightPanel}
           />
-        ) : null}
-      </div>
-      <div
-        aria-label="Resize inspector panel"
-        className="anlyx-resize-handle anlyx-resize-handle--right"
-        role="separator"
-        tabIndex={0}
-        onPointerDown={(event) => startPanelResize("right", event.clientX)}
-      >
-        <span aria-hidden="true" />
-      </div>
-      <InspectorPanel
-        activeView={activeView}
-        collapsed={rightCollapsed}
-        data={data}
-        replayState={replay.state}
-        selectedFlow={selectedFlow}
-        selectedNode={selectedNode}
-        selectedPage={selectedPage}
-        onToggleCollapsed={() => setRightCollapsed((current) => !current)}
-      />
+        </Panel>
+      </Group>
       <div className="anlyx-generated-at">Generated {data.generatedAt}</div>
     </div>
   );
@@ -307,24 +315,6 @@ function findFlowNode(
   );
 }
 
-function usePersistentNumber(
-  key: string,
-  defaultValue: number
-): [number, Dispatch<SetStateAction<number>>] {
-  const [value, setValue] = useState(() => {
-    const storedValue = readLocalStorage(key);
-    const parsedValue = storedValue ? Number(storedValue) : Number.NaN;
-
-    return Number.isFinite(parsedValue) ? parsedValue : defaultValue;
-  });
-
-  useEffect(() => {
-    writeLocalStorage(key, String(value));
-  }, [key, value]);
-
-  return [value, setValue];
-}
-
 function usePersistentBoolean(
   key: string,
   defaultValue: boolean
@@ -393,6 +383,26 @@ function writeLocalStorage(key: string, value: string): void {
   window.localStorage.setItem(key, value);
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
+function readPanelLayout(): typeof DEFAULT_PANEL_LAYOUT {
+  const storedValue = readLocalStorage(STORAGE_KEYS.panelLayout);
+
+  if (!storedValue) {
+    return DEFAULT_PANEL_LAYOUT;
+  }
+
+  try {
+    const parsedValue = JSON.parse(storedValue) as Partial<typeof DEFAULT_PANEL_LAYOUT>;
+
+    return {
+      left: sanitizePanelSize(parsedValue.left, DEFAULT_PANEL_LAYOUT.left),
+      center: sanitizePanelSize(parsedValue.center, DEFAULT_PANEL_LAYOUT.center),
+      right: sanitizePanelSize(parsedValue.right, DEFAULT_PANEL_LAYOUT.right)
+    };
+  } catch {
+    return DEFAULT_PANEL_LAYOUT;
+  }
+}
+
+function sanitizePanelSize(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
 }

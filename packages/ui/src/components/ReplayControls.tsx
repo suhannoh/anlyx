@@ -1,3 +1,5 @@
+import { Pause, Play, RefreshCw, Repeat2 } from "lucide-react";
+
 import type { ReplayLiteState } from "../replay/use-replay-lite.js";
 import type { ReplayStep } from "../replay/build-replay-steps.js";
 
@@ -42,16 +44,20 @@ export function ReplayControls({
             disabled={disabled || state.isPlaying}
             onClick={onPlay}
           >
-            Play
+            <Play size={14} strokeWidth={2.5} />
+            <span>Play</span>
           </button>
           <button type="button" disabled={disabled || !state.isPlaying} onClick={onPause}>
-            Pause
+            <Pause size={14} strokeWidth={2.5} />
+            <span>Pause</span>
           </button>
           <button type="button" disabled={disabled} onClick={onRestart}>
-            Restart
+            <RefreshCw size={14} strokeWidth={2.5} />
+            <span>Restart</span>
           </button>
           <button type="button" aria-pressed={loop} disabled={disabled} onClick={onToggleLoop}>
-            Loop {loop ? "on" : "off"}
+            <Repeat2 size={14} strokeWidth={2.5} />
+            <span>Loop {loop ? "on" : "off"}</span>
           </button>
         </div>
       </div>

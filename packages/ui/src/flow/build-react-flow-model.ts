@@ -1,6 +1,8 @@
 import type { ConfidenceLevel, EndpointFlow, FlowEdge, FlowNode } from "@anlyx/core";
 import type { Edge, Node } from "@xyflow/react";
 
+import { layoutWithFallback, type FlowLayoutVariant } from "./layout/elk-layout.js";
+
 export type AnlyxFlowRole = "main" | "sub" | "secondary";
 
 export type AnlyxFlowNodeData = {
@@ -19,6 +21,7 @@ export type AnlyxFlowEdgeData = {
   flowRole: AnlyxFlowRole;
   confidence?: ConfidenceLevel;
   isReplayActive?: boolean;
+  replayPhase?: "request" | "response" | "idle" | "complete";
 };
 
 export type AnlyxReactFlowNode = Node<AnlyxFlowNodeData, "anlyxNode">;
@@ -29,12 +32,15 @@ export type ReactFlowModel = {
   edges: AnlyxReactFlowEdge[];
 };
 
-const MAIN_X_SPACING = 220;
-const SECONDARY_Y_OFFSET = 120;
-const SUB_X_SPACING = 180;
-const SUB_Y_OFFSET = 180;
+export type BuildReactFlowModelOptions = {
+  variant?: FlowLayoutVariant;
+};
 
-export function buildReactFlowModel(flow: EndpointFlow): ReactFlowModel {
+export function buildReactFlowModel(
+  flow: EndpointFlow,
+  options: BuildReactFlowModelOptions = {}
+): ReactFlowModel {
+  const variant = options.variant ?? "structure";
   const mainPathSet = new Set(flow.mainPath);
   const nodesById = new Map(flow.nodes.map((node) => [node.id, node]));
   const positionedNodes = new Map<string, AnlyxReactFlowNode>();
@@ -43,22 +49,19 @@ export function buildReactFlowModel(flow: EndpointFlow): ReactFlowModel {
     const node = nodesById.get(nodeId);
 
     if (node) {
-      positionedNodes.set(node.id, createNode(node, "main", { x: index * MAIN_X_SPACING, y: 0 }));
+      positionedNodes.set(node.id, createNode(node, "main", { x: index * 220, y: 0 }));
     }
   });
 
   flow.nodes
     .filter((node) => !mainPathSet.has(node.id))
     .forEach((node, index) => {
-      positionedNodes.set(
-        node.id,
-        createNode(node, "secondary", { x: index * MAIN_X_SPACING, y: SECONDARY_Y_OFFSET })
-      );
+      positionedNodes.set(node.id, createNode(node, "secondary", { x: index * 220, y: 120 }));
     });
 
   flow.subFlows.forEach((subFlow, subFlowIndex) => {
     const parentPosition = positionedNodes.get(subFlow.parentNodeId)?.position ?? {
-      x: subFlowIndex * MAIN_X_SPACING,
+      x: subFlowIndex * 220,
       y: 0
     };
 
@@ -69,8 +72,8 @@ export function buildReactFlowModel(flow: EndpointFlow): ReactFlowModel {
           node,
           "sub",
           {
-            x: parentPosition.x + index * SUB_X_SPACING,
-            y: parentPosition.y + SUB_Y_OFFSET + subFlowIndex * 36
+            x: parentPosition.x + index * 180,
+            y: parentPosition.y + 180 + subFlowIndex * 36
           },
           subFlow.id
         )
@@ -78,17 +81,21 @@ export function buildReactFlowModel(flow: EndpointFlow): ReactFlowModel {
     });
   });
 
-  return {
-    nodes: [...positionedNodes.values()],
-    edges: [
-      ...flow.edges.map((edge, index) => createEdge(edge, getEdgeRole(edge, mainPathSet), index)),
-      ...flow.subFlows.flatMap((subFlow, subFlowIndex) =>
-        subFlow.edges.map((edge, edgeIndex) =>
-          createEdge(edge, "sub", `${subFlowIndex}:${edgeIndex}`)
+  return layoutWithFallback(
+    {
+      nodes: [...positionedNodes.values()],
+      edges: [
+        ...flow.edges.map((edge, index) => createEdge(edge, getEdgeRole(edge, mainPathSet), index)),
+        ...flow.subFlows.flatMap((subFlow, subFlowIndex) =>
+          subFlow.edges.map((edge, edgeIndex) =>
+            createEdge(edge, "sub", `${subFlowIndex}:${edgeIndex}`)
+          )
         )
-      )
-    ]
-  };
+      ]
+    },
+    flow.mainPath,
+    { variant }
+  );
 }
 
 function createNode(
@@ -121,7 +128,7 @@ function createEdge(
     id: `${edge.id}:${stableSuffix}`,
     source: edge.from,
     target: edge.to,
-    type: "smoothstep",
+    type: "anlyxEdge",
     animated: false,
     className: `anlyx-flow-edge anlyx-flow-edge--${flowRole}`,
     data: {

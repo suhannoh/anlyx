@@ -100,17 +100,19 @@ describe("AnlyxAppShell", () => {
     expect(screen.getByText("Nav")).toBeTruthy();
   });
 
-  it("panel resize state works", () => {
+  it("panel resize handles render from the panel library", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    const separator = screen.getByRole("separator", { name: "Resize navigation panel" });
-    fireEvent.pointerDown(separator, { clientX: 300 });
-    fireEvent.pointerMove(window, { clientX: 360 });
-    fireEvent.pointerUp(window);
+    expect(screen.getByRole("separator", { name: "Resize navigation panel" })).toBeTruthy();
+    expect(screen.getByRole("separator", { name: "Resize inspector panel" })).toBeTruthy();
+  });
 
-    expect(
-      screen.getByRole("application", { name: "Anlyx application shell" }).getAttribute("style")
-    ).toContain("360px");
+  it("panel collapse state persists", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Collapse navigation panel" }));
+
+    expect(window.localStorage.getItem("anlyx:ui:leftCollapsed")).toBe("true");
   });
 
   it("displays failed page status", () => {

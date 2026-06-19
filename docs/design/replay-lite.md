@@ -26,6 +26,8 @@ The visual treatment SHOULD separate the inferred phases:
 - Response path: purple reverse traversal derived from `mainPath`
 - Complete state: final response delivered marker
 
+The implementation MAY use `motion` and React Flow custom edge rendering for the moving particle and active-step transitions. Motion MUST communicate the current inferred step only; it MUST NOT imply measured latency, live traffic, or runtime traces.
+
 ## Controls
 
 v0.1 MUST provide:
@@ -63,3 +65,5 @@ v0.1 MUST NOT implement:
 ## Visual Direction
 
 The default product UI remains Clean Light. Process Flow MAY use stronger blue/purple/orange/mint accents than Structure, but it MUST still describe replay as generated from the scanned static flow graph. Dark Replay MAY be used for demo imagery and optional dark mode.
+
+Graph layout MAY be produced by `elkjs` for product runtime rendering. If ELK layout fails, the UI MUST fall back to deterministic request-row and branch-row positions instead of hiding the diagram.

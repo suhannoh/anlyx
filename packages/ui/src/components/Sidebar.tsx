@@ -1,4 +1,5 @@
 import type { Endpoint, PageStoryboard, ScanResult } from "@anlyx/core";
+import { PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 
 import { EndpointList } from "./EndpointList.js";
 import { PageList } from "./PageList.js";
@@ -35,7 +36,7 @@ export function Sidebar({
           aria-label="Expand navigation panel"
           onClick={onToggleCollapsed}
         >
-          Open
+          <PanelLeftOpen size={15} strokeWidth={2.4} />
         </button>
         <span className="anlyx-collapsed-label">Nav</span>
       </aside>
@@ -58,7 +59,7 @@ export function Sidebar({
           aria-label="Collapse navigation panel"
           onClick={onToggleCollapsed}
         >
-          Collapse
+          <PanelLeftClose size={15} strokeWidth={2.4} />
         </button>
       </div>
 
@@ -88,7 +89,10 @@ export function Sidebar({
 
       <label className="anlyx-search">
         <span className="anlyx-search__label">Search</span>
-        <input placeholder="Search endpoints or pages" type="search" />
+        <span className="anlyx-search__control">
+          <Search size={14} strokeWidth={2.4} />
+          <input placeholder="Search endpoints or pages" type="search" />
+        </span>
       </label>
 
       <div className="anlyx-sidebar__list-region">

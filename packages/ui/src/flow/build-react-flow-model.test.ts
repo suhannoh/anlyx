@@ -86,6 +86,15 @@ describe("buildReactFlowModel", () => {
       second.nodes.map((node) => node.position)
     );
     expect(first.nodes[0]?.position).toEqual({ x: 0, y: 0 });
-    expect(first.nodes[1]?.position).toEqual({ x: 220, y: 0 });
+    expect(first.nodes[1]?.position).toEqual({ x: 232, y: 0 });
+  });
+
+  it("creates a distinct process layout for branch nodes", () => {
+    const model = buildReactFlowModel(flow, { variant: "process" });
+    const mainNode = model.nodes.find((node) => node.id === flow.mainPath[1]);
+    const branchNode = model.nodes.find((node) => node.data.flowRole === "sub");
+
+    expect(mainNode?.position.y).toBe(0);
+    expect(branchNode?.position.y).toBeGreaterThan(0);
   });
 });

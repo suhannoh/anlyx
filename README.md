@@ -143,6 +143,15 @@ Open [http://localhost:4777](http://localhost:4777). The viewer has three main t
 
 The v0.1 viewer is request-centric: it shows how an endpoint is structured, which frontend pages connect to it, and how the scanned request flow moves through the application.
 
+The viewer keeps React Flow as its graph engine and adds a focused visual system around it:
+
+- `elkjs` for stable left-to-right graph layout with deterministic fallback positions.
+- `motion` for active node pulse, replay step transitions, and restrained flow movement.
+- `react-resizable-panels` for the resizable/collapsible three-panel shell.
+- `lucide-react` for consistent endpoint, service, repository, database, replay, and panel icons.
+
+These libraries improve diagram readability without adding runtime tracing, a Java agent, OpenTelemetry, or a new graph engine.
+
 ### Capture Mode
 
 Run the frontend app first, then run scan without `--skip-capture`:

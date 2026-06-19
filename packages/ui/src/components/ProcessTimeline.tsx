@@ -1,4 +1,6 @@
 import type { EndpointFlow } from "@anlyx/core";
+import { Check } from "lucide-react";
+import { motion } from "motion/react";
 
 import type { ReplayStep } from "../replay/build-replay-steps.js";
 import type { ReplayLiteState } from "../replay/use-replay-lite.js";
@@ -42,7 +44,14 @@ export function ProcessTimeline({ flow, steps, state }: ProcessTimelineProps): J
                 .join(" ")}
               key={`${step.phase}:${step.nodeId}:${index}`}
             >
-              <span className="anlyx-process-step__dot" aria-hidden="true" />
+              <motion.span
+                animate={isActive ? { scale: [1, 1.18, 1] } : { scale: 1 }}
+                className="anlyx-process-step__dot"
+                aria-hidden="true"
+                transition={{ duration: 1.1, repeat: isActive ? Infinity : 0 }}
+              >
+                {isCompleted ? <Check size={11} strokeWidth={3} /> : null}
+              </motion.span>
               <span className="anlyx-process-step__phase">
                 {step.phase === "request" ? "Request" : "Response"}
               </span>
@@ -62,7 +71,14 @@ export function ProcessTimeline({ flow, steps, state }: ProcessTimelineProps): J
             .filter(Boolean)
             .join(" ")}
         >
-          <span className="anlyx-process-step__dot" aria-hidden="true" />
+          <motion.span
+            animate={isComplete ? { scale: [1, 1.18, 1] } : { scale: 1 }}
+            className="anlyx-process-step__dot"
+            aria-hidden="true"
+            transition={{ duration: 1.1, repeat: isComplete ? Infinity : 0 }}
+          >
+            {isComplete ? <Check size={11} strokeWidth={3} /> : null}
+          </motion.span>
           <span className="anlyx-process-step__phase">Complete</span>
           <span className="anlyx-process-step__label">Client</span>
           <span className="anlyx-process-step__node">Response delivered</span>

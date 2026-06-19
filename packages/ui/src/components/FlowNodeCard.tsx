@@ -1,13 +1,26 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react";
+import {
+  Box,
+  Braces,
+  Code2,
+  Database,
+  GitBranch,
+  Globe2,
+  Layers3,
+  type LucideIcon
+} from "lucide-react";
+import { motion } from "motion/react";
 
 import { StatusBadge } from "./StatusBadge.js";
 import type { AnlyxReactFlowNode } from "../flow/build-react-flow-model.js";
 
 export function FlowNodeCard({ data, selected }: NodeProps<AnlyxReactFlowNode>): JSX.Element {
   const confidence = data.confidence ?? "unknown";
+  const Icon = getTypeIcon(data.type, data.flowRole);
 
   return (
-    <button
+    <motion.button
+      animate={data.isReplayActive ? { scale: [1, 1.018, 1] } : { scale: 1 }}
       className={[
         "anlyx-flow-node",
         `anlyx-flow-node--${data.type}`,
@@ -20,11 +33,13 @@ export function FlowNodeCard({ data, selected }: NodeProps<AnlyxReactFlowNode>):
       aria-label={`Select node ${data.label}`}
       data-replay-active={String(Boolean(data.isReplayActive))}
       data-testid={`flow-node-${data.node.id}`}
+      transition={{ duration: 1.35, repeat: data.isReplayActive ? Infinity : 0 }}
     >
       <Handle className="anlyx-flow-handle" position={Position.Left} type="target" />
+      {data.isReplayActive ? <span className="anlyx-flow-node__pulse" aria-hidden="true" /> : null}
       <span className="anlyx-flow-node__header">
         <span className="anlyx-flow-node__icon" aria-hidden="true">
-          {formatTypeMark(data.type)}
+          <Icon size={14} strokeWidth={2.4} />
         </span>
         <span className="anlyx-flow-node__type">{data.type}</span>
       </span>
@@ -33,23 +48,27 @@ export function FlowNodeCard({ data, selected }: NodeProps<AnlyxReactFlowNode>):
         {confidence}
       </StatusBadge>
       <Handle className="anlyx-flow-handle" position={Position.Right} type="source" />
-    </button>
+    </motion.button>
   );
 }
 
-function formatTypeMark(type: string): string {
+function getTypeIcon(type: string, flowRole: string): LucideIcon {
+  if (flowRole === "sub") {
+    return GitBranch;
+  }
+
   switch (type) {
     case "endpoint":
-      return "EP";
+      return Globe2;
     case "controller":
-      return "C";
+      return Code2;
     case "service":
-      return "S";
+      return Layers3;
     case "repository":
-      return "R";
+      return Braces;
     case "database":
-      return "DB";
+      return Database;
     default:
-      return "U";
+      return Box;
   }
 }

@@ -30,6 +30,15 @@ The visual hierarchy SHOULD match the target references in `docs/design/referenc
 - Blue request accents, purple response accents, orange branch accents, and mint database/result accents
 - Floating legend cards and section-card inspector structure
 
+The v0.1.2 visual system keeps React Flow as the graph engine and uses focused UI libraries:
+
+- `elkjs` for structure/process graph layout, with deterministic fallback layout when async layout fails or is unavailable.
+- `motion` for active node pulse, replay step transitions, and restrained moving particles.
+- `react-resizable-panels` for the left/center/right panel group, resize handles, and collapse behavior.
+- `lucide-react` for consistent type and action icons.
+
+These dependencies are visual-system support only. They MUST NOT introduce runtime tracing, a Java agent, OpenTelemetry, or a replacement graph engine.
+
 ## Structure
 
 Left sidebar MUST include:
@@ -97,6 +106,7 @@ Process Flow SHOULD feel visually different from Structure:
 - Branch calls use orange dashed connectors and smaller utility cards
 - Database arrival uses mint/green emphasis
 - Response path uses purple return language and reverse traversal
+- Active request/response edges MAY render a moving particle on top of the existing React Flow edge geometry
 - The subtitle or controls MUST state that replay is generated from the scanned static flow graph
 
 ## Screen Boundaries
