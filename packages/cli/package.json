@@ -24,7 +24,7 @@
     "url": "https://github.com/suhannoh/anlyx/issues"
   },
   "bin": {
-    "anlyx": "./dist/index.js"
+    "anlyx": "dist/index.js"
   },
   "exports": {
     ".": {
