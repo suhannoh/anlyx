@@ -3,9 +3,14 @@ import { join, sep } from "node:path";
 
 import type { Endpoint, EndpointFlow, HttpMethod } from "@anlyx/core";
 
+import { scanSpringFlows } from "./spring-flow-scanner.js";
+
 export type SpringEndpointScannerOptions = {
   sourceDir: string;
   baseUrl?: string;
+  maxMainDepth?: number;
+  maxSubDepth?: number;
+  includeUtilities?: boolean;
 };
 
 export type BackendAdapter = {
@@ -71,8 +76,8 @@ export function createSpringBackendAdapter(
     async scanEndpoints() {
       return scanSpringEndpoints(options);
     },
-    async scanFlows() {
-      return [];
+    async scanFlows(endpoints: Endpoint[] = []) {
+      return scanSpringFlows(options, endpoints);
     }
   };
 }
