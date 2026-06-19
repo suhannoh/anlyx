@@ -10,6 +10,7 @@ export type AnlyxFlowNodeData = {
   flowRole: AnlyxFlowRole;
   confidence?: ConfidenceLevel;
   subFlowId?: string;
+  isReplayActive?: boolean;
   onSelectNode?: (node: FlowNode) => void;
 };
 
@@ -17,6 +18,7 @@ export type AnlyxFlowEdgeData = {
   edge: FlowEdge;
   flowRole: AnlyxFlowRole;
   confidence?: ConfidenceLevel;
+  isReplayActive?: boolean;
 };
 
 export type AnlyxReactFlowNode = Node<AnlyxFlowNodeData, "anlyxNode">;

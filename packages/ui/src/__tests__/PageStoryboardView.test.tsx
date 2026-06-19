@@ -114,14 +114,14 @@ describe("Page Storyboard view", () => {
     expect(screen.getByText("No pages available yet.")).toBeTruthy();
   });
 
-  it("Replay tab still shows placeholder, not animation", () => {
+  it("Replay tab shows the replay-capable Endpoint Map", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Replay" }));
 
-    expect(screen.getByRole("region", { name: "Replay controls placeholder" })).toBeTruthy();
-    expect(screen.queryByText("Request dot")).toBeNull();
-    expect(screen.queryByText("Response dot")).toBeNull();
+    expect(screen.getByRole("region", { name: "Endpoint Map" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Replay Lite controls" })).toBeTruthy();
+    expect(screen.queryByText("Endpoint Map will render here")).toBeNull();
   });
 });
 

@@ -358,6 +358,15 @@
   outline-offset: 2px;
 }
 
+.anlyx-flow-node--replay-active {
+  border-color: #0891b2;
+  outline: 2px solid #06b6d4;
+  outline-offset: 3px;
+  box-shadow:
+    0 0 0 4px rgb(6 182 212 / 14%),
+    var(--anlyx-shadow-panel);
+}
+
 .anlyx-flow-node__type {
   color: var(--anlyx-color-text-secondary);
   font-size: 11px;
@@ -374,6 +383,11 @@
 
 .anlyx-flow-edge--sub .react-flow__edge-path {
   stroke-dasharray: 5 4;
+}
+
+.anlyx-flow-edge--replay-active .react-flow__edge-path {
+  stroke: #0891b2;
+  stroke-width: 3px;
 }
 
 .anlyx-endpoint-map-empty {
@@ -633,11 +647,43 @@
 
 .anlyx-replay__buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .anlyx-replay button {
   padding: 0 12px;
+}
+
+.anlyx-replay button[aria-pressed="true"] {
+  border-color: #0891b2;
+  color: #0e7490;
+}
+
+.anlyx-replay button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.anlyx-replay__state {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  color: var(--anlyx-color-text-secondary);
+  font-size: 12px;
+}
+
+.anlyx-replay__state span {
+  padding: 4px 8px;
+  border: 1px solid var(--anlyx-color-border);
+  border-radius: 999px;
+  background: var(--anlyx-color-background);
+}
+
+.anlyx-replay__empty {
+  max-width: 300px;
+  margin: 0;
+  color: var(--anlyx-color-text-secondary);
+  font-size: 12px;
 }
 
 .anlyx-generated-at {

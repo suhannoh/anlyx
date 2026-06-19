@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import type { EndpointFlow, FlowNode, ScanResult } from "@anlyx/core";
 
-import { CanvasPlaceholder } from "./CanvasPlaceholder.js";
 import { EndpointMapCanvas } from "./EndpointMapCanvas.js";
 import { InspectorPanel } from "./InspectorPanel.js";
 import { PageStoryboardView } from "./PageStoryboardView.js";
 import { ReplayControls } from "./ReplayControls.js";
 import { Sidebar } from "./Sidebar.js";
+import { useReplayLite } from "../replay/use-replay-lite.js";
 
 export type AnlyxAppShellProps = {
   data: ScanResult;
@@ -25,6 +25,12 @@ export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
     () => data.flows.find((flow) => flow.endpointId === selectedEndpoint?.id),
     [data.flows, selectedEndpoint?.id]
   );
+  const replayMainPath = useMemo(
+    () => getReplayMainPath(selectedFlow, selectedEndpoint?.id),
+    [selectedEndpoint?.id, selectedFlow]
+  );
+  const replay = useReplayLite({ mainPath: replayMainPath });
+  const replayUnavailable = replayMainPath.length === 0;
   const [selectedNodeId, setSelectedNodeId] = useState(() => findDefaultNode(selectedFlow)?.id);
   const selectedNode = findFlowNode(selectedFlow, selectedNodeId) ?? findDefaultNode(selectedFlow);
 
@@ -66,18 +72,53 @@ export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
           <EndpointMapCanvas
             endpoint={selectedEndpoint}
             flow={selectedFlow}
+            replayState={replay.state}
             selectedNodeId={selectedNode?.id}
             onSelectNode={(node) => setSelectedNodeId(node.id)}
           />
         ) : null}
         {activeView === "pages" ? <PageStoryboardView page={selectedPage} /> : null}
-        {activeView === "replay" ? <CanvasPlaceholder endpoint={selectedEndpoint} /> : null}
-        <ReplayControls />
+        {activeView === "replay" ? (
+          <EndpointMapCanvas
+            endpoint={selectedEndpoint}
+            flow={selectedFlow}
+            replayState={replay.state}
+            selectedNodeId={selectedNode?.id}
+            onSelectNode={(node) => setSelectedNodeId(node.id)}
+          />
+        ) : null}
+        <ReplayControls
+          disabled={replayUnavailable}
+          loop={replay.loop}
+          state={replay.state}
+          unavailableReason="Replay is unavailable because this endpoint has no main flow."
+          onPause={replay.pause}
+          onPlay={replay.play}
+          onRestart={replay.restart}
+          onToggleLoop={replay.toggleLoop}
+        />
       </div>
       <InspectorPanel data={data} selectedFlow={selectedFlow} selectedNode={selectedNode} />
       <div className="anlyx-generated-at">Generated {data.generatedAt}</div>
     </div>
   );
+}
+
+function getReplayMainPath(
+  flow: EndpointFlow | undefined,
+  endpointId: string | undefined
+): string[] {
+  if (!flow || flow.mainPath.length === 0) {
+    return [];
+  }
+
+  const endpointIndex = endpointId ? flow.mainPath.indexOf(endpointId) : -1;
+
+  if (endpointIndex >= 0) {
+    return flow.mainPath.slice(endpointIndex);
+  }
+
+  return flow.mainPath;
 }
 
 function findDefaultNode(flow: EndpointFlow | undefined): FlowNode | undefined {

@@ -53,14 +53,14 @@ describe("AnlyxAppShell", () => {
     expect(within(inspector).getByText("DB tables")).toBeTruthy();
   });
 
-  it("renders replay controls placeholder", () => {
+  it("renders replay controls", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    const replay = screen.getByRole("region", { name: "Replay controls placeholder" });
+    const replay = screen.getByRole("region", { name: "Replay Lite controls" });
     expect(within(replay).getByRole("button", { name: "Play" })).toBeTruthy();
     expect(within(replay).getByRole("button", { name: "Pause" })).toBeTruthy();
     expect(within(replay).getByRole("button", { name: "Restart" })).toBeTruthy();
-    expect(within(replay).getByText("Loop")).toBeTruthy();
+    expect(within(replay).getByRole("button", { name: "Loop off" })).toBeTruthy();
     expect(within(replay).getByText("Main Flow only")).toBeTruthy();
   });
 
