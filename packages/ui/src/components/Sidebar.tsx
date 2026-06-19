@@ -1,13 +1,15 @@
-import type { ScanResult } from "@anlyx/core";
+import type { Endpoint, ScanResult } from "@anlyx/core";
 
 import { EndpointList } from "./EndpointList.js";
 import { PageList } from "./PageList.js";
 
 type SidebarProps = {
   data: ScanResult;
+  selectedEndpointId: string | undefined;
+  onSelectEndpoint: (endpoint: Endpoint) => void;
 };
 
-export function Sidebar({ data }: SidebarProps): JSX.Element {
+export function Sidebar({ data, selectedEndpointId, onSelectEndpoint }: SidebarProps): JSX.Element {
   return (
     <aside className="anlyx-sidebar" aria-label="Primary navigation">
       <div className="anlyx-brand">
@@ -37,7 +39,11 @@ export function Sidebar({ data }: SidebarProps): JSX.Element {
         <input placeholder="Search endpoints or pages" type="search" />
       </label>
 
-      <EndpointList endpoints={data.endpoints} />
+      <EndpointList
+        endpoints={data.endpoints}
+        selectedEndpointId={selectedEndpointId}
+        onSelectEndpoint={onSelectEndpoint}
+      />
       <PageList pages={data.pages} />
     </aside>
   );

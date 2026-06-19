@@ -35,19 +35,19 @@ describe("AnlyxAppShell", () => {
     expect(within(pageList).getByText("/admin/benefits")).toBeTruthy();
   });
 
-  it("renders canvas placeholder", () => {
+  it("renders Endpoint Map canvas", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    expect(screen.getByLabelText("Endpoint map canvas placeholder")).toBeTruthy();
-    expect(screen.getByText("Endpoint Map will render here")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Endpoint Map" })).toBeTruthy();
+    expect(screen.getAllByText("GET /api/public/benefits/{id}").length).toBeGreaterThan(0);
   });
 
-  it("renders inspector placeholder", () => {
+  it("renders inspector", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
     const inspector = screen.getByRole("complementary", { name: "Inspector" });
     expect(within(inspector).getByText("Selected Node")).toBeTruthy();
-    expect(within(inspector).getByText("PublicBenefitController#getDetail")).toBeTruthy();
+    expect(within(inspector).getByText("GET /api/public/benefits/{id}")).toBeTruthy();
     expect(within(inspector).getByText("Linked pages")).toBeTruthy();
     expect(within(inspector).getByText("Sub flows")).toBeTruthy();
     expect(within(inspector).getByText("DB tables")).toBeTruthy();
@@ -82,7 +82,7 @@ describe("AnlyxAppShell", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
     expect(screen.getByText("unknown")).toBeTruthy();
-    expect(screen.getByText("confidence")).toBeTruthy();
+    expect(screen.getAllByText("confidence").length).toBeGreaterThan(0);
   });
 
   it("accepts a valid ScanResult prop", () => {

@@ -75,7 +75,35 @@ export const mockScanResult: ScanResult = scanResultSchema.parse({
           from: "page:benefit-detail",
           to: "endpoint:get:/api/public/benefits/{id}",
           kind: "request",
-          animated: true,
+          animated: false,
+          confidence: "high"
+        },
+        {
+          id: "edge:endpoint-to-controller",
+          from: "endpoint:get:/api/public/benefits/{id}",
+          to: "controller:PublicBenefitController#getDetail",
+          kind: "main",
+          confidence: "high"
+        },
+        {
+          id: "edge:controller-to-service",
+          from: "controller:PublicBenefitController#getDetail",
+          to: "service:PublicBenefitService#getBenefitDetail",
+          kind: "main",
+          confidence: "high"
+        },
+        {
+          id: "edge:service-to-repository",
+          from: "service:PublicBenefitService#getBenefitDetail",
+          to: "repository:BenefitRepository#findById",
+          kind: "main",
+          confidence: "high"
+        },
+        {
+          id: "edge:repository-to-database",
+          from: "repository:BenefitRepository#findById",
+          to: "database:benefits",
+          kind: "db",
           confidence: "high"
         }
       ],
@@ -92,8 +120,49 @@ export const mockScanResult: ScanResult = scanResultSchema.parse({
           id: "subflow:benefit-detail-support",
           parentNodeId: "service:PublicBenefitService#getBenefitDetail",
           collapsedByDefault: true,
-          nodes: [],
-          edges: []
+          nodes: [
+            {
+              id: "mapper:BenefitDisplayMapper",
+              type: "mapper",
+              label: "BenefitDisplayMapper",
+              confidence: "medium"
+            },
+            {
+              id: "utility:DateRangeUtil",
+              type: "utility",
+              label: "DateRangeUtil",
+              confidence: "medium"
+            },
+            {
+              id: "validator:PublicVisibilityPolicy",
+              type: "validator",
+              label: "PublicVisibilityPolicy",
+              confidence: "low"
+            }
+          ],
+          edges: [
+            {
+              id: "edge:service-to-mapper",
+              from: "service:PublicBenefitService#getBenefitDetail",
+              to: "mapper:BenefitDisplayMapper",
+              kind: "sub",
+              confidence: "medium"
+            },
+            {
+              id: "edge:service-to-date-range",
+              from: "service:PublicBenefitService#getBenefitDetail",
+              to: "utility:DateRangeUtil",
+              kind: "sub",
+              confidence: "medium"
+            },
+            {
+              id: "edge:service-to-visibility-policy",
+              from: "service:PublicBenefitService#getBenefitDetail",
+              to: "validator:PublicVisibilityPolicy",
+              kind: "sub",
+              confidence: "low"
+            }
+          ]
         }
       ]
     }

@@ -10,6 +10,7 @@ export default defineConfig({
   },
   test: {
     include: ["packages/**/*.test.ts", "packages/**/*.test.tsx"],
-    passWithNoTests: false
+    passWithNoTests: false,
+    setupFiles: ["./packages/ui/src/test/setup.ts"]
   }
 });

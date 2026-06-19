@@ -4,9 +4,15 @@ import { StatusBadge } from "./StatusBadge.js";
 
 type EndpointListProps = {
   endpoints: Endpoint[];
+  selectedEndpointId: string | undefined;
+  onSelectEndpoint: (endpoint: Endpoint) => void;
 };
 
-export function EndpointList({ endpoints }: EndpointListProps): JSX.Element {
+export function EndpointList({
+  endpoints,
+  selectedEndpointId,
+  onSelectEndpoint
+}: EndpointListProps): JSX.Element {
   return (
     <section className="anlyx-sidebar-section" aria-labelledby="anlyx-endpoints-heading">
       <div className="anlyx-section-heading" id="anlyx-endpoints-heading">
@@ -15,13 +21,19 @@ export function EndpointList({ endpoints }: EndpointListProps): JSX.Element {
       <ul className="anlyx-list" aria-label="Endpoint list">
         {endpoints.map((endpoint) => (
           <li className="anlyx-list-item" key={endpoint.id}>
-            <div className="anlyx-list-item__line">
-              <StatusBadge tone={endpoint.method}>{endpoint.method}</StatusBadge>
-              <span className="anlyx-list-item__primary">{endpoint.path}</span>
-            </div>
-            <div className="anlyx-list-item__meta">
-              {formatEndpointHandler(endpoint)}
-            </div>
+            <button
+              className="anlyx-endpoint-button"
+              type="button"
+              aria-label={`${endpoint.method} ${endpoint.path} ${formatEndpointHandler(endpoint)}`}
+              aria-current={endpoint.id === selectedEndpointId ? "true" : undefined}
+              onClick={() => onSelectEndpoint(endpoint)}
+            >
+              <span className="anlyx-list-item__line">
+                <StatusBadge tone={endpoint.method}>{endpoint.method}</StatusBadge>
+                <span className="anlyx-list-item__primary">{endpoint.path}</span>
+              </span>
+              <span className="anlyx-list-item__meta">{formatEndpointHandler(endpoint)}</span>
+            </button>
           </li>
         ))}
       </ul>
