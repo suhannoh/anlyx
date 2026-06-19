@@ -21,6 +21,12 @@ export type {
 } from "./config.js";
 
 export type {
+  FixtureExpectedData,
+  FixtureValidationIssue,
+  FixtureValidationResult
+} from "./fixture-validation.js";
+
+export type {
   ApiCall,
   CaptureResult,
   CaptureStatus,
@@ -54,6 +60,10 @@ export {
   springBackendConfigSchema,
   viewportConfigSchema
 } from "./config.js";
+
+export {
+  validateFixtureExpectedData
+} from "./fixture-validation.js";
 
 export {
   apiCallSchema,
