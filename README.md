@@ -4,11 +4,11 @@
 
 Visual flow maps for modern web apps.
 
-Anlyx is an open-source developer tool that will turn frontend pages, backend endpoints, services, repositories, and database flows into interactive flow maps and page storyboards.
+Anlyx is an open-source developer tool that turns frontend pages, backend endpoints, services, repositories, and database flows into interactive flow maps and page storyboards.
 
-> Status: Planning / Design Docs phase. Product implementation has not started yet.
+> Status: v0.1 acceptance pass.
 
-Anlyx is not currently installable as an npm package. The repository is being prepared with scope, contracts, adapter rules, fixture expectations, and design documents before v0.1 implementation begins.
+Anlyx is not published to npm yet. Until the package is published, use the repository scripts or local workspace commands.
 
 ## Problem
 
@@ -41,20 +41,47 @@ Deep Support:
 Basic Support:
 
 - OpenAPI backend import for endpoint lists, request schemas, and response schemas
+- Manual frontend URLs for OpenAPI backend projects
 
 v0.1 will focus on the Spring Boot + Next.js App Router combination first. Other backend frameworks are handled only through OpenAPI Basic Support in this phase.
 
+## Usage
+
+When using the published package:
+
+```bash
+npx anlyx init
+npx anlyx scan
+npx anlyx dev
+```
+
+Until npm publishing is complete, run the local workspace CLI during development.
+
+```bash
+corepack pnpm --filter anlyx exec anlyx init
+corepack pnpm --filter anlyx exec anlyx scan
+corepack pnpm --filter anlyx exec anlyx dev
+```
+
+`anlyx scan` writes `.anlyx/report-data.json`. `anlyx dev` reads that file and serves the local UI; it does not run scan automatically.
+
+## Not Included in v0.1
+
+- FastAPI, Express, or NestJS Deep Support
+- React Router Deep Support
+- Static HTML export
+- Mermaid export
+- PNG/SVG export
+- GitHub Actions report generation
+- Java Agent runtime tracing
+- LLM flow summaries
+
 ## Development Approach
 
-This repository follows documentation-first development. The implementation starts only after the v0.1 planning documents, contracts, adapter rules, fixture expectations, design direction, and acceptance checklist are reviewed.
-
-The first CLI commands, `anlyx init` and `anlyx scan`, are available for generating a starter
-`anlyx.config.ts` and writing local scan JSON output. Dev UI hosting and npm package distribution
-are still in progress.
+This repository follows documentation-first development. v0.1 implementation is constrained by the scope lock, contracts, adapter rules, fixture expectations, design direction, and acceptance checklist.
 
 ## Development Setup
 
 Anlyx uses a pnpm workspace with TypeScript, ESLint, Prettier, and Vitest. The current
 workspace contains tooling, package skeletons, Core data/config validation, adapter utilities,
-capture primitives, UI components, and the `anlyx init` / `anlyx scan` commands. Dev UI hosting is
-not implemented yet.
+capture primitives, UI components, and the `anlyx init` / `anlyx scan` / `anlyx dev` commands.

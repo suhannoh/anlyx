@@ -4,9 +4,9 @@
 
 Anlyx는 프론트 페이지부터 백엔드 엔드포인트, 서비스 레이어, Repository, 데이터베이스까지 이어지는 흐름을 시각적인 플로우 맵과 스토리보드로 보여주는 오픈소스 개발자 도구입니다.
 
-> 현재 상태: 기획 / 설계 문서 작성 단계입니다. 아직 실제 구현은 시작하지 않았습니다.
+> 현재 상태: v0.1 acceptance pass 단계입니다.
 
-Anlyx는 아직 npm 패키지로 설치할 수 있는 상태가 아닙니다. v0.1 구현 전에 범위, 데이터 계약, Adapter 규칙, Fixture expected output, 디자인 문서, Acceptance 기준을 먼저 고정합니다.
+Anlyx는 아직 npm에 배포되지 않았습니다. 패키지가 배포되기 전까지는 저장소 스크립트나 로컬 workspace 명령을 사용합니다.
 
 ## 해결하려는 문제
 
@@ -39,12 +39,43 @@ Deep Support:
 Basic Support:
 
 - OpenAPI backend import
+- OpenAPI backend 프로젝트를 위한 manual frontend URLs
 
 v0.1은 Spring Boot + Next.js App Router 조합을 가장 완성도 있게 지원하는 데 집중합니다. 다른 백엔드 프레임워크는 OpenAPI 문서가 있을 때 Basic Support로만 다룹니다.
 
+## 사용 흐름
+
+배포된 패키지를 사용할 때의 기본 흐름은 다음과 같습니다.
+
+```bash
+npx anlyx init
+npx anlyx scan
+npx anlyx dev
+```
+
+npm 배포 전에는 로컬 workspace CLI를 사용합니다.
+
+```bash
+corepack pnpm --filter anlyx exec anlyx init
+corepack pnpm --filter anlyx exec anlyx scan
+corepack pnpm --filter anlyx exec anlyx dev
+```
+
+`anlyx scan`은 `.anlyx/report-data.json`을 생성합니다. `anlyx dev`는 이 파일을 읽어 로컬 UI를 띄우며, scan을 자동 실행하지 않습니다.
+
+## v0.1 제외 범위
+
+- FastAPI, Express, NestJS Deep Support
+- React Router Deep Support
+- Static HTML export
+- Mermaid export
+- PNG/SVG export
+- GitHub Actions report generation
+- Java Agent runtime tracing
+- LLM flow summary
+
 ## 개발 방식
 
-이 저장소는 문서 우선 개발 방식을 따릅니다. v0.1 설계 문서, 데이터 계약, Adapter 규칙, Fixture expected output, 디자인 기준, Acceptance 체크리스트가 검토된 뒤 구현을 시작합니다.
+이 저장소는 문서 우선 개발 방식을 따릅니다. v0.1 구현은 scope lock, 데이터 계약, Adapter 규칙, Fixture expected output, 디자인 기준, Acceptance 체크리스트에 의해 제한됩니다.
 
-현재는 `anlyx init`으로 기본 `anlyx.config.ts`를 생성하고, `anlyx scan`으로 로컬 scan JSON
-출력을 만들 수 있습니다. dev UI 호스팅과 npm 패키지 배포는 아직 진행 중입니다.
+현재는 `anlyx init`으로 기본 `anlyx.config.ts`를 생성하고, `anlyx scan`으로 로컬 scan JSON 출력을 만들 수 있으며, `anlyx dev`로 로컬 UI를 확인할 수 있습니다. npm 패키지 배포는 아직 진행하지 않습니다.
