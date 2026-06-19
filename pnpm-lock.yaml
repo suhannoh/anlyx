@@ -36,7 +36,11 @@ importers:
         specifier: workspace:*
         version: link:../core
 
-  packages/adapter-next: {}
+  packages/adapter-next:
+    dependencies:
+      '@anlyx/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/adapter-openapi:
     dependencies:
