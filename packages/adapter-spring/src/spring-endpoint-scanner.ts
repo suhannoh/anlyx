@@ -1,9 +1,10 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { join, sep } from "node:path";
 
 import type { Endpoint, EndpointFlow, HttpMethod } from "@anlyx/core";
 
 import { scanSpringFlows } from "./spring-flow-scanner.js";
+import { resolveSpringJavaSourceDir } from "./spring-source-dir.js";
 
 export type SpringEndpointScannerOptions = {
   sourceDir: string;
@@ -48,9 +49,9 @@ export async function scanSpringEndpoints(
   options: SpringEndpointScannerOptions
 ): Promise<Endpoint[]> {
   void options.baseUrl;
-  await assertSourceDirectoryExists(options.sourceDir);
+  const sourceDir = await resolveSpringJavaSourceDir(options.sourceDir);
 
-  const javaFiles = await collectJavaFiles(options.sourceDir);
+  const javaFiles = await collectJavaFiles(sourceDir);
   const endpoints: Endpoint[] = [];
 
   for (const filePath of javaFiles) {
@@ -78,18 +79,6 @@ export function createSpringBackendAdapter(options: SpringEndpointScannerOptions
       return scanSpringFlows(options, endpoints);
     }
   };
-}
-
-async function assertSourceDirectoryExists(sourceDir: string): Promise<void> {
-  try {
-    const sourceDirStat = await stat(sourceDir);
-
-    if (!sourceDirStat.isDirectory()) {
-      throw new Error();
-    }
-  } catch {
-    throw new Error(`Spring source directory not found: ${sourceDir}`);
-  }
 }
 
 async function collectJavaFiles(directory: string): Promise<string[]> {

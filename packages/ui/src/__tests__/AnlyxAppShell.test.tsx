@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { AnlyxAppShell } from "../components/AnlyxAppShell.js";
@@ -30,6 +30,8 @@ describe("AnlyxAppShell", () => {
   it("renders page list", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+
     const pageList = screen.getByRole("list", { name: "Page list" });
     expect(within(pageList).getByText("/benefit/[brandSlug]/[benefitSlugWithId]")).toBeTruthy();
     expect(within(pageList).getByText("/admin/benefits")).toBeTruthy();
@@ -46,7 +48,7 @@ describe("AnlyxAppShell", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
     const inspector = screen.getByRole("complementary", { name: "Inspector" });
-    expect(within(inspector).getByText("Selected Node")).toBeTruthy();
+    expect(within(inspector).getByText("Backend Node")).toBeTruthy();
     expect(within(inspector).getByText("GET /api/public/benefits/{id}")).toBeTruthy();
     expect(within(inspector).getByText("Linked pages")).toBeTruthy();
     expect(within(inspector).getByText("Sub flows")).toBeTruthy();
@@ -55,6 +57,8 @@ describe("AnlyxAppShell", () => {
 
   it("renders replay controls", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Replay" }));
 
     const replay = screen.getByRole("region", { name: "Replay Lite controls" });
     expect(within(replay).getByRole("button", { name: "Play" })).toBeTruthy();
@@ -67,6 +71,8 @@ describe("AnlyxAppShell", () => {
   it("displays failed page status", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+
     expect(screen.getByText("failed")).toBeTruthy();
     expect(screen.getByText("Login required")).toBeTruthy();
   });
@@ -74,8 +80,20 @@ describe("AnlyxAppShell", () => {
   it("displays pending page status", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+
     expect(screen.getByText("pending")).toBeTruthy();
     expect(screen.getByText("Missing sampleParams")).toBeTruthy();
+  });
+
+  it("uses a contextual page inspector in the Pages tab", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+
+    const inspector = screen.getByRole("complementary", { name: "Inspector" });
+    expect(within(inspector).getByText("Frontend Page")).toBeTruthy();
+    expect(within(inspector).getByText("/benefit/[brandSlug]/[benefitSlugWithId]")).toBeTruthy();
   });
 
   it("does not hide unknown/confidence status", () => {

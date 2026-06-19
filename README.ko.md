@@ -2,68 +2,208 @@
 
 [English README](./README.md)
 
-Anlyx는 프론트 페이지부터 백엔드 엔드포인트, 서비스 레이어, Repository, 데이터베이스까지 이어지는 흐름을 시각적인 플로우 맵과 스토리보드로 보여주는 오픈소스 개발자 도구입니다.
+Anlyx는 현대 웹 앱의 프론트 페이지, 백엔드 엔드포인트, 서비스, Repository, 데이터베이스 테이블, 캡처 상태, API 호출을 하나의 로컬 시각화 뷰어로 연결하는 개발자 도구입니다.
 
-> 현재 상태: v0.1.2 patch release 준비 단계입니다.
+> 현재 상태: v0.1.2 patch release 준비 단계입니다. 실제 npm publish는 별도 승인 후 진행합니다.
 
-Anlyx `0.1.0`은 `workspace:*` dependency가 남아 있는 상태로 배포되어 deprecated 처리 예정입니다. Anlyx `0.1.1`은 배포된 CLI entrypoint가 unsettled top-level await 경고를 내고 명령 실행 전에 종료될 수 있어 deprecated 처리 예정입니다. 승인된 pnpm 기반 publish 이후에는 `0.1.2`부터 일반 `npm install anlyx`로 설치 가능한 버전으로 안내합니다.
+Anlyx `0.1.0`은 `workspace:*` dependency가 남아 있는 상태로 배포되어 deprecated 처리 예정입니다. Anlyx `0.1.1`은 배포된 CLI entrypoint가 명령 실행 전에 종료될 수 있어 deprecated 처리 예정입니다. 승인된 pnpm 기반 publish 이후에는 `0.1.2`부터 일반 `npm install anlyx`로 설치 가능한 버전으로 안내합니다.
 
-## 해결하려는 문제
+## What is Anlyx?
 
-현대 웹 애플리케이션의 기능 하나는 프론트 라우트, API 엔드포인트, Controller, Service, Repository, DB Table, DTO, 유틸리티, 인증 조건에 나뉘어 있습니다.
-
-새로운 개발자나 기여자는 다음 질문에 답하기 위해 여러 문서와 코드를 오가야 합니다.
+Anlyx는 보통 라우트, Swagger/OpenAPI, 백엔드 코드, 데이터베이스 모델, 스크린샷을 오가며 확인해야 하는 질문에 답합니다.
 
 - 이 화면은 어떤 API를 호출하는가?
-- 이 API는 어떤 Controller와 Service에서 처리되는가?
-- 어떤 Repository와 DB Table이 연결되는가?
-- 핵심 흐름과 보조 흐름은 어떻게 구분되는가?
-- API 호출이 발생하는 실제 화면은 어떻게 생겼는가?
+- 이 API는 어떤 Controller, Service, Repository, DB Table과 연결되는가?
+- 어떤 호출이 핵심 경로이고 어떤 호출이 보조 흐름인가?
+- API 호출 시점의 화면 상태는 어떻게 캡처되었는가?
 
-Anlyx는 이 정보를 하나의 읽기 쉬운 시각적 지도로 연결하는 것을 목표로 합니다.
-
-## 핵심 기능
-
-- **Endpoint Map**: Swagger처럼 엔드포인트를 나열하고 Controller, Service, Repository, Database Table 흐름과 연결합니다.
-- **Page Storyboard**: 프론트 페이지의 route, screenshot segment, capture status, API call을 스토리보드로 보여줍니다.
-- **Main Flow / Sub Flow**: 요청 처리의 중심 경로와 mapper, utility, validator 같은 보조 호출을 구분합니다.
-- **Replay Lite**: 요청과 응답이 Main Flow를 따라 이동하는 최소 애니메이션을 제공합니다.
-
-## v0.1 범위
+## Current Support
 
 Deep Support:
 
-- Spring Boot backend analysis
-- Next.js App Router page discovery and capture
+- Spring Boot backend endpoint 및 flow scanning
+- Next.js App Router page discovery 및 Playwright capture
 
 Basic Support:
 
-- OpenAPI backend import
-- OpenAPI backend 프로젝트를 위한 manual frontend URLs
+- OpenAPI backend endpoint import
+- OpenAPI-only 프로젝트를 위한 manual frontend URLs
 
-v0.1은 Spring Boot + Next.js App Router 조합을 가장 완성도 있게 지원하는 데 집중합니다. 다른 백엔드 프레임워크는 OpenAPI 문서가 있을 때 Basic Support로만 다룹니다.
+v0.1 Deep Support는 Spring Boot + Next.js App Router로 제한합니다. FastAPI, Express, NestJS, React Router는 v0.1 Deep Support 대상이 아닙니다.
 
-## 사용 흐름
+## Quick Start
 
-배포된 패키지를 사용할 때의 기본 흐름은 다음과 같습니다.
+### Install
+
+승인된 0.1.2 publish 이후:
 
 ```bash
-npx anlyx init
-npx anlyx scan
-npx anlyx dev
+npm install -D anlyx@0.1.2
 ```
 
-`anlyx@0.1.2` 이상을 사용합니다. 0.1.2 배포가 승인되고 완료되기 전에는 로컬 workspace CLI를 사용합니다.
+publish 전 로컬 workspace에서는 다음처럼 사용합니다.
 
 ```bash
 corepack pnpm install
 corepack pnpm build
-corepack pnpm --filter anlyx exec anlyx init
-corepack pnpm --filter anlyx exec anlyx scan
-corepack pnpm --filter anlyx exec anlyx dev
+corepack pnpm --filter anlyx exec anlyx --help
 ```
 
-`anlyx scan`은 `.anlyx/report-data.json`을 생성합니다. `anlyx dev`는 이 파일을 읽어 로컬 UI를 띄우며, scan을 자동 실행하지 않습니다.
+### Initialize config
+
+```bash
+npx anlyx init
+```
+
+기본 `anlyx.config.ts`는 import가 없는 plain object입니다. 따라서 scan 대상 프로젝트가 `defineConfig`를 import하려고 `anlyx`를 해석하지 못하는 문제를 피할 수 있습니다.
+
+### Minimal config
+
+```ts
+export default {
+  projectName: "my-app",
+  backend: {
+    type: "spring",
+    sourceDir: "./backend"
+  },
+  frontend: {
+    type: "next",
+    sourceDir: "./frontend",
+    baseUrl: "http://localhost:3000"
+  },
+  server: {
+    port: 4777,
+    openBrowser: true
+  }
+};
+```
+
+대상 프로젝트에서 `anlyx`를 devDependency로 해석할 수 있다면 선택적으로 type helper를 사용할 수 있습니다.
+
+```ts
+import { defineConfig } from "anlyx";
+
+export default defineConfig({
+  projectName: "my-app"
+});
+```
+
+### Monorepo example: Spring Boot backend + Next.js frontend
+
+```txt
+my-app/
+  backend/
+    src/main/java/...
+  frontend/
+    src/app/...
+```
+
+권장 config:
+
+```ts
+export default {
+  projectName: "my-app",
+  backend: {
+    type: "spring",
+    sourceDir: "./backend"
+  },
+  frontend: {
+    type: "next",
+    sourceDir: "./frontend",
+    baseUrl: "http://localhost:3000"
+  }
+};
+```
+
+Spring adapter는 `./backend`에서 `./backend/src/main/java`를 찾습니다. Next adapter는 `./frontend/app`을 먼저 보고, 없으면 `./frontend/src/app`을 찾습니다.
+
+### First scan without capture
+
+```bash
+npx anlyx scan --skip-capture
+```
+
+이 명령은 정적 adapter 결과만 사용해 `.anlyx/report-data.json`을 생성합니다. capture를 실행하기 전의 page는 `pending` 상태로 남습니다.
+
+### Open local viewer
+
+```bash
+npx anlyx dev --no-open
+```
+
+[http://localhost:4777](http://localhost:4777)을 엽니다. 뷰어는 세 개의 주요 탭으로 구성됩니다.
+
+- Endpoint: 중앙에는 backend endpoint map, 오른쪽에는 node inspector
+- Pages: 중앙에는 frontend page storyboard, 오른쪽에는 page inspector
+- Replay: 중앙 Endpoint Map 위에 Replay Lite controls와 step 정보
+
+### Capture mode
+
+프론트엔드 앱을 먼저 실행한 뒤 `--skip-capture` 없이 scan합니다.
+
+```bash
+npx anlyx scan
+```
+
+capture는 `frontend.baseUrl`을 기준으로 페이지를 방문하고 screenshot/API-call 데이터를 `.anlyx/report-data.json`에 기록합니다.
+
+### Dynamic routes and sampleParams
+
+Next.js 동적 라우트는 capture가 방문할 실제 URL을 만들 수 있도록 sample params를 제공합니다.
+
+```ts
+export default {
+  frontend: {
+    type: "next",
+    sourceDir: "./frontend",
+    baseUrl: "http://localhost:3000",
+    sampleParams: {
+      "/benefit/[brandSlug]/[benefitSlugWithId]": {
+        brandSlug: "starbucks",
+        benefitSlugWithId: "birthday-coupon-123"
+      }
+    }
+  }
+};
+```
+
+## Troubleshooting
+
+### Cannot find module 'anlyx'
+
+`npx anlyx init --force`로 생성되는 import-free config를 사용합니다. `defineConfig` import는 대상 프로젝트가 `anlyx`를 devDependency로 설치하고 해석할 수 있을 때만 사용합니다.
+
+### Next.js App Router directory not found
+
+`frontend.sourceDir`를 frontend root 또는 source root로 지정합니다. v0.1에서 지원하는 구조는 다음과 같습니다.
+
+```txt
+frontend/app
+frontend/src/app
+sourceDir이 ./frontend/src일 때 ./frontend/src/app
+```
+
+### .anlyx/report-data.json not generated
+
+먼저 다음 명령으로 정적 scan을 확인합니다.
+
+```bash
+npx anlyx scan --skip-capture
+```
+
+실패하면 config 경로, backend source directory, frontend app directory, 터미널 에러를 확인합니다. `anlyx dev`는 report data를 읽기만 하며 자동으로 scan하지 않습니다.
+
+### Pages are pending
+
+`--skip-capture`, manual frontend URLs, capture data가 없는 route에서는 정상입니다. Pending page는 숨기지 않고 뷰어에 표시합니다.
+
+### Playwright/capture fails
+
+프론트엔드 서버가 `frontend.baseUrl`에서 실행 중인지, dynamic route에 `sampleParams`가 있는지, 로그인 전용 페이지에 capture 설정이 있는지 확인합니다. capture 문제를 분리하려면 `--skip-capture`로 정적 scan을 먼저 실행합니다.
+
+### 0.1.0 workspace dependency issue
+
+`anlyx@0.1.0`은 사용하지 마세요. unresolved `workspace:*` dependency가 포함되어 배포되었습니다. 승인된 patch publish 이후 `0.1.2` 이상을 사용합니다.
 
 ## v0.1 제외 범위
 
@@ -76,11 +216,17 @@ corepack pnpm --filter anlyx exec anlyx dev
 - Java Agent runtime tracing
 - LLM flow summary
 
-## 개발 방식
+## Development Setup
 
-이 저장소는 문서 우선 개발 방식을 따릅니다. v0.1 구현은 scope lock, 데이터 계약, Adapter 규칙, Fixture expected output, 디자인 기준, Acceptance 체크리스트에 의해 제한됩니다.
+Anlyx는 pnpm workspace, TypeScript, ESLint, Prettier, Vitest를 사용합니다.
 
-현재는 `anlyx init`으로 기본 `anlyx.config.ts`를 생성하고, `anlyx scan`으로 로컬 scan JSON 출력을 만들 수 있으며, `anlyx dev`로 로컬 UI를 확인할 수 있습니다. 0.1.2 실제 npm 배포는 별도 승인 후 진행합니다.
+```bash
+corepack pnpm install
+corepack pnpm typecheck
+corepack pnpm lint
+corepack pnpm test
+corepack pnpm format
+corepack pnpm -r build
+```
 
-npm 배포 전 포장 점검은 로컬 build와 pack dry-run으로 확인합니다. 자세한 항목은 [`docs/release/npm-publish-preflight.md`](./docs/release/npm-publish-preflight.md)를 참고합니다.
-수동 릴리스 순서는 [`docs/release/v0.1-release-runbook.md`](./docs/release/v0.1-release-runbook.md)에 정리되어 있습니다.
+배포 전 package 검증은 local build와 pack dry-run으로 확인합니다. 자세한 내용은 [`docs/release/npm-publish-preflight.md`](./docs/release/npm-publish-preflight.md)와 [`docs/release/v0.1-release-runbook.md`](./docs/release/v0.1-release-runbook.md)를 참고합니다.

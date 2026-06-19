@@ -16,6 +16,8 @@ describe("Replay Lite", () => {
   it("ReplayControls renders play/pause/restart/loop", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Replay" }));
+
     const controls = screen.getByRole("region", { name: "Replay Lite controls" });
     expect(within(controls).getByRole("button", { name: "Play" })).toBeTruthy();
     expect(within(controls).getByRole("button", { name: "Pause" })).toBeTruthy();
@@ -74,7 +76,8 @@ describe("Replay Lite", () => {
       vi.advanceTimersByTime(4_800);
     });
 
-    expect(screen.getByText("Phase: response")).toBeTruthy();
+    const controls = screen.getByRole("region", { name: "Replay Lite controls" });
+    expect(within(controls).getByText("Phase: response")).toBeTruthy();
     expect(
       screen.getByTestId("replay-edge-repository:BenefitRepository#findById-database:benefits")
         .dataset["replayActive"]

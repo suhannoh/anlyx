@@ -16,7 +16,7 @@ export function EndpointList({
   return (
     <section className="anlyx-sidebar-section" aria-labelledby="anlyx-endpoints-heading">
       <div className="anlyx-section-heading" id="anlyx-endpoints-heading">
-        Endpoints
+        Backend Endpoints
       </div>
       <ul className="anlyx-list" aria-label="Endpoint list">
         {endpoints.map((endpoint) => (

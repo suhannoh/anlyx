@@ -18,11 +18,12 @@ async function withTempDir<T>(callback: (dir: string) => Promise<T>): Promise<T>
 }
 
 describe("init command", () => {
-  it("createDefaultConfigTemplate returns config containing defineConfig", () => {
+  it("createDefaultConfigTemplate returns an import-free config object", () => {
     const template = createDefaultConfigTemplate();
 
-    expect(template).toContain('import { defineConfig } from "anlyx";');
-    expect(template).toContain("export default defineConfig({");
+    expect(template).not.toContain("defineConfig");
+    expect(template).not.toContain('from "anlyx"');
+    expect(template).toContain("export default {");
   });
 
   it("init creates anlyx.config.ts", async () => {
@@ -34,7 +35,7 @@ describe("init command", () => {
         created: true,
         path: join(dir, "anlyx.config.ts")
       });
-      expect(config).toContain("My Anlyx Project");
+      expect(config).toContain("my-app");
     });
   });
 
@@ -67,7 +68,7 @@ describe("init command", () => {
         created: true,
         path: configPath
       });
-      expect(config).toContain("defineConfig");
+      expect(config).toContain("export default {");
       expect(config).not.toBe("existing config");
     });
   });
@@ -76,7 +77,7 @@ describe("init command", () => {
     const template = createDefaultConfigTemplate();
 
     expect(template).toContain('type: "spring"');
-    expect(template).toContain('sourceDir: "./backend/src/main/java"');
+    expect(template).toContain('sourceDir: "./backend"');
     expect(template).toContain("maxMainDepth: 4");
   });
 

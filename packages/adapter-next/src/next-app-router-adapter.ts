@@ -1,5 +1,5 @@
 import { readdir, stat } from "node:fs/promises";
-import { join, relative, sep } from "node:path";
+import { basename, join, relative, sep } from "node:path";
 
 import type { PageStoryboard } from "@anlyx/core";
 
@@ -29,9 +29,7 @@ export async function scanNextAppRouterPages(
 ): Promise<PageStoryboard[]> {
   void options.baseUrl;
   void options.sampleParams;
-  const appDir = join(options.sourceDir, "app");
-
-  await assertAppDirectoryExists(appDir);
+  const appDir = await resolveAppDirectory(options.sourceDir);
 
   const pageFiles = await collectPageFiles(appDir);
   const pages = pageFiles
@@ -52,15 +50,29 @@ export function createNextFrontendAdapter(options: NextAppRouterAdapterOptions):
   };
 }
 
-async function assertAppDirectoryExists(appDir: string): Promise<void> {
-  try {
-    const appDirStat = await stat(appDir);
+async function resolveAppDirectory(sourceDir: string): Promise<string> {
+  const candidates = [
+    ...(basename(sourceDir) === "app" ? [sourceDir] : []),
+    join(sourceDir, "app"),
+    join(sourceDir, "src", "app")
+  ];
 
-    if (!appDirStat.isDirectory()) {
-      throw new Error();
+  for (const candidate of candidates) {
+    if (await isDirectory(candidate)) {
+      return candidate;
     }
+  }
+
+  throw new Error(`Next.js App Router directory not found. Checked: ${candidates.join(", ")}`);
+}
+
+async function isDirectory(path: string): Promise<boolean> {
+  try {
+    const pathStat = await stat(path);
+
+    return pathStat.isDirectory();
   } catch {
-    throw new Error(`Next.js App Router directory not found: ${appDir}`);
+    return false;
   }
 }
 

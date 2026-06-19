@@ -15,17 +15,13 @@ export type InitCommandResult = {
 const CONFIG_FILE_NAME = "anlyx.config.ts";
 
 export function createDefaultConfigTemplate(): string {
-  return `import { defineConfig } from "anlyx";
-
-export default defineConfig({
-  projectName: "My Anlyx Project",
+  return `export default {
+  projectName: "my-app",
 
   backend: {
     type: "spring",
-    sourceDir: "./backend/src/main/java",
+    sourceDir: "./backend",
     baseUrl: "http://localhost:8080",
-    openApiUrl: "http://localhost:8080/v3/api-docs",
-    actuatorMappingsUrl: "http://localhost:8080/actuator/mappings",
     maxMainDepth: 4,
     maxSubDepth: 1,
     includeUtilities: false
@@ -44,8 +40,7 @@ export default defineConfig({
 
     capture: {
       mode: "segments",
-      segmentHeight: 900,
-      storageState: "./.anlyx/auth-state.json"
+      segmentHeight: 900
     },
 
     sampleParams: {
@@ -60,7 +55,7 @@ export default defineConfig({
     port: 4777,
     openBrowser: true
   }
-});
+};
 `;
 }
 

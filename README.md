@@ -4,75 +4,212 @@
 
 Visual flow maps for modern web apps.
 
-Anlyx is an open-source developer tool that turns frontend pages, backend endpoints, services, repositories, and database flows into interactive flow maps and page storyboards.
+Anlyx turns frontend pages, backend endpoints, services, repositories, database tables, capture status, and API calls into a local visual viewer for onboarding and codebase exploration.
 
-> Status: v0.1.2 patch release preparation.
+> Status: v0.1.2 patch release preparation. Actual npm publish requires separate approval.
 
-Anlyx `0.1.0` is planned to be deprecated because it was published with unresolved
-`workspace:*` dependencies. Anlyx `0.1.1` is planned to be deprecated because the
-published CLI entrypoint can trigger an unsettled top-level await warning and exit
-before running commands. `0.1.2` is the patch release intended for normal
-`npm install anlyx` usage after the approved pnpm-based publish.
+Anlyx `0.1.0` is planned to be deprecated because it was published with unresolved `workspace:*` dependencies. Anlyx `0.1.1` is planned to be deprecated because the published CLI entrypoint can exit before running commands. `0.1.2` is the patch release intended for normal `npm install anlyx` usage after the approved pnpm-based publish.
 
-## Problem
+## What Is Anlyx?
 
-Modern web applications spread one user-facing flow across routes, API endpoints, controllers, services, repositories, database tables, schemas, utilities, and authorization boundaries.
-
-Developers often need to jump between README files, Swagger or OpenAPI docs, frontend route files, backend code, database schemas, and screenshots to answer basic onboarding questions:
+Anlyx answers questions that usually require jumping between routes, Swagger/OpenAPI, backend code, database models, and screenshots:
 
 - Which page calls this API?
-- Which controller and service handle the request?
-- Which repository and database table are involved?
-- Which helper logic is part of the main path, and which logic is only supporting detail?
-- What does the page look like when the API call happens?
+- Which controller, service, repository, and database table are involved?
+- Which logic is the main request path, and which logic is supporting detail?
+- What page state was captured when the API call happened?
 
-Anlyx aims to connect those answers in one visual, shareable map.
-
-## Core Features
-
-- **Endpoint Map**: A Swagger-like endpoint list connected to backend flow nodes such as Controller, Service, Repository, and Database Table.
-- **Page Storyboard**: Frontend route cards with screenshot segments, capture status, and API calls observed during capture.
-- **Main Flow / Sub Flow**: A readable distinction between the primary request path and supporting calls such as mappers, utilities, validators, cache, or external services.
-- **Replay Lite**: A minimal animation that highlights the request and response path through the main flow.
-
-## v0.1 Scope
+## Current Support
 
 Deep Support:
 
-- Spring Boot backend analysis
-- Next.js App Router page discovery and capture
+- Spring Boot backend endpoint and flow scanning
+- Next.js App Router page discovery and Playwright capture
 
 Basic Support:
 
-- OpenAPI backend import for endpoint lists, request schemas, and response schemas
-- Manual frontend URLs for OpenAPI backend projects
+- OpenAPI backend endpoint import
+- Manual frontend URLs for OpenAPI-only projects
 
-v0.1 will focus on the Spring Boot + Next.js App Router combination first. Other backend frameworks are handled only through OpenAPI Basic Support in this phase.
+v0.1 is intentionally limited to Spring Boot + Next.js App Router for Deep Support. FastAPI, Express, NestJS, and React Router are not Deep Support targets in v0.1.
 
-## Usage
+## Quick Start
 
-When using the published package:
+### Install
+
+After the approved 0.1.2 publish:
 
 ```bash
-npx anlyx init
-npx anlyx scan
-npx anlyx dev
+npm install -D anlyx@0.1.2
 ```
 
-Use `anlyx@0.1.2` or newer. Until the 0.1.2 publish is approved and complete, run
-the local workspace CLI during development.
+Before publish, use the local workspace:
 
 ```bash
 corepack pnpm install
 corepack pnpm build
-corepack pnpm --filter anlyx exec anlyx init
-corepack pnpm --filter anlyx exec anlyx scan
-corepack pnpm --filter anlyx exec anlyx dev
+corepack pnpm --filter anlyx exec anlyx --help
 ```
 
-`anlyx scan` writes `.anlyx/report-data.json`. `anlyx dev` reads that file and serves the local UI; it does not run scan automatically.
+### Initialize Config
 
-## Not Included in v0.1
+```bash
+npx anlyx init
+```
+
+This creates an import-free `anlyx.config.ts`, so projects do not need to import `defineConfig` from `anlyx` just to scan.
+
+### Minimal Config
+
+```ts
+export default {
+  projectName: "my-app",
+  backend: {
+    type: "spring",
+    sourceDir: "./backend"
+  },
+  frontend: {
+    type: "next",
+    sourceDir: "./frontend",
+    baseUrl: "http://localhost:3000"
+  },
+  server: {
+    port: 4777,
+    openBrowser: true
+  }
+};
+```
+
+Optional type support is still available if the project can resolve `anlyx` from its dev dependencies:
+
+```ts
+import { defineConfig } from "anlyx";
+
+export default defineConfig({
+  projectName: "my-app"
+});
+```
+
+### Monorepo Example
+
+For a Spring Boot backend plus Next.js frontend:
+
+```txt
+my-app/
+  backend/
+    src/main/java/...
+  frontend/
+    src/app/...
+```
+
+Use:
+
+```ts
+export default {
+  projectName: "my-app",
+  backend: {
+    type: "spring",
+    sourceDir: "./backend"
+  },
+  frontend: {
+    type: "next",
+    sourceDir: "./frontend",
+    baseUrl: "http://localhost:3000"
+  }
+};
+```
+
+The Spring adapter resolves `./backend/src/main/java` from `./backend`. The Next adapter resolves `./frontend/app` first, then `./frontend/src/app`.
+
+### First Scan Without Capture
+
+```bash
+npx anlyx scan --skip-capture
+```
+
+This writes `.anlyx/report-data.json` using static adapter output only. Pages remain `pending` until capture runs.
+
+### Open Local Viewer
+
+```bash
+npx anlyx dev --no-open
+```
+
+Open [http://localhost:4777](http://localhost:4777). The viewer has three main tabs:
+
+- Endpoint: backend endpoint map in the center with a right-side node inspector
+- Pages: frontend page storyboard in the center with a page inspector
+- Replay: Endpoint Map with Replay Lite controls and step details
+
+### Capture Mode
+
+Run the frontend app first, then run scan without `--skip-capture`:
+
+```bash
+npx anlyx scan
+```
+
+Capture uses the configured `frontend.baseUrl` and writes screenshot/API-call data into `.anlyx/report-data.json`.
+
+### Dynamic Routes And sampleParams
+
+For dynamic Next.js routes, provide sample params so capture can visit a concrete URL:
+
+```ts
+export default {
+  frontend: {
+    type: "next",
+    sourceDir: "./frontend",
+    baseUrl: "http://localhost:3000",
+    sampleParams: {
+      "/benefit/[brandSlug]/[benefitSlugWithId]": {
+        brandSlug: "starbucks",
+        benefitSlugWithId: "birthday-coupon-123"
+      }
+    }
+  }
+};
+```
+
+## Troubleshooting
+
+### Cannot find module 'anlyx'
+
+Use the default import-free config generated by `npx anlyx init --force`. Only import `defineConfig` when the target project installs and resolves `anlyx`.
+
+### Next.js App Router directory not found
+
+Set `frontend.sourceDir` to the frontend root or source root. Supported v0.1 shapes include:
+
+```txt
+frontend/app
+frontend/src/app
+frontend/src/app when sourceDir is ./frontend/src
+```
+
+### .anlyx/report-data.json not generated
+
+Run:
+
+```bash
+npx anlyx scan --skip-capture
+```
+
+If it fails, check the config path, backend source directory, frontend app directory, and the terminal error. `anlyx dev` reads report data but does not create it.
+
+### Pages are pending
+
+This is expected when using `--skip-capture`, manual frontend URLs, or routes without capture data. Pending pages are intentionally visible in the viewer.
+
+### Playwright or capture fails
+
+Confirm the frontend server is running at `frontend.baseUrl`, dynamic routes have `sampleParams`, and login-only pages have a valid capture setup. Use `--skip-capture` for a static scan while debugging capture.
+
+### 0.1.0 workspace dependency issue
+
+Do not use `anlyx@0.1.0`. It was published with unresolved `workspace:*` dependencies. Use `0.1.2` or newer after the approved patch publish.
+
+## Not Included In v0.1
 
 - FastAPI, Express, or NestJS Deep Support
 - React Router Deep Support
@@ -83,17 +220,17 @@ corepack pnpm --filter anlyx exec anlyx dev
 - Java Agent runtime tracing
 - LLM flow summaries
 
-## Development Approach
-
-This repository follows documentation-first development. v0.1 implementation is constrained by the scope lock, contracts, adapter rules, fixture expectations, design direction, and acceptance checklist.
-
 ## Development Setup
 
-Anlyx uses a pnpm workspace with TypeScript, ESLint, Prettier, and Vitest. The current
-workspace contains tooling, package skeletons, Core data/config validation, adapter utilities,
-capture primitives, UI components, and the `anlyx init` / `anlyx scan` / `anlyx dev` commands.
+Anlyx uses a pnpm workspace with TypeScript, ESLint, Prettier, and Vitest.
 
-Before npm publication, release packaging is checked with local build and pack dry-runs. See
-[`docs/release/npm-publish-preflight.md`](./docs/release/npm-publish-preflight.md).
-The manual release sequence is documented in
-[`docs/release/v0.1-release-runbook.md`](./docs/release/v0.1-release-runbook.md).
+```bash
+corepack pnpm install
+corepack pnpm typecheck
+corepack pnpm lint
+corepack pnpm test
+corepack pnpm format
+corepack pnpm -r build
+```
+
+Release packaging is checked with local build and pack dry-runs. See [`docs/release/npm-publish-preflight.md`](./docs/release/npm-publish-preflight.md) and [`docs/release/v0.1-release-runbook.md`](./docs/release/v0.1-release-runbook.md).

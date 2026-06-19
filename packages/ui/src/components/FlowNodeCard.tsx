@@ -1,4 +1,4 @@
-import type { NodeProps } from "@xyflow/react";
+import { Handle, Position, type NodeProps } from "@xyflow/react";
 
 import { StatusBadge } from "./StatusBadge.js";
 import type { AnlyxReactFlowNode } from "../flow/build-react-flow-model.js";
@@ -21,11 +21,13 @@ export function FlowNodeCard({ data, selected }: NodeProps<AnlyxReactFlowNode>):
       data-replay-active={String(Boolean(data.isReplayActive))}
       data-testid={`flow-node-${data.node.id}`}
     >
+      <Handle className="anlyx-flow-handle" position={Position.Left} type="target" />
       <span className="anlyx-flow-node__type">{data.type}</span>
       <span className="anlyx-flow-node__label">{data.label}</span>
       <StatusBadge tone={confidence} label="confidence">
         {confidence}
       </StatusBadge>
+      <Handle className="anlyx-flow-handle" position={Position.Right} type="source" />
     </button>
   );
 }

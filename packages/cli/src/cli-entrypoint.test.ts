@@ -65,7 +65,8 @@ describe("built CLI entrypoint", () => {
 
       expect(stdout).toContain("Created ");
       expect(stdout).toContain("anlyx.config.ts");
-      expect(config).toContain("defineConfig");
+      expect(config).toContain("export default {");
+      expect(config).not.toContain("defineConfig");
       expect(stderr).not.toContain("unsettled top-level await");
     });
   });

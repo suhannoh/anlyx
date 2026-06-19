@@ -63,12 +63,21 @@ export function Sidebar({
         <input placeholder="Search endpoints or pages" type="search" />
       </label>
 
-      <EndpointList
-        endpoints={data.endpoints}
-        selectedEndpointId={selectedEndpointId}
-        onSelectEndpoint={onSelectEndpoint}
-      />
-      <PageList pages={data.pages} selectedPageId={selectedPageId} onSelectPage={onSelectPage} />
+      <div className="anlyx-sidebar__list-region">
+        {activeView === "pages" ? (
+          <PageList
+            pages={data.pages}
+            selectedPageId={selectedPageId}
+            onSelectPage={onSelectPage}
+          />
+        ) : (
+          <EndpointList
+            endpoints={data.endpoints}
+            selectedEndpointId={selectedEndpointId}
+            onSelectEndpoint={onSelectEndpoint}
+          />
+        )}
+      </div>
     </aside>
   );
 }

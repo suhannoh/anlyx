@@ -14,8 +14,8 @@ export function PageStoryboardView({ page }: PageStoryboardViewProps): JSX.Eleme
     <main className="anlyx-workspace">
       <header className="anlyx-workspace-header">
         <div>
-          <p className="anlyx-eyebrow">Page Storyboard</p>
-          <h1>Page Storyboard</h1>
+          <p className="anlyx-eyebrow">Frontend Page Storyboard</p>
+          <h1>{page ? page.route : "Page Storyboard"}</h1>
         </div>
         {page ? <StatusBadge tone={page.captureStatus}>{page.captureStatus}</StatusBadge> : null}
       </header>

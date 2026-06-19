@@ -345,6 +345,43 @@ describe("Spring Boot Flow Scanner", () => {
     ]);
   });
 
+  it("sourceDir can point at a Spring backend root for flows", async () => {
+    await writeJavaFile(
+      "backend/src/main/java/PublicBenefitController.java",
+      `
+        @RestController
+        @RequestMapping("/api/public/benefits")
+        class PublicBenefitController {
+          private final PublicBenefitService publicBenefitService;
+
+          @GetMapping("/{id}")
+          public BenefitDetailResponse getDetail(Long id) {
+            return publicBenefitService.getBenefitDetail(id);
+          }
+        }
+      `
+    );
+    await writeJavaFile(
+      "backend/src/main/java/PublicBenefitService.java",
+      `
+        @Service
+        class PublicBenefitService {
+          public BenefitDetailResponse getBenefitDetail(Long id) { return null; }
+        }
+      `
+    );
+    const backendRoot = join(sourceDir, "backend");
+    const endpoints = await scanSpringEndpoints({ sourceDir: backendRoot });
+
+    const [flow] = await scanSpringFlows({ sourceDir: backendRoot }, endpoints);
+
+    expect(flow?.mainPath).toEqual([
+      "endpoint:GET:/api/public/benefits/{id}",
+      "controller:PublicBenefitController",
+      "service:PublicBenefitService"
+    ]);
+  });
+
   async function scanFlows() {
     const endpoints = await scanSpringEndpoints({ sourceDir });
     return scanSpringFlows({ sourceDir }, endpoints);

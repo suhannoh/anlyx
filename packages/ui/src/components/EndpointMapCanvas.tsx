@@ -20,6 +20,8 @@ export type EndpointMapCanvasProps = {
   endpoint: Endpoint | undefined;
   flow: EndpointFlow | undefined;
   selectedNodeId: string | undefined;
+  title?: string;
+  eyebrow?: string;
   replayState?: ReplayLiteState;
   onSelectNode: (node: FlowNode) => void;
 };
@@ -28,6 +30,8 @@ export function EndpointMapCanvas({
   endpoint,
   flow,
   selectedNodeId,
+  title,
+  eyebrow = "Backend Endpoint Map",
   replayState,
   onSelectNode
 }: EndpointMapCanvasProps): JSX.Element {
@@ -71,8 +75,10 @@ export function EndpointMapCanvas({
     <main className="anlyx-workspace">
       <header className="anlyx-workspace-header">
         <div>
-          <p className="anlyx-eyebrow">Endpoint Map</p>
-          <h1>{endpoint ? `${endpoint.method} ${endpoint.path}` : "No endpoint selected"}</h1>
+          <p className="anlyx-eyebrow">{eyebrow}</p>
+          <h1>
+            {title ?? (endpoint ? `${endpoint.method} ${endpoint.path}` : "No endpoint selected")}
+          </h1>
         </div>
         {endpoint ? (
           <StatusBadge tone={endpoint.confidence ?? "unknown"}>

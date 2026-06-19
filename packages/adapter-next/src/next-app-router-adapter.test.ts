@@ -30,6 +30,33 @@ describe("Next.js App Router Adapter", () => {
     expect(pages[0]?.filePath).toBe(join(projectRoot, "app/page.tsx"));
   });
 
+  it("sourceDir can point directly at the app directory", async () => {
+    await writeProjectFile("app/page.tsx");
+
+    const pages = await scanNextAppRouterPages({ sourceDir: join(projectRoot, "app") });
+
+    expect(pages[0]?.route).toBe("/");
+    expect(pages[0]?.filePath).toBe(join(projectRoot, "app/page.tsx"));
+  });
+
+  it("sourceDir can point at frontend root with src/app", async () => {
+    await writeProjectFile("frontend/src/app/dashboard/page.tsx");
+
+    const pages = await scanNextAppRouterPages({ sourceDir: join(projectRoot, "frontend") });
+
+    expect(pages[0]?.route).toBe("/dashboard");
+    expect(pages[0]?.filePath).toBe(join(projectRoot, "frontend/src/app/dashboard/page.tsx"));
+  });
+
+  it("sourceDir can point at src with app", async () => {
+    await writeProjectFile("frontend/src/app/items/page.tsx");
+
+    const pages = await scanNextAppRouterPages({ sourceDir: join(projectRoot, "frontend/src") });
+
+    expect(pages[0]?.route).toBe("/items");
+    expect(pages[0]?.filePath).toBe(join(projectRoot, "frontend/src/app/items/page.tsx"));
+  });
+
   it("nested page creates nested route", async () => {
     await writeProjectFile("app/benefits/page.tsx");
 

@@ -36,6 +36,26 @@ describe("Spring Boot Endpoint Scanner", () => {
     expect(endpoints).toHaveLength(1);
   });
 
+  it("sourceDir can point at a Spring backend root", async () => {
+    await writeJavaFile(
+      "backend/src/main/java/com/zup/PublicBenefitController.java",
+      `
+        @RestController
+        class PublicBenefitController {
+          @GetMapping("/benefits")
+          public BenefitListResponse list() {}
+        }
+      `
+    );
+
+    const endpoints = await scanSpringEndpoints({ sourceDir: join(sourceDir, "backend") });
+
+    expect(endpoints).toHaveLength(1);
+    expect(endpoints[0]?.filePath).toBe(
+      join(sourceDir, "backend/src/main/java/com/zup/PublicBenefitController.java")
+    );
+  });
+
   it("class-level @RequestMapping plus method-level @GetMapping creates endpoint", async () => {
     await writeJavaFile(
       "PublicBenefitController.java",

@@ -12,7 +12,7 @@ export function PageList({ pages, selectedPageId, onSelectPage }: PageListProps)
   return (
     <section className="anlyx-sidebar-section" aria-labelledby="anlyx-pages-heading">
       <div className="anlyx-section-heading" id="anlyx-pages-heading">
-        Pages
+        Frontend Pages
       </div>
       <ul className="anlyx-list" aria-label="Page list">
         {pages.map((page) => (

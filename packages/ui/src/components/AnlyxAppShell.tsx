@@ -67,7 +67,10 @@ export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
           setActiveView("pages");
         }}
       />
-      <div className="anlyx-main">
+      <div
+        className={activeView === "replay" ? "anlyx-main anlyx-main--replay" : "anlyx-main"}
+        aria-live="polite"
+      >
         {activeView === "endpoint" ? (
           <EndpointMapCanvas
             endpoint={selectedEndpoint}
@@ -79,26 +82,41 @@ export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
         ) : null}
         {activeView === "pages" ? <PageStoryboardView page={selectedPage} /> : null}
         {activeView === "replay" ? (
-          <EndpointMapCanvas
-            endpoint={selectedEndpoint}
-            flow={selectedFlow}
-            replayState={replay.state}
-            selectedNodeId={selectedNode?.id}
-            onSelectNode={(node) => setSelectedNodeId(node.id)}
-          />
+          <>
+            <ReplayControls
+              disabled={replayUnavailable}
+              loop={replay.loop}
+              state={replay.state}
+              unavailableReason="Replay is unavailable because this endpoint has no main flow."
+              onPause={replay.pause}
+              onPlay={replay.play}
+              onRestart={replay.restart}
+              onToggleLoop={replay.toggleLoop}
+            />
+            <EndpointMapCanvas
+              eyebrow="Replay Lite"
+              endpoint={selectedEndpoint}
+              flow={selectedFlow}
+              replayState={replay.state}
+              selectedNodeId={selectedNode?.id}
+              title={
+                selectedEndpoint
+                  ? `Replay ${selectedEndpoint.method} ${selectedEndpoint.path}`
+                  : "Replay Lite"
+              }
+              onSelectNode={(node) => setSelectedNodeId(node.id)}
+            />
+          </>
         ) : null}
-        <ReplayControls
-          disabled={replayUnavailable}
-          loop={replay.loop}
-          state={replay.state}
-          unavailableReason="Replay is unavailable because this endpoint has no main flow."
-          onPause={replay.pause}
-          onPlay={replay.play}
-          onRestart={replay.restart}
-          onToggleLoop={replay.toggleLoop}
-        />
       </div>
-      <InspectorPanel data={data} selectedFlow={selectedFlow} selectedNode={selectedNode} />
+      <InspectorPanel
+        activeView={activeView}
+        data={data}
+        replayState={replay.state}
+        selectedFlow={selectedFlow}
+        selectedNode={selectedNode}
+        selectedPage={selectedPage}
+      />
       <div className="anlyx-generated-at">Generated {data.generatedAt}</div>
     </div>
   );

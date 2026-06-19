@@ -1,4 +1,4 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { join, sep } from "node:path";
 
 import type {
@@ -9,6 +9,8 @@ import type {
   FlowNode,
   SubFlow
 } from "@anlyx/core";
+
+import { resolveSpringJavaSourceDir } from "./spring-source-dir.js";
 
 export type SpringFlowScannerOptions = {
   sourceDir: string;
@@ -83,8 +85,8 @@ export async function scanSpringFlows(
 }
 
 async function buildJavaSourceIndex(sourceDir: string): Promise<Map<string, JavaClass>> {
-  await assertSourceDirectoryExists(sourceDir);
-  const javaFiles = await collectJavaFiles(sourceDir);
+  const resolvedSourceDir = await resolveSpringJavaSourceDir(sourceDir);
+  const javaFiles = await collectJavaFiles(resolvedSourceDir);
   const index = new Map<string, JavaClass>();
 
   for (const filePath of javaFiles) {
@@ -354,18 +356,6 @@ function createDatabaseStep(repositoryClass: JavaClass, index: Map<string, JavaC
     edgeKind: "db",
     confidence: node.confidence ?? "unknown"
   };
-}
-
-async function assertSourceDirectoryExists(sourceDir: string): Promise<void> {
-  try {
-    const sourceDirStat = await stat(sourceDir);
-
-    if (!sourceDirStat.isDirectory()) {
-      throw new Error();
-    }
-  } catch {
-    throw new Error(`Spring source directory not found: ${sourceDir}`);
-  }
 }
 
 async function collectJavaFiles(directory: string): Promise<string[]> {

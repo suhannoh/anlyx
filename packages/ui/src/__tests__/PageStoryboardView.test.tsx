@@ -18,7 +18,10 @@ describe("Page Storyboard view", () => {
     fireEvent.click(screen.getByRole("button", { name: "Pages" }));
 
     expect(screen.getByRole("region", { name: "Page Storyboard" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Page Storyboard" })).toBeTruthy();
+    expect(
+      screen.getAllByRole("heading", { name: "/benefit/[brandSlug]/[benefitSlugWithId]" }).length
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("Frontend Page Storyboard")).toBeTruthy();
   });
 
   it("page tab switches from Endpoint Map to Page Storyboard", () => {
@@ -40,7 +43,7 @@ describe("Page Storyboard view", () => {
       screen.getByRole("button", { name: "/admin/benefits failed 0 API calls 0 screenshots" })
     );
 
-    expect(screen.getByRole("heading", { name: "/admin/benefits" })).toBeTruthy();
+    expect(screen.getAllByRole("heading", { name: "/admin/benefits" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Capture failed")).toBeTruthy();
   });
 
