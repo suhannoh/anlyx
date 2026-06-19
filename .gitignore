@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+.next/
+.turbo/
+
+# Test and coverage output
+coverage/
+playwright-report/
+test-results/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Anlyx generated output
+.anlyx/
+
+# Local runtime and logs
+.omx/
+*.log
+
+# OS files
+.DS_Store
