@@ -6,6 +6,9 @@ This document records the release packaging dry-run checks required before publi
 
 Do not use this checklist to publish. It is only the preflight for package metadata, build output, tarball contents, workspace dependency conversion, and local CLI execution.
 
+For the manual publish sequence, registry checks, and failure response steps, see
+[`docs/release/v0.1-release-runbook.md`](./v0.1-release-runbook.md).
+
 ## Package Metadata
 
 Every publishable package should define:

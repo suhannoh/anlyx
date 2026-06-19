@@ -90,3 +90,5 @@ capture primitives, UI components, and the `anlyx init` / `anlyx scan` / `anlyx 
 
 Before npm publication, release packaging is checked with local build and pack dry-runs. See
 [`docs/release/npm-publish-preflight.md`](./docs/release/npm-publish-preflight.md).
+The manual release sequence is documented in
+[`docs/release/v0.1-release-runbook.md`](./docs/release/v0.1-release-runbook.md).

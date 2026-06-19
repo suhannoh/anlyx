@@ -83,3 +83,4 @@ corepack pnpm --filter anlyx exec anlyx dev
 현재는 `anlyx init`으로 기본 `anlyx.config.ts`를 생성하고, `anlyx scan`으로 로컬 scan JSON 출력을 만들 수 있으며, `anlyx dev`로 로컬 UI를 확인할 수 있습니다. npm 패키지 배포는 아직 진행하지 않습니다.
 
 npm 배포 전 포장 점검은 로컬 build와 pack dry-run으로 확인합니다. 자세한 항목은 [`docs/release/npm-publish-preflight.md`](./docs/release/npm-publish-preflight.md)를 참고합니다.
+수동 릴리스 순서는 [`docs/release/v0.1-release-runbook.md`](./docs/release/v0.1-release-runbook.md)에 정리되어 있습니다.
