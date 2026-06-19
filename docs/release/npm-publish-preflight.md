@@ -1,10 +1,12 @@
-# npm Publish Preflight
+# npm Registry Publish Preflight
 
 ## Purpose
 
-This document records the release packaging dry-run checks required before publishing Anlyx v0.1 packages to npm.
+This document records the release packaging dry-run checks required before publishing Anlyx v0.1 packages to the npm registry.
 
 Do not use this checklist to publish. It is only the preflight for package metadata, build output, tarball contents, workspace dependency conversion, and local CLI execution.
+
+Anlyx `0.1.0` was published with unresolved `workspace:*` dependencies and is planned for deprecation. The `0.1.1` patch release must be published with `corepack pnpm publish`, not `npm publish`, so pnpm converts workspace protocol dependencies before upload.
 
 For the manual publish sequence, registry checks, and failure response steps, see
 [`docs/release/v0.1-release-runbook.md`](./v0.1-release-runbook.md).
@@ -44,7 +46,7 @@ The CLI package must keep:
 {
   "name": "anlyx",
   "bin": {
-    "anlyx": "./dist/index.js"
+    "anlyx": "dist/index.js"
   }
 }
 ```
@@ -95,10 +97,10 @@ Recommended local check:
 
 ```bash
 corepack pnpm --filter anlyx pack --pack-destination /tmp/anlyx-pack
-tar -xOf /tmp/anlyx-pack/anlyx-0.1.0.tgz package/package.json
+tar -xOf /tmp/anlyx-pack/anlyx-0.1.1.tgz package/package.json
 ```
 
-pnpm should convert workspace dependencies to publishable version ranges in packed output. If any `workspace:*` range remains, stop the release and either use pnpm publish with workspace conversion or explicitly replace publish-time ranges.
+pnpm should convert workspace dependencies to publishable version ranges in packed output. For `0.1.1`, the packed `anlyx` CLI package should contain `@anlyx/*` dependencies as `0.1.1` or a compatible publishable range, never `workspace:*`. If any `workspace:*` range remains, stop the release and use `corepack pnpm publish`/`corepack pnpm pack` behavior that converts workspace ranges or prepare an explicit dependency range fix PR.
 
 ## Local CLI Tarball Check
 
@@ -109,7 +111,7 @@ Example:
 ```bash
 mkdir -p /tmp/anlyx-npx-check
 cd /tmp/anlyx-npx-check
-npm install --ignore-scripts /tmp/anlyx-pack/anlyx-0.1.0.tgz
+npm install --ignore-scripts /tmp/anlyx-pack/anlyx-0.1.1.tgz
 npx anlyx --help
 npx anlyx init --force
 ```
@@ -123,6 +125,7 @@ Expected results:
 ## Publish-Time Risks
 
 - Internal packages must be published before the `anlyx` CLI package if npm cannot resolve packed local tarball dependencies.
+- Publish must use `corepack pnpm publish`; direct `npm publish` can upload unresolved `workspace:*` dependency ranges.
 - npm access, authentication, organization permissions, and 2FA are outside local preflight.
 - `--ignore-scripts` local install does not install Playwright browsers; full capture validation still requires a runtime environment with Playwright browsers available.
 - This repo does not yet include release automation, changelog automation, tags, GitHub Releases, or GitHub Actions publish workflow.
@@ -130,6 +133,7 @@ Expected results:
 ## Explicit Non-Goals
 
 - Do not run `npm publish`.
+- Do not run `corepack pnpm publish` during preflight.
 - Do not create a Git tag.
 - Do not create a GitHub Release.
 - Do not add GitHub Actions.

@@ -1,6 +1,6 @@
 {
   "name": "@anlyx/adapter-spring",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Spring Boot endpoint and flow scanner adapter for Anlyx.",
   "license": "MIT",
   "type": "module",
