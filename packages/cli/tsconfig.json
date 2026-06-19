@@ -9,6 +9,21 @@
   "references": [
     {
       "path": "../core"
+    },
+    {
+      "path": "../adapter-manual"
+    },
+    {
+      "path": "../adapter-next"
+    },
+    {
+      "path": "../adapter-openapi"
+    },
+    {
+      "path": "../adapter-spring"
+    },
+    {
+      "path": "../capture"
     }
   ]
 }

@@ -48,13 +48,13 @@ v0.1 will focus on the Spring Boot + Next.js App Router combination first. Other
 
 This repository follows documentation-first development. The implementation starts only after the v0.1 planning documents, contracts, adapter rules, fixture expectations, design direction, and acceptance checklist are reviewed.
 
-The first CLI command, `anlyx init`, is available for generating a starter
-`anlyx.config.ts`. Scan/dev orchestration, adapter execution, capture, and npm
-package distribution are still in progress.
+The first CLI commands, `anlyx init` and `anlyx scan`, are available for generating a starter
+`anlyx.config.ts` and writing local scan JSON output. Dev UI hosting and npm package distribution
+are still in progress.
 
 ## Development Setup
 
 Anlyx uses a pnpm workspace with TypeScript, ESLint, Prettier, and Vitest. The current
 workspace contains tooling, package skeletons, Core data/config validation, adapter utilities,
-capture primitives, UI components, and the `anlyx init` command. Scan/dev orchestration is not
-implemented yet.
+capture primitives, UI components, and the `anlyx init` / `anlyx scan` commands. Dev UI hosting is
+not implemented yet.

@@ -64,6 +64,21 @@ importers:
 
   packages/cli:
     dependencies:
+      "@anlyx/adapter-manual":
+        specifier: workspace:*
+        version: link:../adapter-manual
+      "@anlyx/adapter-next":
+        specifier: workspace:*
+        version: link:../adapter-next
+      "@anlyx/adapter-openapi":
+        specifier: workspace:*
+        version: link:../adapter-openapi
+      "@anlyx/adapter-spring":
+        specifier: workspace:*
+        version: link:../adapter-spring
+      "@anlyx/capture":
+        specifier: workspace:*
+        version: link:../capture
       "@anlyx/core":
         specifier: workspace:*
         version: link:../core

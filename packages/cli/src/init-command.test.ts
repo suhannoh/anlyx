@@ -103,17 +103,17 @@ describe("init command", () => {
     expect(writes.join("\n")).toContain("anlyx init");
   });
 
-  it("invalid command reports usage without running scan or dev", async () => {
+  it("invalid command reports usage without running dev", async () => {
     await withTempDir(async (dir) => {
       const writes: string[] = [];
-      const exitCode = await runCli(["scan"], {
+      const exitCode = await runCli(["unknown"], {
         cwd: dir,
         write: (message) => writes.push(message)
       });
 
       expect(exitCode).toBe(1);
-      expect(writes.join("\n")).toContain("Unknown command: scan");
-      expect(writes.join("\n")).toContain("Available commands: init");
+      expect(writes.join("\n")).toContain("Unknown command: unknown");
+      expect(writes.join("\n")).toContain("Available commands: init, scan");
       await expect(readFile(join(dir, "anlyx.config.ts"), "utf8")).rejects.toThrow();
     });
   });

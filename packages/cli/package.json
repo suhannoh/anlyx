@@ -15,6 +15,11 @@
     }
   },
   "dependencies": {
+    "@anlyx/adapter-manual": "workspace:*",
+    "@anlyx/adapter-next": "workspace:*",
+    "@anlyx/adapter-openapi": "workspace:*",
+    "@anlyx/adapter-spring": "workspace:*",
+    "@anlyx/capture": "workspace:*",
     "@anlyx/core": "workspace:*",
     "jiti": "^2.7.0"
   }
