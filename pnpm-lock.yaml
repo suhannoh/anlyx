@@ -32,7 +32,11 @@ importers:
 
   packages/adapter-next: {}
 
-  packages/adapter-openapi: {}
+  packages/adapter-openapi:
+    dependencies:
+      '@anlyx/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/adapter-spring: {}
 
