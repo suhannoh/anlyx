@@ -1,0 +1,323 @@
+{
+  "projectName": "Zup",
+  "generatedAt": "2026-06-19T00:00:00.000Z",
+  "schemaVersion": "0.1",
+  "endpoints": [
+    {
+      "id": "endpoint:get:/api/public/benefits/{id}",
+      "method": "GET",
+      "path": "/api/public/benefits/{id}",
+      "framework": "spring",
+      "supportLevel": "deep",
+      "controller": "PublicBenefitController",
+      "handler": "getDetail",
+      "filePath": "backend/src/main/java/com/zup/benefit/PublicBenefitController.java",
+      "lineNumber": 24,
+      "responseSchema": "BenefitDetailResponse",
+      "authRequired": false,
+      "tags": ["benefits", "public"],
+      "usedByPageIds": ["page:benefit-detail"],
+      "confidence": "high"
+    },
+    {
+      "id": "endpoint:get:/api/public/benefits",
+      "method": "GET",
+      "path": "/api/public/benefits",
+      "framework": "spring",
+      "supportLevel": "deep",
+      "controller": "PublicBenefitController",
+      "handler": "list",
+      "filePath": "backend/src/main/java/com/zup/benefit/PublicBenefitController.java",
+      "lineNumber": 18,
+      "responseSchema": "BenefitSummaryListResponse",
+      "authRequired": false,
+      "tags": ["benefits", "public"],
+      "usedByPageIds": ["page:benefits-list"],
+      "confidence": "high"
+    }
+  ],
+  "flows": [
+    {
+      "endpointId": "endpoint:get:/api/public/benefits/{id}",
+      "nodes": [
+        {
+          "id": "page:benefit-detail",
+          "type": "page",
+          "label": "/benefit/[brandSlug]/[benefitSlugWithId]",
+          "filePath": "frontend/app/benefit/[brandSlug]/[benefitSlugWithId]/page.tsx",
+          "confidence": "high"
+        },
+        {
+          "id": "endpoint:get:/api/public/benefits/{id}",
+          "type": "endpoint",
+          "label": "GET /api/public/benefits/{id}",
+          "filePath": "backend/src/main/java/com/zup/benefit/PublicBenefitController.java",
+          "lineNumber": 24,
+          "confidence": "high"
+        },
+        {
+          "id": "controller:PublicBenefitController#getDetail",
+          "type": "controller",
+          "label": "PublicBenefitController#getDetail",
+          "filePath": "backend/src/main/java/com/zup/benefit/PublicBenefitController.java",
+          "lineNumber": 24,
+          "confidence": "high"
+        },
+        {
+          "id": "service:PublicBenefitService#getBenefitDetail",
+          "type": "service",
+          "label": "PublicBenefitService#getBenefitDetail",
+          "filePath": "backend/src/main/java/com/zup/benefit/PublicBenefitService.java",
+          "lineNumber": 82,
+          "confidence": "high"
+        },
+        {
+          "id": "repository:BenefitRepository#findById",
+          "type": "repository",
+          "label": "BenefitRepository#findById",
+          "filePath": "backend/src/main/java/com/zup/benefit/BenefitRepository.java",
+          "lineNumber": 11,
+          "confidence": "high"
+        },
+        {
+          "id": "database:benefits",
+          "type": "database",
+          "label": "benefits",
+          "filePath": "backend/src/main/java/com/zup/benefit/Benefit.java",
+          "lineNumber": 9,
+          "confidence": "high",
+          "metadata": {
+            "tableName": "benefits"
+          }
+        },
+        {
+          "id": "dto:BenefitDetailResponse",
+          "type": "dto",
+          "label": "BenefitDetailResponse",
+          "filePath": "backend/src/main/java/com/zup/benefit/BenefitDetailResponse.java",
+          "confidence": "high"
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge:page-to-endpoint",
+          "from": "page:benefit-detail",
+          "to": "endpoint:get:/api/public/benefits/{id}",
+          "kind": "request",
+          "animated": true,
+          "confidence": "high"
+        },
+        {
+          "id": "edge:endpoint-to-controller",
+          "from": "endpoint:get:/api/public/benefits/{id}",
+          "to": "controller:PublicBenefitController#getDetail",
+          "kind": "main",
+          "confidence": "high"
+        },
+        {
+          "id": "edge:controller-to-service",
+          "from": "controller:PublicBenefitController#getDetail",
+          "to": "service:PublicBenefitService#getBenefitDetail",
+          "kind": "main",
+          "confidence": "high"
+        },
+        {
+          "id": "edge:service-to-repository",
+          "from": "service:PublicBenefitService#getBenefitDetail",
+          "to": "repository:BenefitRepository#findById",
+          "kind": "main",
+          "confidence": "high"
+        },
+        {
+          "id": "edge:repository-to-database",
+          "from": "repository:BenefitRepository#findById",
+          "to": "database:benefits",
+          "kind": "db",
+          "confidence": "high"
+        },
+        {
+          "id": "edge:service-to-dto",
+          "from": "service:PublicBenefitService#getBenefitDetail",
+          "to": "dto:BenefitDetailResponse",
+          "kind": "main",
+          "confidence": "high"
+        }
+      ],
+      "mainPath": [
+        "page:benefit-detail",
+        "endpoint:get:/api/public/benefits/{id}",
+        "controller:PublicBenefitController#getDetail",
+        "service:PublicBenefitService#getBenefitDetail",
+        "repository:BenefitRepository#findById",
+        "database:benefits",
+        "repository:BenefitRepository#findById",
+        "service:PublicBenefitService#getBenefitDetail",
+        "controller:PublicBenefitController#getDetail",
+        "endpoint:get:/api/public/benefits/{id}",
+        "page:benefit-detail"
+      ],
+      "subFlows": [
+        {
+          "id": "subflow:benefit-detail-support",
+          "parentNodeId": "service:PublicBenefitService#getBenefitDetail",
+          "collapsedByDefault": true,
+          "nodes": [
+            {
+              "id": "mapper:BenefitDisplayMapper",
+              "type": "mapper",
+              "label": "BenefitDisplayMapper",
+              "filePath": "backend/src/main/java/com/zup/benefit/BenefitDisplayMapper.java",
+              "confidence": "high"
+            },
+            {
+              "id": "utility:DateRangeUtil",
+              "type": "utility",
+              "label": "DateRangeUtil",
+              "filePath": "backend/src/main/java/com/zup/common/DateRangeUtil.java",
+              "confidence": "high"
+            },
+            {
+              "id": "validator:PublicVisibilityPolicy",
+              "type": "validator",
+              "label": "PublicVisibilityPolicy",
+              "filePath": "backend/src/main/java/com/zup/benefit/PublicVisibilityPolicy.java",
+              "confidence": "high"
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge:service-to-mapper",
+              "from": "service:PublicBenefitService#getBenefitDetail",
+              "to": "mapper:BenefitDisplayMapper",
+              "kind": "sub",
+              "confidence": "high"
+            },
+            {
+              "id": "edge:service-to-date-range",
+              "from": "service:PublicBenefitService#getBenefitDetail",
+              "to": "utility:DateRangeUtil",
+              "kind": "sub",
+              "confidence": "high"
+            },
+            {
+              "id": "edge:service-to-visibility-policy",
+              "from": "service:PublicBenefitService#getBenefitDetail",
+              "to": "validator:PublicVisibilityPolicy",
+              "kind": "sub",
+              "confidence": "high"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "id": "page:benefit-detail",
+      "route": "/benefit/[brandSlug]/[benefitSlugWithId]",
+      "filePath": "frontend/app/benefit/[brandSlug]/[benefitSlugWithId]/page.tsx",
+      "screenshots": [
+        {
+          "segmentIndex": 0,
+          "title": "Hero / Summary",
+          "path": ".anlyx/screenshots/benefit-detail-0.png",
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollY": 0
+        },
+        {
+          "segmentIndex": 1,
+          "title": "Detail Info",
+          "path": ".anlyx/screenshots/benefit-detail-1.png",
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollY": 900
+        },
+        {
+          "segmentIndex": 2,
+          "title": "Related Benefits",
+          "path": ".anlyx/screenshots/benefit-detail-2.png",
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollY": 1800
+        }
+      ],
+      "apiCalls": [
+        {
+          "method": "GET",
+          "path": "/api/public/benefits/{id}",
+          "endpointId": "endpoint:get:/api/public/benefits/{id}",
+          "status": 200
+        }
+      ],
+      "captureStatus": "success"
+    },
+    {
+      "id": "page:benefits-list",
+      "route": "/benefits",
+      "filePath": "frontend/app/benefits/page.tsx",
+      "screenshots": [
+        {
+          "segmentIndex": 0,
+          "title": "Benefits List",
+          "path": ".anlyx/screenshots/benefits-list-0.png",
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollY": 0
+        }
+      ],
+      "apiCalls": [
+        {
+          "method": "GET",
+          "path": "/api/public/benefits",
+          "endpointId": "endpoint:get:/api/public/benefits",
+          "status": 200
+        }
+      ],
+      "captureStatus": "success"
+    },
+    {
+      "id": "page:admin-benefits",
+      "route": "/admin/benefits",
+      "filePath": "frontend/app/admin/benefits/page.tsx",
+      "screenshots": [],
+      "apiCalls": [],
+      "captureStatus": "failed",
+      "errorMessage": "Login required"
+    }
+  ],
+  "capture": {
+    "capturedAt": "2026-06-19T00:00:00.000Z",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "storageStateUsed": "./.anlyx/auth-state.json",
+    "pages": [
+      {
+        "id": "page:admin-benefits",
+        "route": "/admin/benefits",
+        "filePath": "frontend/app/admin/benefits/page.tsx",
+        "screenshots": [],
+        "apiCalls": [],
+        "captureStatus": "failed",
+        "errorMessage": "Login required"
+      }
+    ]
+  },
+  "warnings": [
+    {
+      "code": "CAPTURE_LOGIN_REQUIRED",
+      "message": "Login required",
+      "targetId": "page:admin-benefits"
+    }
+  ]
+}

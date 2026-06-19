@@ -1,0 +1,50 @@
+# Replay Lite
+
+## Purpose
+
+Replay Lite helps users understand request and response movement through the Main Flow. It is intentionally small in v0.1.
+
+## v0.1 Behavior
+
+Replay Lite MUST:
+
+1. Start the request dot from the Frontend Page node.
+2. Highlight the Endpoint node.
+3. Highlight the Controller node.
+4. Highlight the Service node.
+5. Highlight the Repository node.
+6. Pulse the Database node.
+7. Move a response dot in the reverse direction.
+8. Return to the Frontend Page node.
+9. Allow repeat playback.
+
+## Controls
+
+v0.1 MUST provide:
+
+- Play
+- Pause
+- Restart
+- Loop on/off
+- Main Flow only mode
+
+## Data Source
+
+Replay Lite MUST use `EndpointFlow.mainPath` and matching `FlowNode` / `FlowEdge` entries.
+
+If required nodes are missing, the UI MUST show an unavailable or unknown state rather than inventing a path.
+
+## Explicit Non-goals
+
+v0.1 MUST NOT implement:
+
+- Speed control
+- Step-by-step debugging
+- Sub Flow replay
+- Timeline event log
+- Node-level runtime metrics
+- Runtime tracing
+
+## Visual Direction
+
+The default product UI remains Clean Light. Dark Replay MAY be used for demo imagery and optional dark mode.
