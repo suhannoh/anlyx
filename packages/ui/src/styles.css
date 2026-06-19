@@ -28,6 +28,25 @@
     sans-serif;
 }
 
+body {
+  margin: 0;
+  background: var(--anlyx-color-background);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.anlyx-viewer-state {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  color: var(--anlyx-color-text-secondary);
+  background: var(--anlyx-color-background);
+  font-size: 14px;
+}
+
 .anlyx-shell {
   box-sizing: border-box;
   display: grid;

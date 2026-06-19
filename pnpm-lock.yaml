@@ -82,9 +82,15 @@ importers:
       "@anlyx/core":
         specifier: workspace:*
         version: link:../core
+      "@anlyx/ui":
+        specifier: workspace:*
+        version: link:../ui
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
+      vite:
+        specifier: ^8.0.16
+        version: 8.0.16(@types/node@24.13.2)(jiti@2.7.0)
 
   packages/core:
     dependencies:

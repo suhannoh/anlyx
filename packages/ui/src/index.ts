@@ -17,6 +17,7 @@ export type {
   UseReplayLiteResult
 } from "./replay/use-replay-lite.js";
 
+export { ViewerApp } from "./viewer/ViewerApp.js";
 export { AnlyxAppShell } from "./components/AnlyxAppShell.js";
 export { ApiCallList } from "./components/ApiCallList.js";
 export { CaptureStatusEmptyState } from "./components/CaptureStatusEmptyState.js";
