@@ -82,14 +82,21 @@ export function PageStoryboardView({
                     <span>{linkedEndpoints.length}</span>
                   </div>
                   {linkedEndpoints.length > 0 ? (
-                    <ul className="anlyx-relationship-list">
-                      {linkedEndpoints.map((endpoint) => (
-                        <li key={endpoint.id}>
-                          <StatusBadge tone={endpoint.method}>{endpoint.method}</StatusBadge>
-                          <span>{endpoint.path}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="anlyx-relationship-diagram">
+                      <div className="anlyx-relationship-source">
+                        <strong>{page.route}</strong>
+                        <span>Frontend Page</span>
+                      </div>
+                      <ul className="anlyx-relationship-list">
+                        {linkedEndpoints.map((endpoint) => (
+                          <li key={endpoint.id}>
+                            <span className="anlyx-relationship-line" aria-hidden="true" />
+                            <StatusBadge tone={endpoint.method}>{endpoint.method}</StatusBadge>
+                            <span>{endpoint.path}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ) : (
                     <p className="anlyx-empty-inline">
                       No backend endpoint was linked during capture.

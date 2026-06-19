@@ -29,13 +29,21 @@ const STORAGE_KEYS = {
   leftCollapsed: "anlyx:ui:leftCollapsed",
   leftWidth: "anlyx:ui:leftWidth",
   rightCollapsed: "anlyx:ui:rightCollapsed",
-  rightWidth: "anlyx:ui:rightWidth"
+  rightWidth: "anlyx:ui:rightWidth",
+  selectedEndpointId: "anlyx:ui:selectedEndpointId",
+  selectedPageId: "anlyx:ui:selectedPageId"
 } as const;
 
 export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
   const [activeView, setActiveView] = useState<ViewMode>("structure");
-  const [selectedEndpointId, setSelectedEndpointId] = useState(data.endpoints[0]?.id);
-  const [selectedPageId, setSelectedPageId] = useState(data.pages[0]?.id);
+  const [selectedEndpointId, setSelectedEndpointId] = usePersistentString(
+    STORAGE_KEYS.selectedEndpointId,
+    selectInitialEndpointId(data)
+  );
+  const [selectedPageId, setSelectedPageId] = usePersistentString(
+    STORAGE_KEYS.selectedPageId,
+    data.pages[0]?.id
+  );
   const [leftWidth, setLeftWidth] = usePersistentNumber(STORAGE_KEYS.leftWidth, DEFAULT_LEFT_WIDTH);
   const [rightWidth, setRightWidth] = usePersistentNumber(
     STORAGE_KEYS.rightWidth,
@@ -65,9 +73,11 @@ export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
 
   useEffect(() => {
     setSelectedEndpointId((current) =>
-      data.endpoints.some((endpoint) => endpoint.id === current) ? current : data.endpoints[0]?.id
+      data.endpoints.some((endpoint) => endpoint.id === current)
+        ? current
+        : selectInitialEndpointId(data)
     );
-  }, [data.endpoints]);
+  }, [data, setSelectedEndpointId]);
 
   useEffect(() => {
     setSelectedPageId((current) =>
@@ -247,6 +257,32 @@ function getReplayMainPath(
   return flow.mainPath;
 }
 
+function selectInitialEndpointId(data: ScanResult): string | undefined {
+  const flowByEndpointId = new Map(data.flows.map((flow) => [flow.endpointId, flow]));
+  const endpointsByScore = [...data.endpoints].sort(
+    (left, right) => scoreEndpoint(right, flowByEndpointId) - scoreEndpoint(left, flowByEndpointId)
+  );
+
+  return endpointsByScore[0]?.id;
+}
+
+function scoreEndpoint(
+  endpoint: ScanResult["endpoints"][number],
+  flowByEndpointId: Map<string, EndpointFlow>
+): number {
+  const flow = flowByEndpointId.get(endpoint.id);
+  const hasDatabase = flow?.nodes.some((node) => node.type === "database") ? 1 : 0;
+  const confidenceScore =
+    endpoint.confidence === "high" ? 4 : endpoint.confidence === "medium" ? 2 : 0;
+
+  return (
+    (flow?.mainPath.length ?? 0) * 8 +
+    (flow?.subFlows.length ?? 0) * 5 +
+    hasDatabase * 6 +
+    confidenceScore
+  );
+}
+
 function findDefaultNode(flow: EndpointFlow | undefined): FlowNode | undefined {
   if (!flow) {
     return undefined;
@@ -309,6 +345,33 @@ function usePersistentBoolean(
 
   useEffect(() => {
     writeLocalStorage(key, String(value));
+  }, [key, value]);
+
+  return [value, setValue];
+}
+
+function usePersistentString(
+  key: string,
+  fallback: string | undefined
+): [string | undefined, Dispatch<SetStateAction<string | undefined>>] {
+  const [value, setValue] = useState<string | undefined>(() => {
+    if (typeof window === "undefined") {
+      return fallback;
+    }
+
+    return window.localStorage.getItem(key) ?? fallback;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (value) {
+      window.localStorage.setItem(key, value);
+    } else {
+      window.localStorage.removeItem(key);
+    }
   }, [key, value]);
 
   return [value, setValue];

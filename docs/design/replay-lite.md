@@ -18,6 +18,14 @@ Replay Lite MUST:
 8. Return to the Frontend Page node.
 9. Allow repeat playback.
 
+The visual treatment SHOULD separate the inferred phases:
+
+- Request path: blue active edge, glow, and travel motion
+- Branch calls: orange dashed connectors and compact utility cards
+- Database arrival: mint/green node emphasis and pulse
+- Response path: purple reverse traversal derived from `mainPath`
+- Complete state: final response delivered marker
+
 ## Controls
 
 v0.1 MUST provide:
@@ -54,4 +62,4 @@ v0.1 MUST NOT implement:
 
 ## Visual Direction
 
-The default product UI remains Clean Light. Dark Replay MAY be used for demo imagery and optional dark mode.
+The default product UI remains Clean Light. Process Flow MAY use stronger blue/purple/orange/mint accents than Structure, but it MUST still describe replay as generated from the scanned static flow graph. Dark Replay MAY be used for demo imagery and optional dark mode.

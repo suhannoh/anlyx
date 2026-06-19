@@ -11,6 +11,7 @@ export type ProcessTimelineProps = {
 
 export function ProcessTimeline({ flow, steps, state }: ProcessTimelineProps): JSX.Element {
   const nodeById = new Map(flow?.nodes.map((node) => [node.id, node]) ?? []);
+  const isComplete = state.phase === "complete";
 
   return (
     <section className="anlyx-process-timeline" aria-label="Process Flow timeline">
@@ -45,28 +46,46 @@ export function ProcessTimeline({ flow, steps, state }: ProcessTimelineProps): J
               <span className="anlyx-process-step__phase">
                 {step.phase === "request" ? "Request" : "Response"}
               </span>
-              <span className="anlyx-process-step__label">{formatStepLabel(node?.type)}</span>
+              <span className="anlyx-process-step__label">
+                {formatStepLabel(node?.type, step.phase)}
+              </span>
               <span className="anlyx-process-step__node">{node?.label ?? step.nodeId}</span>
             </li>
           );
         })}
+        <li
+          className={[
+            "anlyx-process-step",
+            "anlyx-process-step--complete-stop",
+            isComplete ? "anlyx-process-step--active" : ""
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          <span className="anlyx-process-step__dot" aria-hidden="true" />
+          <span className="anlyx-process-step__phase">Complete</span>
+          <span className="anlyx-process-step__label">Client</span>
+          <span className="anlyx-process-step__node">Response delivered</span>
+        </li>
       </ol>
     </section>
   );
 }
 
-function formatStepLabel(type: string | undefined): string {
+function formatStepLabel(type: string | undefined, phase: ReplayStep["phase"]): string {
+  const suffix = phase === "response" ? " Return" : "";
+
   switch (type) {
     case "endpoint":
-      return "Endpoint";
+      return phase === "response" ? "Endpoint Return" : "Endpoint";
     case "controller":
-      return "Controller";
+      return `Controller${suffix}`;
     case "service":
-      return "Service";
+      return `Service${suffix}`;
     case "repository":
-      return "Repository";
+      return `Repository${suffix}`;
     case "database":
-      return "Database";
+      return phase === "response" ? "Database Result" : "Database";
     default:
       return "Flow Node";
   }

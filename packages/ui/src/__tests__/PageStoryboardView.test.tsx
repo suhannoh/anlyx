@@ -54,7 +54,9 @@ describe("Connected Frontend view", () => {
     fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
 
     const storyboard = screen.getByRole("region", { name: "Page Storyboard" });
-    expect(within(storyboard).getByText("/benefit/[brandSlug]/[benefitSlugWithId]")).toBeTruthy();
+    expect(
+      within(storyboard).getAllByText("/benefit/[brandSlug]/[benefitSlugWithId]").length
+    ).toBeGreaterThan(0);
     expect(
       within(storyboard).getByText("frontend/app/benefit/[brandSlug]/[benefitSlugWithId]/page.tsx")
     ).toBeTruthy();
@@ -105,7 +107,7 @@ describe("Connected Frontend view", () => {
 
     expect(screen.getByText("Capture failed")).toBeTruthy();
     expect(screen.getByText("Reason: Login required")).toBeTruthy();
-    expect(screen.getByText("No screenshots captured yet.")).toBeTruthy();
+    expect(screen.getAllByText("Waiting for capture data").length).toBeGreaterThan(0);
   });
 
   it("pending page status and errorMessage are visible", () => {

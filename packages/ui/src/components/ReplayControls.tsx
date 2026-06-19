@@ -36,7 +36,12 @@ export function ReplayControls({
       <div>
         <p className="anlyx-eyebrow">Replay from scanned flow graph</p>
         <div className="anlyx-replay__buttons" aria-label="Process Flow actions">
-          <button type="button" disabled={disabled || state.isPlaying} onClick={onPlay}>
+          <button
+            className="anlyx-replay__button--primary"
+            type="button"
+            disabled={disabled || state.isPlaying}
+            onClick={onPlay}
+          >
             Play
           </button>
           <button type="button" disabled={disabled || !state.isPlaying} onClick={onPause}>

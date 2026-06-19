@@ -18,7 +18,7 @@ describe("buildReactFlowModel", () => {
   it("converts flow edges", () => {
     const model = buildReactFlowModel(flow);
 
-    expect(model.edges.map((edge) => edge.id)).toContain("edge:page-to-endpoint");
+    expect(model.edges.map((edge) => edge.id)).toContain("edge:page-to-endpoint:0");
   });
 
   it("marks mainPath nodes as main", () => {
@@ -58,7 +58,7 @@ describe("buildReactFlowModel", () => {
     });
 
     const subNode = model.nodes.find((node) => node.id === "mapper:BenefitDisplayMapper");
-    const subEdge = model.edges.find((edge) => edge.id === "edge:service-to-mapper");
+    const subEdge = model.edges.find((edge) => edge.id === "edge:service-to-mapper:0:0");
 
     expect(subNode?.data.flowRole).toBe("sub");
     expect(subNode?.data.subFlowId).toBe("subflow:benefit-detail-support");

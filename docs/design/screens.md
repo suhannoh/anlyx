@@ -18,8 +18,17 @@ Anlyx SHOULD use a three-panel developer-tool layout:
 - Center canvas or storyboard workspace
 - Right inspector for selected item details
 - Bottom replay control area when a flow is selected
+- Left and right panels are resizable and collapsible. The state SHOULD persist in local storage.
+- Only the left list, center workspace, and inspector scroll independently. The root shell MUST remain `100dvh` with hidden body overflow.
 
 The default product UI MUST be Clean Light. Dark treatment is reserved for optional mode and Dark Replay demo assets.
+
+The visual hierarchy SHOULD match the target references in `docs/design/references/`:
+
+- Dense but readable endpoint/page cards
+- Light panels with subtle borders and shadows
+- Blue request accents, purple response accents, orange branch accents, and mint database/result accents
+- Floating legend cards and section-card inspector structure
 
 ## Structure
 
@@ -38,6 +47,8 @@ Center MUST include:
 - Endpoint to Controller to Service to Repository to Database structure
 - Main Flow and Sub Flow distinction
 - Zoom, pan, and fit controls
+- Type-specific node cards with icon marks, confidence pills, and selected/active states
+- Main Flow blue solid edges, Sub Flow orange/purple dashed edges, and muted unknown edges
 
 Right inspector MUST include:
 
@@ -50,6 +61,8 @@ Right inspector MUST include:
 - Sub flows
 - DB tables
 - Request and response schema information
+- Details, Metadata, Confidence, Linked pages, Sub flows, and DB tables as separate section cards
+- Metadata copy affordance when metadata is available
 
 When Process Flow is active, bottom or lower-center controls MUST include:
 
@@ -69,12 +82,22 @@ Connected Frontend MUST include:
 - Linked endpoint IDs when available
 - Page to Endpoint relationship panel
 - Failed capture empty state with the reason
+- Pending capture state explaining that `--skip-capture` leaves screenshots/API calls empty
+- Product-style placeholder segment cards when screenshots are not captured yet
 
 The failed capture state MUST be visible. It MUST NOT be hidden behind a generic empty state.
 
 ## Process Flow
 
 Process Flow MUST reuse the selected scanned `EndpointFlow` data and focus on the Main Flow. It MAY show a lightweight step rail derived from `EndpointFlow.mainPath`, but it MUST NOT introduce runtime event tracing or a separate advanced event timeline in v0.1.
+
+Process Flow SHOULD feel visually different from Structure:
+
+- Request path uses blue glow and active edge motion
+- Branch calls use orange dashed connectors and smaller utility cards
+- Database arrival uses mint/green emphasis
+- Response path uses purple return language and reverse traversal
+- The subtitle or controls MUST state that replay is generated from the scanned static flow graph
 
 ## Screen Boundaries
 

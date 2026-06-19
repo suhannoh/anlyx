@@ -64,16 +64,19 @@ export function InspectorPanel({
 
         {selectedPage ? (
           <div className="anlyx-inspector-stack">
-            <Field label="Route" value={selectedPage.route} />
-            <Field label="File path" value={selectedPage.filePath ?? "Manual or unknown"} />
-            <div className="anlyx-field">
-              <span className="anlyx-field__label">Capture status</span>
-              <StatusBadge tone={selectedPage.captureStatus}>
-                {selectedPage.captureStatus}
-              </StatusBadge>
-            </div>
-            <Field label="Screenshots" value={String(selectedPage.screenshots.length)} />
-            <Field label="API calls" value={String(selectedPage.apiCalls.length)} />
+            <section className="anlyx-inspector-group" aria-label="Details">
+              <h3>Details</h3>
+              <Field label="Route" value={selectedPage.route} />
+              <Field label="File path" value={selectedPage.filePath ?? "Manual or unknown"} />
+              <div className="anlyx-field">
+                <span className="anlyx-field__label">Capture status</span>
+                <StatusBadge tone={selectedPage.captureStatus}>
+                  {selectedPage.captureStatus}
+                </StatusBadge>
+              </div>
+              <Field label="Screenshots" value={String(selectedPage.screenshots.length)} />
+              <Field label="API calls" value={String(selectedPage.apiCalls.length)} />
+            </section>
             {selectedPage.errorMessage ? (
               <section className="anlyx-inspector-group" aria-label="Capture error">
                 <h3>Capture error</h3>
@@ -112,28 +115,41 @@ export function InspectorPanel({
           {activeView === "process" ? (
             <section className="anlyx-inspector-group" aria-label="Replay state">
               <h3>Process replay</h3>
-              <p>Phase: {replayState.phase}</p>
-              <p>Step: {replayState.currentStepIndex + 1}</p>
-              <p>Active node: {replayState.activeNodeId ?? "none"}</p>
-              <p>Source: scanned static flow graph</p>
+              <Field label="Active Step" value={replayState.phase} />
+              <Field label="Step" value={String(replayState.currentStepIndex + 1)} />
+              <Field label="Active Node" value={replayState.activeNodeId ?? "none"} />
+              <Field label="Active Edge" value={formatActiveEdge(replayState)} />
+              <p className="anlyx-inspector-note">Source: scanned static flow graph</p>
             </section>
           ) : null}
-          <Field label="Type" value={selectedNode.type} />
-          <Field label="Label" value={selectedNode.label} />
-          <Field label="File path" value={selectedNode.filePath ?? "Unknown"} />
-          <Field label="Line number" value={formatLineNumber(selectedNode.lineNumber)} />
+          <section className="anlyx-inspector-group" aria-label="Details">
+            <h3>Details</h3>
+            <Field label="Type" value={selectedNode.type} />
+            <Field label="Label" value={selectedNode.label} />
+            <Field label="File path" value={selectedNode.filePath ?? "Unknown"} />
+            <Field label="Line number" value={formatLineNumber(selectedNode.lineNumber)} />
+          </section>
           {selectedNode.metadata ? (
             <section className="anlyx-inspector-group" aria-label="Metadata">
-              <h3>Metadata</h3>
+              <div className="anlyx-inspector-group__heading">
+                <h3>Metadata</h3>
+                <button
+                  className="anlyx-copy-button"
+                  type="button"
+                  onClick={() => copyToClipboard(JSON.stringify(selectedNode.metadata, null, 2))}
+                >
+                  Copy
+                </button>
+              </div>
               <pre className="anlyx-metadata">{JSON.stringify(selectedNode.metadata, null, 2)}</pre>
             </section>
           ) : null}
-          <div className="anlyx-field">
-            <span className="anlyx-field__label">Confidence</span>
+          <section className="anlyx-inspector-group" aria-label="Confidence">
+            <h3>Confidence</h3>
             <StatusBadge tone={selectedNode.confidence ?? "unknown"} label="confidence">
               {selectedNode.confidence ?? "unknown"}
             </StatusBadge>
-          </div>
+          </section>
           <section className="anlyx-inspector-group" aria-label="Linked pages">
             <h3>Linked pages</h3>
             {linkedPages.length > 0 ? (
@@ -173,6 +189,18 @@ function Field({ label, value }: { label: string; value: string }): JSX.Element 
 
 function formatLineNumber(lineNumber: number | undefined): string {
   return lineNumber === undefined ? "Unknown" : String(lineNumber);
+}
+
+function formatActiveEdge(replayState: ReplayLiteState): string {
+  if (!replayState.activeEdge) {
+    return "none";
+  }
+
+  return `${replayState.activeEdge.from} -> ${replayState.activeEdge.to}`;
+}
+
+function copyToClipboard(value: string): void {
+  void navigator.clipboard?.writeText(value);
 }
 
 function findLinkedPages(data: ScanResult, nodeId: string): PageStoryboard[] {

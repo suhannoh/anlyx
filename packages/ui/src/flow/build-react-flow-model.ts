@@ -81,8 +81,12 @@ export function buildReactFlowModel(flow: EndpointFlow): ReactFlowModel {
   return {
     nodes: [...positionedNodes.values()],
     edges: [
-      ...flow.edges.map((edge) => createEdge(edge, getEdgeRole(edge, mainPathSet))),
-      ...flow.subFlows.flatMap((subFlow) => subFlow.edges.map((edge) => createEdge(edge, "sub")))
+      ...flow.edges.map((edge, index) => createEdge(edge, getEdgeRole(edge, mainPathSet), index)),
+      ...flow.subFlows.flatMap((subFlow, subFlowIndex) =>
+        subFlow.edges.map((edge, edgeIndex) =>
+          createEdge(edge, "sub", `${subFlowIndex}:${edgeIndex}`)
+        )
+      )
     ]
   };
 }
@@ -108,9 +112,13 @@ function createNode(
   };
 }
 
-function createEdge(edge: FlowEdge, flowRole: AnlyxFlowRole): AnlyxReactFlowEdge {
+function createEdge(
+  edge: FlowEdge,
+  flowRole: AnlyxFlowRole,
+  stableSuffix: string | number
+): AnlyxReactFlowEdge {
   return {
-    id: edge.id,
+    id: `${edge.id}:${stableSuffix}`,
     source: edge.from,
     target: edge.to,
     type: "smoothstep",

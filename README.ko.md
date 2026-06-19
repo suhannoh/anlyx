@@ -133,9 +133,11 @@ npx anlyx dev --no-open
 
 [http://localhost:4777](http://localhost:4777)을 엽니다. 뷰어는 세 개의 주요 탭으로 구성됩니다.
 
-- Structure: Endpoint에서 Controller, Service, Repository, Database로 이어지는 backend API structure
-- Connected Frontend: frontend page storyboard, capture status, API calls, linked backend endpoints
-- Process Flow: scanned static flow graph에서 파생한 request/response replay, inferred request path, branch calls, return path
+- Structure: Endpoint에서 Controller, Service, Repository, Database로 이어지는 backend API structure.
+- Connected Frontend: frontend page storyboard, capture status, API calls, linked backend endpoints. `--skip-capture`를 사용하면 page는 `pending`으로 남고, viewer는 이 상태를 숨기지 않고 제품형 empty storyboard로 보여줍니다.
+- Process Flow: scanned static flow graph에서 파생한 request/response replay, inferred request path, branch calls, database arrival, return path. runtime tracing은 아닙니다.
+
+v0.1 viewer는 request-centric architecture viewer입니다. 하나의 endpoint가 어떻게 구성되어 있고, 어떤 frontend page와 연결되며, scan된 request flow가 애플리케이션 안에서 어떻게 이동하는지 보여줍니다.
 
 ### Capture mode
 

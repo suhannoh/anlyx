@@ -111,7 +111,7 @@ export function EndpointMapCanvas({
       >
         {flow && model && model.nodes.length > 0 ? (
           <>
-            <FlowLegend />
+            <FlowLegend variant={variant} />
             <ul className="anlyx-sr-only" aria-label="Endpoint map node list">
               {nodes.map((node) => (
                 <li key={node.id}>
@@ -147,8 +147,9 @@ export function EndpointMapCanvas({
               className="anlyx-react-flow"
               edges={edges}
               fitView
-              maxZoom={1.25}
-              minZoom={0.45}
+              fitViewOptions={{ padding: 0.18 }}
+              maxZoom={1.35}
+              minZoom={0.62}
               nodes={nodes}
               nodesConnectable={false}
               nodesDraggable={false}
