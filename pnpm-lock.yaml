@@ -48,7 +48,11 @@ importers:
         specifier: workspace:*
         version: link:../core
 
-  packages/adapter-spring: {}
+  packages/adapter-spring:
+    dependencies:
+      '@anlyx/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/capture: {}
 
