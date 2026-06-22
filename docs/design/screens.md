@@ -95,6 +95,8 @@ The timeline MUST include:
 - Relative order of events
 - Repeated-event grouping for the same method, path, status, and matched endpoint so polling/auth checks do not flood the drawer
 
+The timeline SHOULD render each event as a compact trace from user action to browser request to match/result state. It SHOULD keep repeated counts, status, latency, and match state as small metadata chips instead of making every row a plain path list.
+
 The timeline MUST ignore common local-development implementation noise, including Anlyx runtime requests, Vite internals, Next.js `/_next/*` assets, hot-update files, favicon requests, browser-service config probes such as `/getconfig/*`, and static asset-like URLs. Ignored events are a filtering behavior, not a user-facing error state.
 
 The timeline MUST NOT become Advanced Replay in v0.1. It is a local UI affordance for recently observed browser requests only.

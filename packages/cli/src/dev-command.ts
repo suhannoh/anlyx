@@ -659,9 +659,17 @@ export function getOverlayClientScript(): string {
     .anlyx-mini-pill.good { border-color: #bbf7d0; color: #087443; background: #ecfdf3; }
     .anlyx-mini-pill.warn { border-color: #fed7aa; color: #c2410c; background: #fff7ed; }
     .anlyx-mini-pill.danger { border-color: #fecaca; color: #b42318; background: #fff1f2; }
-    .anlyx-event { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 10px 12px; border-bottom: 1px solid #edf2f7; cursor: pointer; }
+    .anlyx-event { display: grid; gap: 7px; padding: 10px 12px; border-bottom: 1px solid #edf2f7; cursor: pointer; }
     .anlyx-event:last-child { border-bottom: 0; }
     .anlyx-event[data-selected="true"] { background: #eef4ff; }
+    .anlyx-event-trace { display: grid; grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1.2fr) 14px auto; gap: 6px; align-items: center; }
+    .anlyx-event-action, .anlyx-event-request, .anlyx-event-result { min-width: 0; display: grid; gap: 2px; }
+    .anlyx-event-label { margin: 0; color: #667085; font-size: 9px; line-height: 1.15; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+    .anlyx-event-value { margin: 0; color: #182230; font-size: 11px; line-height: 1.25; font-weight: 850; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .anlyx-event-arrow { color: #94a3b8; font-size: 12px; line-height: 1; font-weight: 900; text-align: center; }
+    .anlyx-event-meta { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; padding-left: 2px; }
+    .anlyx-event-status { border: 1px solid #bbf7d0; color: #087443; background: #ecfdf3; border-radius: 999px; padding: 3px 7px; font-size: 10px; font-weight: 850; white-space: nowrap; }
+    .anlyx-event-status.unmatched { border-color: #fed7aa; background: #fff7ed; color: #c2410c; }
     .anlyx-method { border-radius: 8px; background: #dbeafe; color: #1d4ed8; font-weight: 850; font-size: 11px; padding: 4px 6px; }
     .anlyx-path { min-width: 0; overflow-wrap: anywhere; font-size: 12px; font-weight: 750; color: #182230; }
     .anlyx-pill { border: 1px solid #bbf7d0; color: #087443; background: #ecfdf3; border-radius: 999px; padding: 3px 7px; font-size: 11px; font-weight: 800; white-space: nowrap; }
@@ -1086,16 +1094,31 @@ export function getOverlayClientScript(): string {
     }
 
     return '<section class="anlyx-section"><h3 class="anlyx-section-title">Recent API events</h3>' +
-      state.events.map((event) => {
-        const matched = Boolean(event.matchedEndpoint);
-        return '<div class="anlyx-event" data-event-id="' + escapeHtml(event.id) + '" data-selected="' + String(selected && selected.id === event.id) + '">' +
-          '<span class="anlyx-method">' + escapeHtml(event.method) + '</span>' +
-          '<span class="anlyx-path">' + escapeHtml(event.path) + renderTimelineAction(event) + '</span>' +
-          '<span class="anlyx-count">' + escapeHtml(event.count && event.count > 1 ? "×" + event.count : "1") + '</span>' +
-          '<span class="anlyx-pill ' + (matched ? '' : 'unmatched') + '">' + (matched ? 'matched' : 'unmatched') + '</span>' +
-        '</div>';
-      }).join("") +
+      state.events.map((event) => renderTimelineEvent(event, selected)).join("") +
     '</section>';
+  }
+
+  function renderTimelineEvent(event, selected) {
+    const matched = Boolean(event.matchedEndpoint);
+    return '<div class="anlyx-event" data-event-id="' + escapeHtml(event.id) + '" data-selected="' + String(selected && selected.id === event.id) + '">' +
+      '<div class="anlyx-event-trace">' +
+        '<div class="anlyx-event-action"><p class="anlyx-event-label">Action</p><p class="anlyx-event-value">' + escapeHtml(event.triggeredBy ? formatAction(event.triggeredBy) : "page/load") + '</p></div>' +
+        '<span class="anlyx-event-arrow">-></span>' +
+        '<div class="anlyx-event-request"><p class="anlyx-event-label">Request</p><p class="anlyx-event-value">' + escapeHtml(event.method + " " + event.path) + '</p></div>' +
+        '<span class="anlyx-event-arrow">-></span>' +
+        '<div class="anlyx-event-result"><p class="anlyx-event-label">Result</p><p class="anlyx-event-value">' + escapeHtml(matched ? "matched" : "unmatched") + '</p></div>' +
+      '</div>' +
+      '<div class="anlyx-event-meta">' +
+        '<span class="anlyx-method">' + escapeHtml(event.method) + '</span>' +
+        renderTimelineStatus(event, matched) +
+        '<span class="anlyx-count">' + escapeHtml(event.count && event.count > 1 ? "seen x" + event.count : "seen 1") + '</span>' +
+        '<span class="anlyx-count">' + escapeHtml(event.durationMs) + 'ms</span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderTimelineStatus(event, matched) {
+    return '<span class="anlyx-event-status ' + (matched ? '' : 'unmatched') + '">' + escapeHtml((matched ? "matched" : "unmatched") + " · " + getStatusLabel(event.status)) + '</span>';
   }
 
   function renderSelectedEvent(event) {

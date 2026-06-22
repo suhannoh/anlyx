@@ -431,6 +431,17 @@ describe("dev command", () => {
     expect(script).toContain("getNodeTypeLabel");
   });
 
+  it("renders recent API events as compact action request result traces", () => {
+    const script = getOverlayClientScript();
+
+    expect(script).toContain("renderTimelineEvent");
+    expect(script).toContain("anlyx-event-trace");
+    expect(script).toContain("anlyx-event-action");
+    expect(script).toContain("anlyx-event-request");
+    expect(script).toContain("anlyx-event-result");
+    expect(script).toContain("renderTimelineStatus");
+  });
+
   it("--no-open disables browser opening", async () => {
     await withTempDir(async (dir) => {
       await writeReportData(dir, scanResult);
