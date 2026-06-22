@@ -21,6 +21,8 @@ export function PageStoryboardView({
         page.apiCalls.some((apiCall) => apiCall.endpointId === endpoint.id)
       )
     : [];
+  const linkedApiCallCount = page?.apiCalls.filter((apiCall) => apiCall.endpointId).length ?? 0;
+  const unmatchedApiCallCount = page ? page.apiCalls.length - linkedApiCallCount : 0;
 
   return (
     <main className="anlyx-workspace">
@@ -69,10 +71,17 @@ export function PageStoryboardView({
               {...(page.errorMessage ? { reason: page.errorMessage } : {})}
             />
 
+            <PageEvidenceBoard
+              linkedApiCallCount={linkedApiCallCount}
+              linkedEndpointCount={linkedEndpoints.length}
+              page={page}
+              unmatchedApiCallCount={unmatchedApiCallCount}
+            />
+
             <div className="anlyx-storyboard-grid">
               <PageStoryboardCard page={page} />
               <div className="anlyx-storyboard-side">
-                <ApiCallList apiCalls={page.apiCalls} />
+                <ApiCallList apiCalls={page.apiCalls} endpoints={data.endpoints} />
                 <section
                   className="anlyx-storyboard-panel"
                   aria-label="Page to endpoint relationship"
@@ -113,5 +122,65 @@ export function PageStoryboardView({
         )}
       </section>
     </main>
+  );
+}
+
+function PageEvidenceBoard({
+  linkedApiCallCount,
+  linkedEndpointCount,
+  page,
+  unmatchedApiCallCount
+}: {
+  linkedApiCallCount: number;
+  linkedEndpointCount: number;
+  page: PageStoryboard;
+  unmatchedApiCallCount: number;
+}): JSX.Element {
+  return (
+    <section
+      className="anlyx-page-evidence-board"
+      role="region"
+      aria-label="Page execution evidence"
+    >
+      <div className="anlyx-page-evidence-board__intro">
+        <span>Capture proof</span>
+        <strong>
+          {page.captureStatus === "success" ? "Observed page run" : "Incomplete page run"}
+        </strong>
+      </div>
+      <EvidenceMetric
+        label="Screenshots"
+        value={String(page.screenshots.length)}
+        detail={page.screenshots.length > 0 ? "visual segments captured" : "waiting for capture"}
+      />
+      <EvidenceMetric
+        label="API evidence"
+        value={String(page.apiCalls.length)}
+        detail={`${linkedApiCallCount} linked`}
+      />
+      <EvidenceMetric
+        label="Backend linkage"
+        value={String(linkedEndpointCount)}
+        detail={`${unmatchedApiCallCount} unmatched`}
+      />
+    </section>
+  );
+}
+
+function EvidenceMetric({
+  detail,
+  label,
+  value
+}: {
+  detail: string;
+  label: string;
+  value: string;
+}): JSX.Element {
+  return (
+    <div className="anlyx-page-evidence-metric">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <em>{detail}</em>
+    </div>
   );
 }

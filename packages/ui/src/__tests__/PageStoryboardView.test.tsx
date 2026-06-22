@@ -83,6 +83,9 @@ describe("Captures view", () => {
     const storyboard = screen.getByRole("region", { name: "Page Storyboard" });
     expect(within(storyboard).getByText("/api/public/benefits/123")).toBeTruthy();
     expect(within(storyboard).getByText("Linked endpoint")).toBeTruthy();
+    expect(within(storyboard).getByText("Matched endpoint")).toBeTruthy();
+    expect(within(storyboard).getByText("GET /api/public/benefits/{id}")).toBeTruthy();
+    expect(within(storyboard).getByText("PublicBenefitController#getDetail")).toBeTruthy();
     expect(within(storyboard).getByText("/api/public/benefits/123/related")).toBeTruthy();
     expect(within(storyboard).getByText("Unmatched")).toBeTruthy();
   });
@@ -95,6 +98,20 @@ describe("Captures view", () => {
     const relationship = screen.getByRole("region", { name: "Page to endpoint relationship" });
     expect(within(relationship).getByText("Page to Endpoint")).toBeTruthy();
     expect(within(relationship).getByText("/api/public/benefits/{id}")).toBeTruthy();
+  });
+
+  it("renders a page evidence board that separates capture proof from backend linkage", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Captures" }));
+
+    const evidenceBoard = screen.getByRole("region", { name: "Page execution evidence" });
+    expect(within(evidenceBoard).getByText("Capture proof")).toBeTruthy();
+    expect(within(evidenceBoard).getByText("Screenshots")).toBeTruthy();
+    expect(within(evidenceBoard).getByText("API evidence")).toBeTruthy();
+    expect(within(evidenceBoard).getByText("Backend linkage")).toBeTruthy();
+    expect(within(evidenceBoard).getByText("1 linked")).toBeTruthy();
+    expect(within(evidenceBoard).getByText("0 unmatched")).toBeTruthy();
   });
 
   it("failed page status and errorMessage are visible", () => {

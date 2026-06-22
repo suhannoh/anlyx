@@ -1521,6 +1521,60 @@ body {
   min-width: 0;
 }
 
+.anlyx-page-evidence-board {
+  display: grid;
+  grid-template-columns: minmax(210px, 1.2fr) repeat(3, minmax(150px, 1fr));
+  gap: 10px;
+  align-items: stretch;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #cfe0f8;
+  border-radius: var(--anlyx-radius);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 94%), rgb(248 251 255 / 92%)),
+    radial-gradient(circle at 0% 0%, rgb(37 99 235 / 12%), transparent 34%);
+  box-shadow: var(--anlyx-shadow-panel);
+}
+
+.anlyx-page-evidence-board__intro,
+.anlyx-page-evidence-metric {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgb(219 231 251 / 88%);
+  border-radius: 9px;
+  background: rgb(255 255 255 / 78%);
+}
+
+.anlyx-page-evidence-board__intro {
+  border-left: 4px solid var(--anlyx-color-request);
+}
+
+.anlyx-page-evidence-board__intro span,
+.anlyx-page-evidence-metric span {
+  color: var(--anlyx-color-text-secondary);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.anlyx-page-evidence-board__intro strong,
+.anlyx-page-evidence-metric strong {
+  overflow-wrap: anywhere;
+  color: var(--anlyx-color-text-primary);
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.anlyx-page-evidence-metric em {
+  overflow-wrap: anywhere;
+  color: var(--anlyx-color-text-secondary);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 650;
+}
+
 .anlyx-storyboard-side {
   display: grid;
   gap: 16px;
@@ -1685,12 +1739,45 @@ body {
   margin: 0;
 }
 
-.anlyx-segment-card__body code,
-.anlyx-api-call__endpoint {
+.anlyx-segment-card__body code {
   overflow-wrap: anywhere;
   color: var(--anlyx-color-text-secondary);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   font-size: 12px;
+}
+
+.anlyx-api-call__endpoint {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.anlyx-api-call__endpoint span {
+  color: var(--anlyx-color-text-secondary);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.anlyx-api-call__endpoint strong,
+.anlyx-api-call__endpoint em {
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.anlyx-api-call__endpoint strong {
+  color: var(--anlyx-color-text-primary);
+}
+
+.anlyx-api-call__endpoint em {
+  color: var(--anlyx-color-text-secondary);
+  font-style: normal;
 }
 
 .anlyx-segment-card__meta,
@@ -2216,6 +2303,16 @@ body {
 
   .anlyx-page-summary,
   .anlyx-storyboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .anlyx-page-evidence-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .anlyx-page-evidence-board {
     grid-template-columns: 1fr;
   }
 }
