@@ -94,6 +94,15 @@ Check that:
 
 Before publishing, inspect packed package metadata and confirm no `workspace:*` ranges remain.
 
+For local project demos before npm publish, prefer the version-aligned package-set helper:
+
+```bash
+corepack pnpm build
+corepack pnpm pack:local -- --pack-destination /tmp/anlyx-pack
+```
+
+The helper packs every Anlyx package in dependency order, verifies each packed manifest, and prints one `npm install --save-dev ...` command containing the full local package set. Use that generated command in any external Spring Boot + Next.js demo project instead of installing only the `anlyx` CLI tarball.
+
 Recommended local check:
 
 ```bash
