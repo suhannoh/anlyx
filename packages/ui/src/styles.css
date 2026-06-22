@@ -58,6 +58,50 @@ body {
   font-size: 14px;
 }
 
+.anlyx-viewer-state__card {
+  width: min(520px, 100%);
+  padding: 26px;
+  border: 1px solid var(--anlyx-color-border);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 96%), rgb(248 251 255 / 96%)),
+    radial-gradient(circle at 0% 0%, rgb(37 99 235 / 10%), transparent 34%);
+  box-shadow: var(--anlyx-shadow-panel);
+}
+
+.anlyx-viewer-state__eyebrow {
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.anlyx-viewer-state__card h1 {
+  margin: 8px 0 10px;
+  color: var(--anlyx-color-text-primary);
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.anlyx-viewer-state__card p {
+  margin: 8px 0 0;
+  color: var(--anlyx-color-text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.anlyx-viewer-state--error .anlyx-viewer-state__card {
+  border-color: #fecaca;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 96%), rgb(255 247 247 / 96%)),
+    radial-gradient(circle at 0% 0%, rgb(239 68 68 / 9%), transparent 32%);
+}
+
+.anlyx-viewer-state--error .anlyx-viewer-state__eyebrow {
+  color: #dc2626;
+}
+
 .anlyx-shell {
   box-sizing: border-box;
   display: flex;
@@ -1553,9 +1597,40 @@ body {
 .anlyx-endpoint-map-empty {
   display: grid;
   min-height: 420px;
-  place-items: center;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
   padding: 24px;
   color: var(--anlyx-color-text-secondary);
+  text-align: center;
+}
+
+.anlyx-endpoint-map-empty span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border: 1px solid #fed7aa;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.anlyx-endpoint-map-empty h2 {
+  margin: 4px 0 0;
+  color: var(--anlyx-color-text-primary);
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.anlyx-endpoint-map-empty p {
+  max-width: 520px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .anlyx-page-storyboard {

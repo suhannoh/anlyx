@@ -5,7 +5,7 @@ import { AnlyxAppShell } from "../components/AnlyxAppShell.js";
 
 type ViewerState =
   | { status: "loading" }
-  | { status: "error" }
+  | { status: "error"; detail: string }
   | { status: "success"; data: ScanResult };
 
 export function ViewerApp(): JSX.Element {
@@ -19,7 +19,7 @@ export function ViewerApp(): JSX.Element {
         const response = await fetch("/api/report-data");
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch report data: ${response.status}`);
+          throw new Error(`/api/report-data returned ${response.status}`);
         }
 
         const parsed = scanResultSchema.parse(await response.json());
@@ -27,9 +27,12 @@ export function ViewerApp(): JSX.Element {
         if (active) {
           setState({ status: "success", data: parsed });
         }
-      } catch {
+      } catch (error) {
         if (active) {
-          setState({ status: "error" });
+          setState({
+            status: "error",
+            detail: error instanceof Error ? error.message : "Unknown report loading error"
+          });
         }
       }
     }
@@ -42,12 +45,55 @@ export function ViewerApp(): JSX.Element {
   }, []);
 
   if (state.status === "loading") {
-    return <main className="anlyx-viewer-state">Loading Anlyx report...</main>;
+    return (
+      <ViewerStateCard
+        detail="Reading /api/report-data from the local Anlyx runtime."
+        label="Anlyx report loading"
+        status="loading"
+        title="Loading Anlyx report"
+      />
+    );
   }
 
   if (state.status === "error") {
-    return <main className="anlyx-viewer-state">Failed to load Anlyx report.</main>;
+    return (
+      <ViewerStateCard
+        detail={state.detail}
+        label="Anlyx report load failed"
+        status="error"
+        title="Failed to load Anlyx report"
+      />
+    );
   }
 
   return <AnlyxAppShell data={state.data} />;
+}
+
+function ViewerStateCard({
+  detail,
+  label,
+  status,
+  title
+}: {
+  detail: string;
+  label: string;
+  status: "error" | "loading";
+  title: string;
+}): JSX.Element {
+  const role = status === "error" ? "alert" : "status";
+
+  return (
+    <main className={`anlyx-viewer-state anlyx-viewer-state--${status}`}>
+      <section className="anlyx-viewer-state__card" role={role} aria-label={label}>
+        <span className="anlyx-viewer-state__eyebrow">
+          {status === "error" ? "Viewer waiting for report data" : "Preparing local report"}
+        </span>
+        <h1>{title}</h1>
+        <p>{detail}</p>
+        {status === "error" ? (
+          <p>Run `anlyx scan` or `anlyx dev` again, then reload this viewer.</p>
+        ) : null}
+      </section>
+    </main>
+  );
 }

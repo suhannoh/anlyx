@@ -70,7 +70,18 @@ describe("Endpoint Map canvas", () => {
       screen.getByRole("button", { name: "GET /api/public/brands BrandController#list" })
     );
 
-    expect(screen.getByText("No flow available for this endpoint yet.")).toBeTruthy();
+    const emptyState = screen.getByRole("status", { name: "Flow unavailable" });
+    expect(within(emptyState).getByText("No scanned flow for this endpoint yet")).toBeTruthy();
+    expect(
+      within(emptyState).getByText(
+        "Anlyx can list this endpoint, but no Controller -> Service -> Repository path was found."
+      )
+    ).toBeTruthy();
+    expect(
+      within(emptyState).getByText(
+        "Check that the backend source directory is configured, then run `anlyx scan` again."
+      )
+    ).toBeTruthy();
   });
 });
 

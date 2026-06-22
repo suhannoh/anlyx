@@ -104,6 +104,7 @@ Standalone Viewer MUST include:
 - Structure
 - Captures
 - Process
+- Loading, report-load failure, and no-flow states that explain the likely cause and next action
 
 The default product UI MUST be Clean Light. Dark treatment is reserved for optional mode and Dark Replay demo assets.
 
@@ -172,6 +173,17 @@ Process Flow SHOULD feel visually different from Structure:
 - Response path uses purple return language and reverse traversal
 - Active request/response edges MAY render a moving particle on top of the existing React Flow edge geometry
 - The subtitle or controls MUST state that replay is generated from the scanned static flow graph
+
+## Waiting / Error States
+
+Anlyx MUST keep waiting, failed, unknown, unmatched, and unavailable states visible. These states SHOULD be rendered as diagnostic cards or compact panels, not as blank canvases.
+
+Viewer and graph states MUST include:
+
+- What Anlyx was trying to load or infer
+- The observed failure or missing data when available
+- A concrete next action, such as running `anlyx scan` or checking backend source configuration
+- Language that does not imply runtime tracing when only static scan data is available
 
 ## Screen Boundaries
 

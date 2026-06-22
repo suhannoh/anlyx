@@ -215,8 +215,16 @@ export function EndpointMapCanvas({
             </ReactFlow>
           </>
         ) : (
-          <div className="anlyx-endpoint-map-empty">
-            <p>No flow available for this endpoint yet.</p>
+          <div className="anlyx-endpoint-map-empty" role="status" aria-label="Flow unavailable">
+            <span>Flow unavailable</span>
+            <h2>No scanned flow for this endpoint yet</h2>
+            <p>
+              Anlyx can list this endpoint, but no Controller -&gt; Service -&gt; Repository path
+              was found.
+            </p>
+            <p>
+              Check that the backend source directory is configured, then run `anlyx scan` again.
+            </p>
           </div>
         )}
       </section>

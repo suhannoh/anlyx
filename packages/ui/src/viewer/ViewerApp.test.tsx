@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { mockScanResult } from "../mock-data.js";
@@ -7,6 +7,7 @@ import { ViewerApp } from "./ViewerApp.js";
 
 describe("ViewerApp", () => {
   afterEach(() => {
+    cleanup();
     vi.unstubAllGlobals();
   });
 
@@ -18,7 +19,11 @@ describe("ViewerApp", () => {
 
     render(<ViewerApp />);
 
-    expect(screen.getByText("Loading Anlyx report...")).toBeTruthy();
+    const state = screen.getByRole("status", { name: "Anlyx report loading" });
+    expect(within(state).getByText("Loading Anlyx report")).toBeTruthy();
+    expect(
+      within(state).getByText("Reading /api/report-data from the local Anlyx runtime.")
+    ).toBeTruthy();
   });
 
   it("renders error state", async () => {
@@ -33,7 +38,12 @@ describe("ViewerApp", () => {
 
     render(<ViewerApp />);
 
-    expect(await screen.findByText("Failed to load Anlyx report.")).toBeTruthy();
+    const state = await screen.findByRole("alert", { name: "Anlyx report load failed" });
+    expect(within(state).getByText("Failed to load Anlyx report")).toBeTruthy();
+    expect(
+      within(state).getByText("Run `anlyx scan` or `anlyx dev` again, then reload this viewer.")
+    ).toBeTruthy();
+    expect(within(state).getByText("/api/report-data returned 500")).toBeTruthy();
   });
 
   it("renders AnlyxAppShell after successful report fetch", async () => {
