@@ -23,6 +23,11 @@ const edgeTypes = {
   anlyxFlowEdge: AnlyxFlowEdge
 } satisfies EdgeTypes;
 
+const NODE_X_GAP = 224;
+const MAIN_Y = 76;
+const AUTH_Y = 54;
+const SUPPORT_Y = 196;
+
 export type MainFlowCanvasProps = {
   flow: EndpointFlow | null | undefined;
   method: string;
@@ -79,7 +84,12 @@ export function MainFlowCanvas({
           zoomOnPinch={false}
           zoomOnScroll={false}
         >
-          <Background color="rgba(148, 163, 184, .42)" gap={18} size={1} variant={BackgroundVariant.Dots} />
+          <Background
+            color="rgba(148, 163, 184, .42)"
+            gap={18}
+            size={1}
+            variant={BackgroundVariant.Dots}
+          />
         </ReactFlow>
       </div>
       <p className="anlyx-flow-rf-note">
@@ -103,46 +113,160 @@ export function buildDrawerFlowModel({
   const isAuthBlocked = Number(status) === 401 || Number(status) === 403;
   const mainNodes = getMainNodes(flow);
   const controller = mainNodes.find((node) => node.type === "controller");
-  const nodeSpecs: AnlyxFlowNodeData[] = [];
+  const supportNodes = mainNodes.filter(
+    (item) => item.type !== "endpoint" && item.type !== "controller"
+  );
+  const nodes: Node<AnlyxFlowNodeData>[] = [];
+  const edges: Edge[] = [];
 
-  nodeSpecs.push({
-    kind: "api",
-    label: "API",
-    value: `${method} ${path}`,
-    badge: "high",
-    accent: "blue",
-    fullValue: `${method} ${path}`
-  });
+  nodes.push(
+    createFlowNode("api", 0, MAIN_Y, {
+      kind: "api",
+      label: "API",
+      value: `${method} ${path}`,
+      badge: "high",
+      accent: "blue",
+      fullValue: `${method} ${path}`
+    })
+  );
 
   if (controller) {
-    nodeSpecs.push({
-      kind: "controller",
-      label: "Controller",
-      value: compactHandlerName(controller.label),
-      sub: compactClassName(controller.label),
-      badge: controller.confidence ?? "unknown",
-      accent: "blue",
-      fullValue: controller.label
-    });
+    nodes.push(
+      createFlowNode("controller", NODE_X_GAP, MAIN_Y, {
+        kind: "controller",
+        label: "Controller",
+        value: compactHandlerName(controller.label),
+        sub: compactClassName(controller.label),
+        badge: controller.confidence ?? "unknown",
+        accent: "blue",
+        fullValue: controller.label
+      })
+    );
   }
 
   if (isAuthBlocked) {
-    nodeSpecs.push({
-      kind: "auth",
-      label: "Auth / Session",
-      value: "SessionAuthFilter",
-      sub: Number(status) === 403 ? "Permission gate" : "Login required",
-      badge: `${status} returned`,
-      accent: "violet",
-      fullValue: "SessionAuthenticationFilter"
+    const authX = controller ? NODE_X_GAP * 2 : NODE_X_GAP;
+    const resultX = controller ? NODE_X_GAP * 3 : NODE_X_GAP * 2;
+    nodes.push(
+      createFlowNode("auth", authX, AUTH_Y, {
+        kind: "auth",
+        label: "Auth / Session",
+        value: "SessionAuthFilter",
+        sub: Number(status) === 403 ? "Permission gate" : "Login required",
+        badge: `${status} returned`,
+        accent: "violet",
+        fullValue: "SessionAuthenticationFilter"
+      })
+    );
+    nodes.push(createFlowNode("result", resultX, AUTH_Y, getResultNodeData(status)));
+
+    supportNodes.forEach((node, index) => {
+      nodes.push(
+        createFlowNode(
+          `support-${index}`,
+          authX + index * NODE_X_GAP,
+          SUPPORT_Y,
+          toNodeData(node, true)
+        )
+      );
     });
+
+    edges.push(
+      createFlowEdge("api-controller", "api", controller ? "controller" : "auth", "blue", true)
+    );
+    if (controller) {
+      edges.push(createFlowEdge("controller-auth", "controller", "auth", "violet", true));
+    }
+    edges.push(createFlowEdge("auth-result", "auth", "result", "amber", true));
+    supportNodes.forEach((_, index) => {
+      edges.push(
+        createFlowEdge(
+          `support-${index}`,
+          index === 0 ? (controller ? "controller" : "api") : `support-${index - 1}`,
+          `support-${index}`,
+          "gray",
+          false
+        )
+      );
+    });
+
+    return { nodes, edges };
   }
 
-  for (const node of mainNodes.filter((item) => item.type !== "endpoint" && item.type !== "controller")) {
-    nodeSpecs.push(toNodeData(node, isAuthBlocked));
-  }
+  supportNodes.forEach((node, index) => {
+    nodes.push(
+      createFlowNode(
+        `support-${index}`,
+        (index + (controller ? 2 : 1)) * NODE_X_GAP,
+        MAIN_Y,
+        toNodeData(node)
+      )
+    );
+  });
+  nodes.push(
+    createFlowNode(
+      "result",
+      (supportNodes.length + (controller ? 2 : 1)) * NODE_X_GAP,
+      MAIN_Y,
+      getResultNodeData(status)
+    )
+  );
 
-  nodeSpecs.push({
+  nodes.slice(0, -1).forEach((node, index) => {
+    const target = nodes[index + 1]!;
+    edges.push(
+      createFlowEdge(
+        `main-${index}`,
+        node.id,
+        target.id,
+        getEdgeTone(index, target.data.kind),
+        true
+      )
+    );
+  });
+
+  return { nodes, edges };
+}
+
+function createFlowNode(
+  id: string,
+  x: number,
+  y: number,
+  data: AnlyxFlowNodeData
+): Node<AnlyxFlowNodeData> {
+  return {
+    id,
+    type: "anlyxFlowNode",
+    position: { x, y },
+    data
+  };
+}
+
+function createFlowEdge(
+  id: string,
+  source: string,
+  target: string,
+  tone: "blue" | "violet" | "amber" | "gray",
+  animated: boolean
+): Edge {
+  return {
+    id: `drawer-edge-${id}`,
+    source,
+    target,
+    type: "anlyxFlowEdge",
+    animated,
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      width: 10,
+      height: 10,
+      color: getEdgeColor(tone)
+    },
+    data: { tone }
+  };
+}
+
+function getResultNodeData(status: string | number): AnlyxFlowNodeData {
+  return {
     kind: "result",
     label: "Result",
     value: `${status} ${getStatusShortLabel(status)}`,
@@ -150,39 +274,7 @@ export function buildDrawerFlowModel({
     badge: Number(status) >= 400 ? "blocked" : "observed",
     accent: Number(status) >= 400 ? "amber" : "green",
     fullValue: getStatusLabel(status)
-  });
-
-  const nodes = nodeSpecs.map((data, index) => ({
-    id: `drawer-node-${index}`,
-    type: "anlyxFlowNode",
-    position: {
-      x: index * 188,
-      y: index === 2 && data.kind === "auth" ? 8 : 36
-    },
-    data
-  }));
-
-  const edges = nodes.slice(0, -1).map((node, index) => {
-    const target = nodes[index + 1]!;
-    return {
-      id: `drawer-edge-${index}`,
-      source: node.id,
-      target: target.id,
-      type: "anlyxFlowEdge",
-      animated: index === nodes.length - 2 || index === 0,
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        width: 13,
-        height: 13,
-        color: getEdgeColor(index, target.data.kind)
-      },
-      data: {
-        tone: getEdgeTone(index, target.data.kind)
-      }
-    };
-  });
-
-  return { nodes, edges };
+  };
 }
 
 function getMainNodes(flow: EndpointFlow | null | undefined): FlowNode[] {
@@ -195,7 +287,9 @@ function getMainNodes(flow: EndpointFlow | null | undefined): FlowNode[] {
 
 function toNodeData(node: FlowNode, blockedByAuth = false): AnlyxFlowNodeData {
   const kind = getKind(node.type);
-  const sub = blockedByAuth ? `Scanned ${getNodeSub(kind)?.toLowerCase() ?? "step"}` : getNodeSub(kind);
+  const sub = blockedByAuth
+    ? `Scanned ${getNodeSub(kind)?.toLowerCase() ?? "step"}`
+    : getNodeSub(kind);
   return {
     kind,
     label: getNodeLabel(kind),
@@ -250,7 +344,10 @@ function getNodeAccent(kind: AnlyxFlowNodeData["kind"]): AnlyxFlowNodeData["acce
   return "violet";
 }
 
-function getEdgeTone(index: number, targetKind: AnlyxFlowNodeData["kind"]): "blue" | "violet" | "amber" | "gray" {
+function getEdgeTone(
+  index: number,
+  targetKind: AnlyxFlowNodeData["kind"]
+): "blue" | "violet" | "amber" | "gray" {
   if (targetKind === "auth") {
     return "violet";
   }
@@ -260,13 +357,15 @@ function getEdgeTone(index: number, targetKind: AnlyxFlowNodeData["kind"]): "blu
   return index === 0 ? "blue" : "violet";
 }
 
-function getEdgeColor(index: number, targetKind: AnlyxFlowNodeData["kind"]): string {
-  const tone = getEdgeTone(index, targetKind);
+function getEdgeColor(tone: "blue" | "violet" | "amber" | "gray"): string {
   if (tone === "amber") {
     return "#f59e0b";
   }
   if (tone === "violet") {
     return "#7c3aed";
+  }
+  if (tone === "gray") {
+    return "#94a3b8";
   }
   return "#2563eb";
 }

@@ -134,12 +134,16 @@ describe("MainFlowCanvas", () => {
       "API",
       "Controller",
       "Auth / Session",
-      "Service",
-      "Result"
+      "Result",
+      "Service"
     ]);
     expect(model.edges).toHaveLength(4);
-    expect(model.edges.map((edge) => edge.data?.tone)).toEqual(["blue", "violet", "violet", "amber"]);
+    expect(model.edges.map((edge) => edge.data?.tone)).toEqual(["blue", "violet", "amber", "gray"]);
     expect(model.edges.every((edge) => edge.type === "anlyxFlowEdge")).toBe(true);
+    expect(model.edges.map((edge) => edge.animated)).toEqual([true, true, true, false]);
+    expect(model.nodes.find((node) => node.data.label === "Service")?.position.y).toBeGreaterThan(
+      model.nodes.find((node) => node.data.label === "Result")?.position.y ?? 0
+    );
   });
 
   it("renders the full scanned backend path for successful requests", () => {
@@ -181,14 +185,24 @@ describe("MainFlowCanvas", () => {
       "API",
       "Controller",
       "Auth / Session",
+      "Result",
       "Service",
       "Repository",
-      "Database",
-      "Result"
+      "Database"
     ]);
     expect(model.nodes.map((node) => node.data.value)).toContain("SavedBenefitService#list");
-    expect(model.nodes.map((node) => node.data.value)).toContain("SavedBenefitRepository#findAllByUserAccountOrderBySavedAtDesc");
+    expect(model.nodes.map((node) => node.data.value)).toContain(
+      "SavedBenefitRepository#findAllByUserAccountOrderBySavedAtDesc"
+    );
     expect(model.nodes.map((node) => node.data.value)).toContain("saved_benefit");
     expect(model.edges).toHaveLength(6);
+    expect(model.edges.map((edge) => edge.data?.tone)).toEqual([
+      "blue",
+      "violet",
+      "amber",
+      "gray",
+      "gray",
+      "gray"
+    ]);
   });
 });
