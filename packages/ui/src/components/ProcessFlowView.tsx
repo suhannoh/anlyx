@@ -41,6 +41,8 @@ export function ProcessFlowView({
   onSpeedChange,
   onViewStructure
 }: ProcessFlowViewProps): JSX.Element {
+  const replayStepLabels = buildReplayStepLabels(flow);
+
   return (
     <div className="anlyx-process-view">
       <ReplayControls
@@ -48,6 +50,7 @@ export function ProcessFlowView({
         loop={replayLoop}
         speed={replaySpeed}
         state={replayState}
+        stepLabels={replayStepLabels}
         steps={replaySteps}
         unavailableReason="Process Flow is unavailable because this endpoint has no scanned main path."
         onPause={onPause}
@@ -78,4 +81,12 @@ export function ProcessFlowView({
       <ProcessTimeline flow={flow} state={replayState} steps={replaySteps} />
     </div>
   );
+}
+
+function buildReplayStepLabels(flow: EndpointFlow | undefined): Record<string, string> {
+  if (!flow) {
+    return {};
+  }
+
+  return Object.fromEntries(flow.nodes.map((node) => [node.id, node.label]));
 }

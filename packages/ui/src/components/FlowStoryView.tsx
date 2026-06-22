@@ -57,6 +57,7 @@ export function FlowStoryView({
   const storyPage = page ?? findPageForEndpoint(data, endpoint);
   const screenshot = storyPage?.screenshots[0];
   const stats = getFlowStoryStats(flow);
+  const replayStepLabels = buildReplayStepLabels(flow);
 
   return (
     <main className="anlyx-flow-story">
@@ -101,6 +102,7 @@ export function FlowStoryView({
         loop={replayLoop}
         speed={replaySpeed}
         state={replayState}
+        stepLabels={replayStepLabels}
         steps={replaySteps}
         unavailableReason="Replay is unavailable because this flow has no scanned main path."
         onPause={onPause}
@@ -373,6 +375,14 @@ function getFlowStoryStats(flow: EndpointFlow | undefined): {
         0
       )
   };
+}
+
+function buildReplayStepLabels(flow: EndpointFlow | undefined): Record<string, string> {
+  if (!flow) {
+    return {};
+  }
+
+  return Object.fromEntries(flow.nodes.map((node) => [node.id, node.label]));
 }
 
 function getFlowStoryIcon(type: FlowNode["type"]): LucideIcon {
