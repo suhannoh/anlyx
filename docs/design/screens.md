@@ -61,7 +61,7 @@ Flow Drawer MUST include:
 - Last matched API event with method, path, status, and latency when available
 - Status meaning for common local-development states, especially `401`/`403` login or permission gates and `5xx` server failures
 - Matched endpoint label
-- Main Flow path using scanned `EndpointFlow.mainPath`
+- Main Flow path using scanned `EndpointFlow.mainPath`, rendered as an actual React Flow node-edge graph
 - Support calls derived from non-main flow nodes/edges or `EndpointFlow.subFlows`
 - Confidence badges for endpoint, nodes, edges, and evidence
 - File path and line number when available
@@ -71,16 +71,21 @@ Flow Drawer MUST include:
 
 Flow Drawer SHOULD use a wide, visual inspection layout inspired by modern Sheet/Card/Badge systems:
 
-- Top visual summary that separates user action, browser request, and request result into distinct compact cards
+- Compact captured-request summary that separates user action, browser request, and request result into distinct quiet cards
 - On desktop drawer width, the action/request/result summary should fit into a single row when possible
 - Repeated request facts should be removed when the same information is already visible in summary badges or flow nodes
-- Main path presented as a visual flow map so Endpoint, Controller, Service, Repository, and Database order is understandable before reading the text
-- Main path nodes should use distinct shapes, connector arrows, type labels, and confidence chips so the backend topology reads before the node text
+- Matched backend flow presented as the drawer's primary React Flow diagram so Endpoint, Controller, Auth/Session, Service, Repository, Database, and Result order is understandable before reading the text
+- Flow Drawer Main Flow MUST use `@xyflow/react` `ReactFlow`, `Background`, `Handle`, and smoothstep/custom edge rendering. It MUST NOT be implemented as flex card rows, absolute CSS lines, or static div/card arrays that only imitate a graph.
+- Flow Drawer nodes and edges MUST be generated from `nodes` and `edges` data with custom `nodeTypes` and `edgeTypes`.
+- Main path nodes should share one card system with consistent width, height, type label, metadata, and badge placement; Endpoint/Controller/Auth/Session/Result differences should come from restrained accent color, not different component structures
+- Long class, method, or handler names should be clamped to two lines or shortened to the most useful class name, with the full value available through the native title tooltip
+- Request outcomes such as `401` login-required should remain in the same flow path as amber Result nodes; red is reserved for true server errors or destructive failure states
+- Connector arrows should read like a flowchart, with blue primary-path connectors, amber auth/result connectors, and muted gray inactive connectors
 - Horizontal or vertical main path cards depending on drawer width
 - Support calls grouped below the main path as branch cards rather than mixed into the primary path
 - Evidence and metadata collapsed into small sections rather than always-open large panels
 - Evidence inside flow nodes should be collapsed by default so the chain is visible before detailed proof text
-- Blocked, failed, and unmatched requests should render actionable diagnostic cards with a short cause and next checks, not only a status sentence
+- Unmatched requests and true failures should render actionable diagnostic cards with a short cause and next checks, not only a status sentence
 
 ## API Event Timeline
 
@@ -96,7 +101,7 @@ The timeline MUST include:
 - Relative order of events
 - Repeated-event grouping for the same method, path, status, and matched endpoint so polling/auth checks do not flood the drawer
 
-The timeline SHOULD render each event as a compact trace from user action to browser request to match/result state. It SHOULD keep repeated counts, status, latency, and match state as small metadata chips instead of making every row a plain path list.
+The timeline SHOULD render as a compact table with small method/status/match badges. It SHOULD keep repeated counts, status, latency, and match state as quiet metadata instead of making every row a large card. It SHOULD stay visually quieter than the matched backend flow and avoid competing with the primary diagram.
 
 The timeline MUST ignore common local-development implementation noise, including Anlyx runtime requests, Vite internals, Next.js `/_next/*` assets, hot-update files, favicon requests, browser-service config probes such as `/getconfig/*`, and static asset-like URLs. Ignored events are a filtering behavior, not a user-facing error state.
 
@@ -130,7 +135,7 @@ The visual hierarchy SHOULD match the target references in `docs/design/referenc
 - Blue request accents, purple response accents, orange branch accents, and mint database/result accents
 - Sectioned inspector content for evidence and metadata
 
-The v0.1.2 visual system keeps React Flow as the graph engine for the Standalone Viewer and uses focused UI libraries:
+The v0.1.2 visual system keeps React Flow as the graph engine for the Standalone Viewer and Flow Drawer, and uses focused UI libraries:
 
 - `elkjs` for structure/process graph layout, with deterministic fallback layout when async layout fails or is unavailable.
 - `motion` for active node pulse, replay step transitions, and restrained moving particles.

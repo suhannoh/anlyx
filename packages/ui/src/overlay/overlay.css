@@ -1,0 +1,460 @@
+* {
+  box-sizing: border-box;
+}
+
+.anlyx-flow-drawer-body {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  color: #0f172a;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.anlyx-ov-card {
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.anlyx-ov-section-title {
+  margin: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid #eef2f7;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.anlyx-ov-empty {
+  padding: 18px 12px;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.anlyx-ov-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1;
+  padding: 4px 7px;
+  white-space: nowrap;
+}
+
+.anlyx-ov-badge--blue {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.anlyx-ov-badge--green {
+  border-color: #bbf7d0;
+  background: #ecfdf3;
+  color: #087443;
+}
+
+.anlyx-ov-badge--amber {
+  border-color: #fed7aa;
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.anlyx-ov-badge--violet {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+.anlyx-ov-badge--gray,
+.anlyx-ov-badge--neutral {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+}
+
+.anlyx-captured-request__top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.anlyx-captured-request h3 {
+  margin: 0 0 5px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.anlyx-captured-request__path {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.anlyx-captured-request__path strong {
+  overflow: hidden;
+  color: #101828;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.anlyx-captured-request__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 8px 12px 0;
+}
+
+.anlyx-captured-request__steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  padding: 8px 12px 11px;
+}
+
+.anlyx-captured-step {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 8px;
+  border: 1px solid #e8eef7;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fff, #fbfdff);
+}
+
+.anlyx-captured-step__dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  background: #eff6ff;
+  box-shadow: inset 0 0 0 7px #2563eb;
+}
+
+.anlyx-captured-step--green .anlyx-captured-step__dot {
+  background: #dcfae6;
+  box-shadow: inset 0 0 0 7px #16a34a;
+}
+
+.anlyx-captured-step--amber .anlyx-captured-step__dot {
+  background: #fff7ed;
+  box-shadow: inset 0 0 0 7px #f59e0b;
+}
+
+.anlyx-captured-step p,
+.anlyx-captured-step strong,
+.anlyx-captured-step span {
+  display: block;
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.anlyx-captured-step p {
+  color: #667085;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.anlyx-captured-step strong {
+  margin-top: 2px;
+  color: #101828;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.anlyx-captured-step span {
+  margin-top: 2px;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.anlyx-flow-rf-section,
+.anlyx-events-table-section {
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.anlyx-flow-rf-head,
+.anlyx-events-table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 12px;
+}
+
+.anlyx-flow-rf-head h3,
+.anlyx-events-table-head h3 {
+  margin: 0;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.anlyx-flow-rf-canvas {
+  height: 290px;
+  margin: 0 12px;
+  overflow: hidden;
+  border: 1px solid #dce6f4;
+  border-radius: 16px;
+  background: #fbfdff;
+}
+
+.anlyx-flow-rf-canvas .react-flow__viewport {
+  transition: transform 180ms ease;
+}
+
+.anlyx-flow-rf-node {
+  position: relative;
+  display: grid;
+  width: 162px;
+  height: 118px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 7px;
+  padding: 10px;
+  border-left: 3px solid #2563eb;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.anlyx-flow-rf-node--violet {
+  border-color: #ddd6fe;
+  border-left-color: #7c3aed;
+}
+
+.anlyx-flow-rf-node--amber {
+  border-color: #fed7aa;
+  border-left-color: #f59e0b;
+  background: #fffdf7;
+}
+
+.anlyx-flow-rf-node--green {
+  border-color: #bbf7d0;
+  border-left-color: #0f766e;
+}
+
+.anlyx-flow-rf-node--gray {
+  border-color: #e2e8f0;
+  border-left-color: #94a3b8;
+}
+
+.anlyx-flow-rf-node__top {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+
+.anlyx-flow-rf-node__icon {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.anlyx-flow-rf-node--violet .anlyx-flow-rf-node__icon {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.anlyx-flow-rf-node--amber .anlyx-flow-rf-node__icon {
+  background: #fff7ed;
+  color: #d97706;
+}
+
+.anlyx-flow-rf-node--green .anlyx-flow-rf-node__icon {
+  background: #ecfdf3;
+  color: #0f766e;
+}
+
+.anlyx-flow-rf-node__label {
+  overflow: hidden;
+  color: #475467;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.anlyx-flow-rf-node__value {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: #101828;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.28;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.anlyx-flow-rf-node__sub {
+  overflow: hidden;
+  margin: -3px 0 0;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.anlyx-flow-rf-handle {
+  width: 7px;
+  height: 7px;
+  border: 0;
+  background: #93c5fd;
+}
+
+.anlyx-flow-rf-edge {
+  stroke-width: 2.2;
+  fill: none;
+}
+
+.anlyx-flow-rf-edge--blue {
+  stroke: #2563eb;
+}
+
+.anlyx-flow-rf-edge--violet {
+  stroke: #7c3aed;
+}
+
+.anlyx-flow-rf-edge--amber {
+  stroke: #f59e0b;
+}
+
+.anlyx-flow-rf-edge--gray {
+  stroke: #94a3b8;
+  stroke-width: 1.5;
+}
+
+.react-flow__edge.animated .anlyx-flow-rf-edge {
+  stroke-dasharray: 7 7;
+  animation: anlyx-edge-dash 0.9s linear infinite;
+}
+
+@keyframes anlyx-edge-dash {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+
+.anlyx-flow-rf-note {
+  margin: 0;
+  padding: 9px 12px;
+  border-top: 1px solid rgba(226, 232, 240, 0.7);
+  background: rgba(248, 250, 252, 0.55);
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.anlyx-flow-rf-empty {
+  padding: 18px 12px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.anlyx-ov-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.anlyx-ov-table th {
+  padding: 0 10px 7px;
+  color: #667085;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.anlyx-ov-table td {
+  height: 32px;
+  padding: 5px 10px;
+  border-top: 1px solid #f1f5f9;
+  color: #475569;
+  font-weight: 750;
+}
+
+.anlyx-events-table-path {
+  max-width: 340px;
+  overflow: hidden;
+  color: #1f2937;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.anlyx-unmatched-card {
+  padding: 14px;
+  border-color: #fed7aa;
+  background: #fffaf5;
+}
+
+.anlyx-unmatched-card h3 {
+  margin: 0;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.anlyx-unmatched-card p {
+  margin: 5px 0 0;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .anlyx-captured-request__steps {
+    grid-template-columns: 1fr;
+  }
+
+  .anlyx-flow-rf-canvas {
+    height: 320px;
+  }
+}

@@ -359,11 +359,10 @@ describe("dev command", () => {
   it("serves a flow-first overlay drawer for real app interactions", () => {
     const script = getOverlayClientScript();
 
-    expect(script).toContain("What just happened");
-    expect(script).toContain("anlyx-request-hero");
-    expect(script).toContain("Main flow");
-    expect(script).toContain("Support calls");
-    expect(script).toContain("Evidence");
+    expect(script).toContain("/_anlyx/overlay-ui.js");
+    expect(script).toContain("/_anlyx/overlay-ui.css");
+    expect(script).toContain("__ANLYX_RENDER_FLOW_DRAWER__");
+    expect(script).toContain("renderReactDrawer");
   });
 
   it("filters development noise and groups repeated overlay API events", () => {
@@ -373,8 +372,7 @@ describe("dev command", () => {
     expect(script).toContain('url.pathname.startsWith("/getconfig/")');
     expect(script).toContain('url.pathname.includes("hot-update")');
     expect(script).toContain("findExistingEventIndex");
-    expect(script).toContain("event.count");
-    expect(script).toContain("login required");
+    expect(script).toContain("count: (existing.count || 1) + 1");
     expect(script).toContain("DOMContentLoaded");
   });
 
@@ -399,61 +397,24 @@ describe("dev command", () => {
     expect(script).toContain("Date.now() - action.capturedAt");
   });
 
-  it("renders overlay events with a visual action to request summary", () => {
+  it("delegates drawer rendering to the React overlay bundle", () => {
     const script = getOverlayClientScript();
 
-    expect(script).toContain("anlyx-flow-summary");
-    expect(script).toContain("anlyx-summary-step");
-    expect(script).toContain("anlyx-step-icon");
-    expect(script).toContain("renderFlowSummary");
-    expect(script).toContain("What just happened");
-    expect(script).not.toContain("Request facts");
+    expect(script).toContain("loadOverlayUiAssets");
+    expect(script).toContain("Loading Anlyx Flow Drawer");
+    expect(script).toContain("window.__ANLYX_RENDER_FLOW_DRAWER__(body");
+    expect(script).toContain("selectedEvent: selected");
+    expect(script).toContain("events: state.events");
+  });
+
+  it("keeps capture and matching logic in the injected proxy script", () => {
+    const script = getOverlayClientScript();
+
+    expect(script).toContain("matchEndpoint");
+    expect(script).toContain("flows.find");
+    expect(script).toContain("matchedEndpoint");
+    expect(script).toContain("matchedFlow");
     expect(script).not.toContain("renderRequestMetrics");
-  });
-
-  it("keeps the flow drawer compact enough to scan before details", () => {
-    const script = getOverlayClientScript();
-
-    expect(script).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
-    expect(script).toContain("anlyx-evidence-details");
-    expect(script).toContain("Evidence details");
-    expect(script).toContain("renderStatusBanner");
-  });
-
-  it("renders flow nodes as a visual topology instead of plain text cards", () => {
-    const script = getOverlayClientScript();
-
-    expect(script).toContain("anlyx-flow-board");
-    expect(script).toContain("anlyx-map-node");
-    expect(script).toContain("anlyx-map-connector");
-    expect(script).toContain("renderMapNode");
-    expect(script).toContain("renderMapConnector");
-    expect(script).toContain("Main flow map");
-    expect(script).toContain("data-node-type");
-    expect(script).toContain("getNodeTypeIcon");
-    expect(script).toContain("getNodeTypeLabel");
-  });
-
-  it("renders recent API events as compact action request result traces", () => {
-    const script = getOverlayClientScript();
-
-    expect(script).toContain("renderTimelineEvent");
-    expect(script).toContain("anlyx-event-trace");
-    expect(script).toContain("anlyx-event-action");
-    expect(script).toContain("anlyx-event-request");
-    expect(script).toContain("anlyx-event-result");
-    expect(script).toContain("renderTimelineStatus");
-  });
-
-  it("renders actionable diagnostic cards for blocked or unmatched requests", () => {
-    const script = getOverlayClientScript();
-
-    expect(script).toContain("anlyx-diagnostic-card");
-    expect(script).toContain("anlyx-diagnostic-next");
-    expect(script).toContain("renderDiagnosticCard");
-    expect(script).toContain("getDiagnosticActions");
-    expect(script).toContain("Check login/session state");
-    expect(script).toContain("Run anlyx scan again");
   });
 
   it("--no-open disables browser opening", async () => {
