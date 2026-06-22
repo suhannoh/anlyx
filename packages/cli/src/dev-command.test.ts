@@ -420,6 +420,17 @@ describe("dev command", () => {
     expect(script).toContain("renderStatusBanner");
   });
 
+  it("renders flow nodes as a visual topology instead of plain text cards", () => {
+    const script = getOverlayClientScript();
+
+    expect(script).toContain("anlyx-flow-rail");
+    expect(script).toContain("data-node-type");
+    expect(script).toContain("anlyx-node-type-pill");
+    expect(script).toContain("anlyx-node-confidence");
+    expect(script).toContain("getNodeTypeIcon");
+    expect(script).toContain("getNodeTypeLabel");
+  });
+
   it("--no-open disables browser opening", async () => {
     await withTempDir(async (dir) => {
       await writeReportData(dir, scanResult);

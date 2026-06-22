@@ -674,13 +674,29 @@ export function getOverlayClientScript(): string {
     .anlyx-kv span:first-child { color: #667085; font-weight: 750; }
     .anlyx-kv span:last-child { min-width: 0; overflow-wrap: anywhere; font-weight: 750; color: #182230; }
     .anlyx-path-list { display: grid; gap: 10px; padding: 12px; }
-    .anlyx-node-chain { display: grid; gap: 0; padding: 12px; }
-    .anlyx-node { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; border: 1px solid #d8e4f5; border-radius: 12px; padding: 10px; background: linear-gradient(180deg, #fff, #f8fbff); }
+    .anlyx-node-chain { position: relative; display: grid; gap: 0; padding: 12px; }
+    .anlyx-flow-rail { position: absolute; top: 18px; bottom: 18px; left: 25px; width: 2px; border-radius: 999px; background: linear-gradient(180deg, #93c5fd, #bfdbfe 65%, #dbeafe); }
+    .anlyx-node { position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; border: 1px solid #d8e4f5; border-radius: 12px; padding: 10px; background: linear-gradient(180deg, #fff, #f8fbff); box-shadow: 0 8px 24px rgba(15, 23, 42, .04); }
     .anlyx-node-chain .anlyx-node { margin-bottom: 8px; }
-    .anlyx-node-chain .anlyx-node:not(:last-child)::after { content: ""; position: absolute; left: 23px; bottom: -9px; width: 2px; height: 9px; background: #bfdbfe; }
     .anlyx-node.support { border-color: #fdba74; background: #fffaf5; }
-    .anlyx-node-index { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 999px; background: #2563eb; color: #fff; font-size: 11px; font-weight: 900; }
+    .anlyx-node[data-node-type="controller"] { border-left: 3px solid #2563eb; }
+    .anlyx-node[data-node-type="service"] { border-left: 3px solid #7c3aed; }
+    .anlyx-node[data-node-type="repository"] { border-left: 3px solid #f97316; }
+    .anlyx-node[data-node-type="database"] { border-left: 3px solid #0f766e; background: linear-gradient(180deg, #f0fdfa, #fff); }
+    .anlyx-node-index { position: relative; z-index: 1; display: grid; place-items: center; align-content: center; gap: 1px; width: 30px; min-height: 30px; border-radius: 11px; background: #2563eb; color: #fff; box-shadow: 0 0 0 4px #fff; }
+    .anlyx-node-icon { font-size: 10px; line-height: 1; font-weight: 950; letter-spacing: 0; }
+    .anlyx-node-number { font-size: 10px; line-height: 1; font-weight: 900; }
     .anlyx-node.support .anlyx-node-index { background: #f97316; }
+    .anlyx-node[data-node-type="service"] .anlyx-node-index { background: #7c3aed; }
+    .anlyx-node[data-node-type="repository"] .anlyx-node-index { background: #f97316; }
+    .anlyx-node[data-node-type="database"] .anlyx-node-index { background: #0f766e; }
+    .anlyx-node-top { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-bottom: 5px; }
+    .anlyx-node-type-pill, .anlyx-node-confidence { border-radius: 999px; padding: 3px 6px; font-size: 9px; line-height: 1.15; letter-spacing: .04em; text-transform: uppercase; font-weight: 900; white-space: nowrap; }
+    .anlyx-node-type-pill { border: 1px solid #dbeafe; background: #eff6ff; color: #1d4ed8; }
+    .anlyx-node-confidence { border: 1px solid #bbf7d0; background: #ecfdf3; color: #087443; }
+    .anlyx-node[data-node-type="service"] .anlyx-node-type-pill { border-color: #ddd6fe; background: #f5f3ff; color: #6d28d9; }
+    .anlyx-node[data-node-type="repository"] .anlyx-node-type-pill, .anlyx-node.support .anlyx-node-type-pill { border-color: #fed7aa; background: #fff7ed; color: #c2410c; }
+    .anlyx-node[data-node-type="database"] .anlyx-node-type-pill { border-color: #99f6e4; background: #f0fdfa; color: #0f766e; }
     .anlyx-node-type { margin: 0 0 3px; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; color: #64748b; font-weight: 850; }
     .anlyx-node-label { margin: 0; font-size: 12px; line-height: 1.35; font-weight: 850; overflow-wrap: anywhere; }
     .anlyx-evidence-details { margin: 7px 0 0; border: 1px dashed #cbd5e1; border-radius: 10px; background: rgba(248, 250, 252, .8); overflow: hidden; }
@@ -1240,7 +1256,7 @@ export function getOverlayClientScript(): string {
       return '<section class="anlyx-section"><h3 class="anlyx-section-title">Main flow</h3><div class="anlyx-empty">No main path was inferred for this endpoint.</div></section>';
     }
     const nodeById = new Map((flow.nodes || []).map((node) => [node.id, node]));
-    return '<section class="anlyx-section"><h3 class="anlyx-section-title">Main flow</h3><div class="anlyx-node-chain">' +
+    return '<section class="anlyx-section"><h3 class="anlyx-section-title">Main flow</h3><div class="anlyx-node-chain"><span class="anlyx-flow-rail" aria-hidden="true"></span>' +
       flow.mainPath.map((nodeId, index) => renderNode(nodeById.get(nodeId), false, index + 1)).join("") +
     '</div></section>';
   }
@@ -1254,7 +1270,7 @@ export function getOverlayClientScript(): string {
     if (support.length === 0) {
       return "";
     }
-    return '<details class="anlyx-disclosure" open><summary><span>Support calls</span><span class="anlyx-disclosure-count">' + support.length + '</span></summary><div class="anlyx-node-chain">' +
+    return '<details class="anlyx-disclosure" open><summary><span>Support calls</span><span class="anlyx-disclosure-count">' + support.length + '</span></summary><div class="anlyx-node-chain"><span class="anlyx-flow-rail" aria-hidden="true"></span>' +
       support.slice(0, 8).map((node, index) => renderNode(node, true, index + 1)).join("") +
     '</div></details>';
   }
@@ -1270,15 +1286,75 @@ export function getOverlayClientScript(): string {
 
   function renderNode(node, support, index) {
     if (!node) {
-      return '<div class="anlyx-node"><span class="anlyx-node-index">' + escapeHtml(index || "?") + '</span><div><p class="anlyx-node-type">Unknown</p><p class="anlyx-node-label">Missing node data</p></div></div>';
+      return '<div class="anlyx-node" data-node-type="unknown"><span class="anlyx-node-index"><span class="anlyx-node-icon">?</span><span class="anlyx-node-number">' + escapeHtml(index || "?") + '</span></span><div><div class="anlyx-node-top"><span class="anlyx-node-type-pill">Unknown</span><span class="anlyx-node-confidence">confidence unknown</span></div><p class="anlyx-node-label">Missing node data</p></div></div>';
     }
-    return '<div class="anlyx-node ' + (support ? 'support' : '') + '">' +
-      '<span class="anlyx-node-index">' + escapeHtml(index || "?") + '</span><div>' +
-      '<p class="anlyx-node-type">' + escapeHtml(node.type || "node") + ' · confidence ' + escapeHtml(node.confidence || "unknown") + '</p>' +
+    const nodeType = String(node.type || "node").toLowerCase();
+    return '<div class="anlyx-node ' + (support ? 'support' : '') + '" data-node-type="' + escapeHtml(nodeType) + '">' +
+      '<span class="anlyx-node-index"><span class="anlyx-node-icon">' + escapeHtml(getNodeTypeIcon(nodeType)) + '</span><span class="anlyx-node-number">' + escapeHtml(index || "?") + '</span></span><div>' +
+      '<div class="anlyx-node-top"><span class="anlyx-node-type-pill">' + escapeHtml(getNodeTypeLabel(nodeType)) + '</span><span class="anlyx-node-confidence">confidence ' + escapeHtml(node.confidence || "unknown") + '</span></div>' +
       '<p class="anlyx-node-label">' + escapeHtml(node.label || node.id) + '</p>' +
       renderEvidence(node) +
       '</div>' +
     '</div>';
+  }
+
+  function getNodeTypeIcon(type) {
+    if (type === "endpoint") {
+      return "API";
+    }
+    if (type === "controller") {
+      return "C";
+    }
+    if (type === "service") {
+      return "S";
+    }
+    if (type === "repository") {
+      return "R";
+    }
+    if (type === "database") {
+      return "DB";
+    }
+    if (type === "mapper") {
+      return "M";
+    }
+    if (type === "utility") {
+      return "U";
+    }
+    if (type === "policy" || type === "validator") {
+      return "P";
+    }
+    return "N";
+  }
+
+  function getNodeTypeLabel(type) {
+    if (type === "endpoint") {
+      return "Endpoint";
+    }
+    if (type === "controller") {
+      return "Controller";
+    }
+    if (type === "service") {
+      return "Service";
+    }
+    if (type === "repository") {
+      return "Repository";
+    }
+    if (type === "database") {
+      return "Database";
+    }
+    if (type === "mapper") {
+      return "Mapper";
+    }
+    if (type === "utility") {
+      return "Utility";
+    }
+    if (type === "policy") {
+      return "Policy";
+    }
+    if (type === "validator") {
+      return "Validator";
+    }
+    return type || "Node";
   }
 
   function renderEvidence(node) {

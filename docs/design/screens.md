@@ -75,6 +75,7 @@ Flow Drawer SHOULD use a narrow, readable layout:
 - On desktop drawer width, the action/request/result summary should fit into a single row when possible
 - Request facts grouped as small metric cards instead of a long key-value text block
 - Main path cards presented as a step chain so Controller, Service, Repository, and Database order is visually scannable
+- Main path nodes should use a visible step rail, type labels, and confidence chips so the backend topology reads before the node text
 - Horizontal or vertical main path cards depending on drawer width
 - Support calls grouped below the main path
 - Evidence and metadata collapsed into small sections rather than always-open large panels
