@@ -536,6 +536,68 @@ describe("dev command", () => {
       await expect(readReportData(join(dir, ".anlyx", "report-data.json"))).resolves.toEqual(data);
     });
   });
+
+  it("readReportData preserves generic flow node and edge evidence", async () => {
+    await withTempDir(async (dir) => {
+      const data: ScanResult = {
+        ...scanResult,
+        flows: [
+          {
+            endpointId: "endpoint:get:/api/items/{id}",
+            nodes: [
+              {
+                id: "endpoint:get:/api/items/{id}",
+                type: "endpoint",
+                label: "GET /api/items/{id}",
+                confidence: "high",
+                evidence: [
+                  {
+                    label: "Endpoint matched",
+                    detail: "Matched from a framework route definition.",
+                    confidence: "high"
+                  }
+                ]
+              },
+              {
+                id: "service:ItemService#find",
+                type: "service",
+                label: "ItemService#find",
+                confidence: "medium",
+                evidence: [
+                  {
+                    label: "Service call detected",
+                    detail: "Resolved from handler method body.",
+                    confidence: "medium"
+                  }
+                ]
+              }
+            ],
+            edges: [
+              {
+                id: "edge:endpoint-to-service",
+                from: "endpoint:get:/api/items/{id}",
+                to: "service:ItemService#find",
+                kind: "main",
+                confidence: "medium",
+                evidence: [
+                  {
+                    label: "Call edge detected",
+                    detail: "Static analysis linked the endpoint to a service call.",
+                    confidence: "medium"
+                  }
+                ]
+              }
+            ],
+            mainPath: ["endpoint:get:/api/items/{id}", "service:ItemService#find"],
+            subFlows: []
+          }
+        ]
+      };
+      await writeReportData(dir, data);
+
+      await expect(readReportData(join(dir, ".anlyx", "report-data.json"))).resolves.toEqual(data);
+    });
+  });
 });
 
 async function writeReportData(dir: string, data: unknown): Promise<void> {
