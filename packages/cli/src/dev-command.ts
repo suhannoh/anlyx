@@ -810,10 +810,14 @@ export function getOverlayClientScript(): string {
       const startedAt = performance.now();
       try {
         const response = await originalFetch.apply(this, arguments);
-        scheduleApiEventRecord({ method, url, status: response.status, durationMs: performance.now() - startedAt, startedAt });
+        if (shouldTrackRequestUrl(url)) {
+          scheduleApiEventRecord({ method, url, status: response.status, durationMs: performance.now() - startedAt, startedAt });
+        }
         return response;
       } catch (error) {
-        scheduleApiEventRecord({ method, url, status: "failed", durationMs: performance.now() - startedAt, startedAt });
+        if (shouldTrackRequestUrl(url)) {
+          scheduleApiEventRecord({ method, url, status: "failed", durationMs: performance.now() - startedAt, startedAt });
+        }
         throw error;
       }
     };
@@ -953,13 +957,15 @@ export function getOverlayClientScript(): string {
       if (request) {
         request.startedAt = performance.now();
         this.addEventListener("loadend", () => {
-          scheduleApiEventRecord({
-            method: request.method,
-            url: request.url,
-            status: this.status || "unknown",
-            durationMs: performance.now() - request.startedAt,
-            startedAt: request.startedAt
-          });
+          if (shouldTrackRequestUrl(request.url)) {
+            scheduleApiEventRecord({
+              method: request.method,
+              url: request.url,
+              status: this.status || "unknown",
+              durationMs: performance.now() - request.startedAt,
+              startedAt: request.startedAt
+            });
+          }
         });
       }
       return originalSend.apply(this, arguments);
@@ -1064,6 +1070,11 @@ export function getOverlayClientScript(): string {
       return true;
     }
     return /\.(css|js|map|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|otf)$/i.test(url.pathname);
+  }
+
+  function shouldTrackRequestUrl(value) {
+    const normalized = normalizeUrl(value);
+    return Boolean(normalized && !shouldIgnoreRequest(normalized));
   }
 
   function matchEndpoint(method, path) {

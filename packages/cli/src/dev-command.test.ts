@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { runInNewContext } from "node:vm";
 
 import type { NormalizedAnlyxConfig, ScanResult } from "@anlyx/core";
 import { describe, expect, it } from "vitest";
@@ -93,6 +94,217 @@ const config: NormalizedAnlyxConfig = {
   },
   dev: {}
 };
+
+type TimerCallback = () => void;
+
+type HarnessElement = {
+  id: string;
+  tagName: string;
+  className: string;
+  dataset: Record<string, string>;
+  style: Record<string, string>;
+  textContent: string;
+  value: string;
+  name: string;
+  innerHTML: string;
+  appendChild(child: HarnessElement): HarnessElement;
+  addEventListener(): void;
+  contains(target: unknown): boolean;
+  closest(): null;
+  getAttribute(name: string): string | null;
+  querySelector(selector: string): HarnessElement | null;
+  querySelectorAll(): HarnessElement[];
+  remove(): void;
+  setAttribute(name: string, value: string): void;
+};
+
+function createOverlayHarness() {
+  const timers: TimerCallback[] = [];
+  const order: string[] = [];
+  const elementsById = new Map<string, HarnessElement>();
+
+  const createElement = (tagName: string): HarnessElement => {
+    const attributes = new Map<string, string>();
+    const children: HarnessElement[] = [];
+    const element: HarnessElement = {
+      id: "",
+      tagName: tagName.toUpperCase(),
+      className: "",
+      dataset: {},
+      style: {},
+      textContent: "",
+      value: "",
+      name: "",
+      innerHTML: "",
+      appendChild(child) {
+        children.push(child);
+        if (child.id) {
+          elementsById.set(child.id, child);
+        }
+        return child;
+      },
+      addEventListener() {
+        return undefined;
+      },
+      contains(target) {
+        return target === element || children.includes(target as HarnessElement);
+      },
+      closest() {
+        return null;
+      },
+      getAttribute(name) {
+        return attributes.get(name) ?? null;
+      },
+      querySelector(selector) {
+        if (selector === ".anlyx-fab" || selector === ".anlyx-drawer" || selector === ".anlyx-body" || selector === ".anlyx-close") {
+          const child = createElement("div");
+          child.className = selector.slice(1);
+          return child;
+        }
+        return null;
+      },
+      querySelectorAll() {
+        return [];
+      },
+      remove() {
+        if (element.id) {
+          elementsById.delete(element.id);
+        }
+      },
+      setAttribute(name, value) {
+        attributes.set(name, value);
+        if (name === "id") {
+          element.id = value;
+          elementsById.set(value, element);
+        }
+        if (name === "class") {
+          element.className = value;
+        }
+      }
+    };
+    return element;
+  };
+
+  const document = {
+    body: createElement("body"),
+    currentScript: { src: "http://localhost:4777/_anlyx/overlay.js" },
+    head: createElement("head"),
+    readyState: "complete",
+    addEventListener() {
+      return undefined;
+    },
+    createElement,
+    getElementById(id: string) {
+      return elementsById.get(id) ?? null;
+    },
+    querySelector() {
+      return null;
+    }
+  };
+
+  class FakeMutationObserver {
+    observe() {
+      return undefined;
+    }
+  }
+
+  function FakeXmlHttpRequest() {
+    return undefined;
+  }
+
+  FakeXmlHttpRequest.prototype = {
+    addEventListener() {
+      return undefined;
+    },
+    open() {
+      return undefined;
+    },
+    send() {
+      return undefined;
+    }
+  };
+
+  const window = {
+    document,
+    location: { href: "http://localhost:3000/", origin: "http://localhost:3000" },
+    MutationObserver: FakeMutationObserver,
+    XMLHttpRequest: FakeXmlHttpRequest,
+    __ANLYX_RENDER_FLOW_DRAWER__() {
+      order.push("drawer-render");
+    },
+    fetch: async (input: string) => {
+      order.push(`original-fetch:${input}`);
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return scanResult;
+        }
+      };
+    },
+    performance: {
+      now() {
+        return order.length * 10;
+      }
+    },
+    sessionStorage: {
+      getItem() {
+        return null;
+      },
+      removeItem() {
+        return undefined;
+      },
+      setItem() {
+        return undefined;
+      }
+    },
+    setTimeout(callback: TimerCallback) {
+      timers.push(callback);
+      return timers.length;
+    }
+  };
+
+  const context = {
+    Date,
+    Error,
+    Math,
+    MutationObserver: FakeMutationObserver,
+    Promise,
+    URL,
+    XMLHttpRequest: FakeXmlHttpRequest,
+    console,
+    document,
+    fetch(...args: [string]) {
+      return window.fetch(...args);
+    },
+    performance: window.performance,
+    window
+  };
+
+  const waitForMicrotasks = async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+  };
+
+  const flushNextTimer = async () => {
+    const callback = timers.shift();
+    if (callback) {
+      callback();
+      await waitForMicrotasks();
+    }
+  };
+
+  const flushTimers = async () => {
+    while (timers.length > 0) {
+      await flushNextTimer();
+    }
+  };
+
+  runInNewContext(getOverlayClientScript(), context);
+
+  return { flushNextTimer, flushTimers, order, timers, waitForMicrotasks, window };
+}
 
 describe("dev command", () => {
   it("reads valid report-data.json", async () => {
@@ -426,6 +638,31 @@ describe("dev command", () => {
     expect(script).toContain("const endpointRegexCache = new Map()");
     expect(script).toContain("endpointRegexCache.get(key)");
     expect(script).toContain("endpointRegexCache.set(key, regex)");
+  });
+
+  it("does not enqueue matching work for Anlyx runtime requests", async () => {
+    const harness = createOverlayHarness();
+
+    await harness.flushNextTimer();
+
+    expect(harness.order).toEqual(["original-fetch:http://localhost:4777/_anlyx/report-data"]);
+    expect(harness.timers).toHaveLength(0);
+  });
+
+  it("returns application fetch responses before overlay matching and rendering", async () => {
+    const harness = createOverlayHarness();
+    await harness.flushNextTimer();
+
+    const response = await harness.window.fetch("/api/public/benefits/123");
+    harness.order.push("app-response-returned");
+
+    expect(response.status).toBe(200);
+    expect(harness.order).not.toContain("drawer-render");
+    expect(harness.timers).toHaveLength(1);
+
+    await harness.flushTimers();
+
+    expect(harness.order.indexOf("app-response-returned")).toBeLessThan(harness.order.indexOf("drawer-render"));
   });
 
   it("loads the React drawer bundle only after the drawer opens", () => {
