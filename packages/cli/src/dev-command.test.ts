@@ -411,6 +411,15 @@ describe("dev command", () => {
     expect(script).toContain("renderRequestMetrics");
   });
 
+  it("keeps the flow drawer compact enough to scan before details", () => {
+    const script = getOverlayClientScript();
+
+    expect(script).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
+    expect(script).toContain("anlyx-evidence-details");
+    expect(script).toContain("Evidence details");
+    expect(script).toContain("renderStatusBanner");
+  });
+
   it("--no-open disables browser opening", async () => {
     await withTempDir(async (dir) => {
       await writeReportData(dir, scanResult);

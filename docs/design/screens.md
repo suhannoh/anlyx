@@ -72,11 +72,13 @@ Flow Drawer MUST include:
 Flow Drawer SHOULD use a narrow, readable layout:
 
 - Top visual summary that separates user action, browser request, and request result into distinct compact cards
+- On desktop drawer width, the action/request/result summary should fit into a single row when possible
 - Request facts grouped as small metric cards instead of a long key-value text block
 - Main path cards presented as a step chain so Controller, Service, Repository, and Database order is visually scannable
 - Horizontal or vertical main path cards depending on drawer width
 - Support calls grouped below the main path
 - Evidence and metadata collapsed into small sections rather than always-open large panels
+- Evidence inside flow nodes should be collapsed by default so the chain is visible before detailed proof text
 
 ## API Event Timeline
 

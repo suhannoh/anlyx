@@ -632,29 +632,29 @@ export function getOverlayClientScript(): string {
     .anlyx-title { margin: 0; font-size: 15px; line-height: 1.25; font-weight: 850; letter-spacing: 0; }
     .anlyx-subtitle { margin: 4px 0 0; font-size: 12px; color: #667085; }
     .anlyx-close { border: 1px solid #d7e0ee; background: #fff; border-radius: 10px; width: 34px; height: 34px; cursor: pointer; font-size: 18px; line-height: 1; }
-    .anlyx-body { overflow: auto; padding: 14px 16px 18px; }
-    .anlyx-section { border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; margin-bottom: 12px; overflow: hidden; }
-    .anlyx-section-title { margin: 0; padding: 11px 12px; font-size: 11px; text-transform: uppercase; color: #64748b; letter-spacing: .04em; border-bottom: 1px solid #edf2f7; font-weight: 850; }
-    .anlyx-request-hero { border: 1px solid #c7d7fe; border-radius: 16px; background: linear-gradient(180deg, #f8fbff, #fff); margin-bottom: 12px; overflow: hidden; }
-    .anlyx-request-top { padding: 14px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; border-bottom: 1px solid #e6edf6; }
+    .anlyx-body { overflow: auto; padding: 12px 14px 16px; }
+    .anlyx-section { border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; margin-bottom: 10px; overflow: hidden; }
+    .anlyx-section-title { margin: 0; padding: 9px 10px; font-size: 11px; text-transform: uppercase; color: #64748b; letter-spacing: .04em; border-bottom: 1px solid #edf2f7; font-weight: 850; }
+    .anlyx-request-hero { border: 1px solid #c7d7fe; border-radius: 16px; background: linear-gradient(180deg, #f8fbff, #fff); margin-bottom: 10px; overflow: hidden; }
+    .anlyx-request-top { padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; border-bottom: 1px solid #e6edf6; }
     .anlyx-request-top h3 { margin: 0 0 7px; font-size: 12px; color: #475467; letter-spacing: 0; font-weight: 850; }
     .anlyx-request-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .anlyx-request-path { min-width: 0; overflow-wrap: anywhere; font-size: 13px; font-weight: 850; line-height: 1.35; color: #101828; }
     .anlyx-action-line { display: block; margin: 5px 0 0; color: #667085; font-size: 11px; line-height: 1.35; font-weight: 750; overflow-wrap: anywhere; }
-    .anlyx-request-meta { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px 13px; }
-    .anlyx-flow-summary { display: grid; gap: 8px; padding: 12px 14px 14px; border-top: 1px solid #eef2f7; background: #fbfdff; }
-    .anlyx-summary-step { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 9px; align-items: start; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; padding: 9px; }
-    .anlyx-step-icon { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 10px; background: #eef4ff; color: #2563eb; font-size: 14px; font-weight: 900; }
+    .anlyx-request-meta { display: flex; flex-wrap: wrap; gap: 5px; padding: 8px 12px 10px; }
+    .anlyx-flow-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 10px 12px 12px; border-top: 1px solid #eef2f7; background: #fbfdff; }
+    .anlyx-summary-step { display: grid; grid-template-columns: 1fr; gap: 5px; align-items: start; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; padding: 8px; min-width: 0; }
+    .anlyx-step-icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 8px; background: #eef4ff; color: #2563eb; font-size: 12px; font-weight: 900; }
     .anlyx-summary-step[data-tone="good"] .anlyx-step-icon { background: #dcfae6; color: #087443; }
     .anlyx-summary-step[data-tone="warn"] .anlyx-step-icon { background: #fff7ed; color: #c2410c; }
     .anlyx-summary-step[data-tone="danger"] .anlyx-step-icon { background: #fff1f2; color: #b42318; }
     .anlyx-step-kicker { margin: 0 0 2px; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: #667085; font-weight: 900; }
-    .anlyx-step-title { margin: 0; font-size: 12px; line-height: 1.35; color: #101828; font-weight: 850; overflow-wrap: anywhere; }
-    .anlyx-step-subtitle { margin: 3px 0 0; font-size: 11px; line-height: 1.35; color: #667085; font-weight: 700; overflow-wrap: anywhere; }
-    .anlyx-metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 12px; }
-    .anlyx-metric { border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; padding: 9px; min-width: 0; }
-    .anlyx-metric-label { margin: 0 0 4px; color: #667085; font-size: 10px; line-height: 1.2; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
-    .anlyx-metric-value { margin: 0; color: #101828; font-size: 12px; line-height: 1.35; font-weight: 850; overflow-wrap: anywhere; }
+    .anlyx-step-title { margin: 0; font-size: 11px; line-height: 1.3; color: #101828; font-weight: 850; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .anlyx-step-subtitle { margin: 3px 0 0; font-size: 10px; line-height: 1.3; color: #667085; font-weight: 700; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+    .anlyx-metric-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 10px; }
+    .anlyx-metric { border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; padding: 7px; min-width: 0; }
+    .anlyx-metric-label { margin: 0 0 3px; color: #667085; font-size: 9px; line-height: 1.2; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
+    .anlyx-metric-value { margin: 0; color: #101828; font-size: 11px; line-height: 1.3; font-weight: 850; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .anlyx-mini-pill { border: 1px solid #d7e0ee; background: #fff; color: #475467; border-radius: 999px; padding: 4px 8px; font-size: 11px; font-weight: 800; white-space: nowrap; }
     .anlyx-mini-pill.good { border-color: #bbf7d0; color: #087443; background: #ecfdf3; }
     .anlyx-mini-pill.warn { border-color: #fed7aa; color: #c2410c; background: #fff7ed; }
@@ -668,6 +668,8 @@ export function getOverlayClientScript(): string {
     .anlyx-pill.unmatched { border-color: #fed7aa; background: #fff7ed; color: #c2410c; }
     .anlyx-count { border: 1px solid #d7e0ee; background: #f8fafc; color: #475467; border-radius: 999px; padding: 3px 7px; font-size: 11px; font-weight: 850; white-space: nowrap; }
     .anlyx-summary { padding: 12px; display: grid; gap: 8px; }
+    .anlyx-status-banner { margin: 10px 12px 0; border: 1px solid #fed7aa; border-radius: 12px; background: #fff7ed; color: #9a3412; padding: 9px 10px; font-size: 12px; line-height: 1.45; font-weight: 750; }
+    .anlyx-status-banner.danger { border-color: #fecaca; background: #fff1f2; color: #b42318; }
     .anlyx-kv { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 8px; font-size: 12px; line-height: 1.45; }
     .anlyx-kv span:first-child { color: #667085; font-weight: 750; }
     .anlyx-kv span:last-child { min-width: 0; overflow-wrap: anywhere; font-weight: 750; color: #182230; }
@@ -681,7 +683,10 @@ export function getOverlayClientScript(): string {
     .anlyx-node.support .anlyx-node-index { background: #f97316; }
     .anlyx-node-type { margin: 0 0 3px; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; color: #64748b; font-weight: 850; }
     .anlyx-node-label { margin: 0; font-size: 12px; line-height: 1.35; font-weight: 850; overflow-wrap: anywhere; }
-    .anlyx-evidence { margin: 8px 0 0; padding: 8px; border: 1px dashed #cbd5e1; border-radius: 10px; background: rgba(248, 250, 252, .8); }
+    .anlyx-evidence-details { margin: 7px 0 0; border: 1px dashed #cbd5e1; border-radius: 10px; background: rgba(248, 250, 252, .8); overflow: hidden; }
+    .anlyx-evidence-details summary { cursor: pointer; list-style: none; padding: 7px 8px; font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 900; letter-spacing: .04em; }
+    .anlyx-evidence-details summary::-webkit-details-marker { display: none; }
+    .anlyx-evidence { margin: 0; padding: 7px 8px 8px; border-top: 1px dashed #cbd5e1; background: transparent; }
     .anlyx-evidence-title { margin: 0 0 5px; font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 900; letter-spacing: .04em; }
     .anlyx-evidence-item { display: grid; gap: 2px; font-size: 11px; line-height: 1.35; color: #475467; }
     .anlyx-evidence-item strong { color: #182230; overflow-wrap: anywhere; }
@@ -1091,7 +1096,7 @@ export function getOverlayClientScript(): string {
         '</div>' + renderFlowSummary(event, null) + '</section><section class="anlyx-section"><h3 class="anlyx-section-title">Request facts</h3>' +
         renderRequestMetrics(event, null) +
         '<div class="anlyx-summary">' +
-        renderStatusExplanation(event.status, false) +
+        renderStatusBanner(event.status, false) +
         '<div class="anlyx-empty">No scanned endpoint matched this request. If this should be known, run <strong>anlyx scan</strong> again or check the configured backend paths.</div>' +
       '</div></section>';
     }
@@ -1106,7 +1111,7 @@ export function getOverlayClientScript(): string {
       '<span class="anlyx-mini-pill good">confidence ' + escapeHtml(endpoint.confidence || "unknown") + '</span>' +
     '</div>' + renderFlowSummary(event, endpoint) + '</section>' +
     '<section class="anlyx-section"><h3 class="anlyx-section-title">Request facts</h3>' + renderRequestMetrics(event, endpoint) + '</section>' +
-    renderStatusExplanation(event.status, true) +
+    renderStatusBanner(event.status, true) +
     renderMainPath(flow) +
     renderSupportCalls(flow) +
     renderLinkedPages(event.matchedPages);
@@ -1182,13 +1187,13 @@ export function getOverlayClientScript(): string {
     return '<span class="anlyx-mini-pill ' + statusClass + '">' + escapeHtml(getStatusLabel(status)) + '</span>';
   }
 
-  function renderStatusExplanation(status, matched) {
+  function renderStatusBanner(status, matched) {
     const numeric = Number(status);
     if (numeric === 401 || numeric === 403) {
-      return '<section class="anlyx-section"><h3 class="anlyx-section-title">Request state</h3><div class="anlyx-empty">' + (matched ? 'This request matched the scanned flow, but' : 'This browser request was observed, but') + ' the app returned <strong>' + escapeHtml(status) + '</strong>. Treat it as a login or permission gate, not as a missing Anlyx flow.</div></section>';
+      return '<div class="anlyx-status-banner danger">' + (matched ? 'Matched flow, but' : 'Observed request, but') + ' the app returned <strong>' + escapeHtml(status) + '</strong>. This usually means a login or permission gate.</div>';
     }
     if (numeric >= 500) {
-      return '<section class="anlyx-section"><h3 class="anlyx-section-title">Request state</h3><div class="anlyx-empty">' + (matched ? 'This request reached a known endpoint, but' : 'This request failed before Anlyx could match it, and') + ' the server returned <strong>' + escapeHtml(status) + '</strong>. The flow is still useful for debugging the failing path.</div></section>';
+      return '<div class="anlyx-status-banner danger">' + (matched ? 'Known endpoint reached, but' : 'Request failed while unmatched, and') + ' the server returned <strong>' + escapeHtml(status) + '</strong>. Use the flow to debug the failing path.</div>';
     }
     return "";
   }
@@ -1282,12 +1287,12 @@ export function getOverlayClientScript(): string {
       return "";
     }
 
-    return '<div class="anlyx-evidence"><p class="anlyx-evidence-title">Evidence</p>' +
+    return '<details class="anlyx-evidence-details"><summary>Evidence details</summary><div class="anlyx-evidence"><p class="anlyx-evidence-title">Evidence</p>' +
       evidence.slice(0, 2).map((item) => '<div class="anlyx-evidence-item">' +
         '<strong>' + escapeHtml(item.label || "Evidence") + '</strong>' +
         (item.detail ? '<span>' + escapeHtml(item.detail) + '</span>' : '') +
       '</div>').join("") +
-    '</div>';
+    '</div></details>';
   }
 
   function getFallbackEvidence(node) {
