@@ -51,7 +51,7 @@ export function Sidebar({
         </div>
         <div>
           <div className="anlyx-brand__name">Anlyx</div>
-          <div className="anlyx-brand__project">Visual flow map</div>
+          <div className="anlyx-brand__project">Interaction flow map</div>
         </div>
         <button
           className="anlyx-panel-toggle"

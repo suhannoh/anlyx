@@ -16,6 +16,7 @@ describe("AnlyxAppShell", () => {
 
     expect(screen.getByRole("application", { name: "Anlyx application shell" })).toBeTruthy();
     expect(screen.getByText("Anlyx")).toBeTruthy();
+    expect(screen.getByText("Interaction flow map")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Project Zup" })).toBeTruthy();
   });
 
@@ -82,6 +83,20 @@ describe("AnlyxAppShell", () => {
     expect(screen.getByText("3 support calls")).toBeTruthy();
     expect(screen.getByText("6 evidence items")).toBeTruthy();
     expect(screen.getByText("Support calls from service")).toBeTruthy();
+  });
+
+  it("positions Flow Story around real app interaction evidence instead of generic architecture", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    const positioning = screen.getByRole("region", { name: "Interaction evidence chain" });
+    expect(within(positioning).getByText("Triggered page")).toBeTruthy();
+    expect(within(positioning).getByText("/benefit/[brandSlug]/[benefitSlugWithId]")).toBeTruthy();
+    expect(within(positioning).getByText("Browser API event")).toBeTruthy();
+    expect(within(positioning).getByText("GET /api/public/benefits/123")).toBeTruthy();
+    expect(within(positioning).getByText("Scanned backend path")).toBeTruthy();
+    expect(within(positioning).getByText("5 steps")).toBeTruthy();
+    expect(within(positioning).getByText("Static evidence")).toBeTruthy();
+    expect(within(positioning).getByText("not runtime tracing")).toBeTruthy();
   });
 
   it("renders the renamed product view tabs", () => {

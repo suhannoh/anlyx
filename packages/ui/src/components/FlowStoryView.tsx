@@ -9,6 +9,10 @@ import {
   Layers3,
   Maximize2,
   MonitorSmartphone,
+  MousePointerClick,
+  Route,
+  ShieldCheck,
+  Wifi,
   type LucideIcon
 } from "lucide-react";
 
@@ -58,6 +62,7 @@ export function FlowStoryView({
   const screenshot = storyPage?.screenshots[0];
   const stats = getFlowStoryStats(flow);
   const replayStepLabels = buildReplayStepLabels(flow);
+  const primaryApiCall = storyPage?.apiCalls.find((apiCall) => apiCall.endpointId === endpoint?.id);
 
   return (
     <main className="anlyx-flow-story">
@@ -79,6 +84,12 @@ export function FlowStoryView({
           </button>
         </div>
       </header>
+
+      <InteractionEvidenceChain
+        apiCallLabel={formatObservedApiCall(primaryApiCall, endpoint)}
+        backendStepCount={stats.mainSteps}
+        pageRoute={storyPage?.route}
+      />
 
       <section className="anlyx-flow-story__stage" aria-label="Flow Story canvas">
         <PagePreviewCard page={storyPage} />
@@ -114,6 +125,64 @@ export function FlowStoryView({
 
       {screenshot?.path ? <span className="anlyx-sr-only">{screenshot.path}</span> : null}
     </main>
+  );
+}
+
+function InteractionEvidenceChain({
+  apiCallLabel,
+  backendStepCount,
+  pageRoute
+}: {
+  apiCallLabel: string;
+  backendStepCount: number;
+  pageRoute: string | undefined;
+}): JSX.Element {
+  return (
+    <section className="anlyx-interaction-chain" aria-label="Interaction evidence chain">
+      <EvidenceChainItem
+        detail={pageRoute ?? "No page linked"}
+        icon={MousePointerClick}
+        label="Triggered page"
+        tone="page"
+      />
+      <EvidenceChainItem detail={apiCallLabel} icon={Wifi} label="Browser API event" tone="api" />
+      <EvidenceChainItem
+        detail={`${backendStepCount} steps`}
+        icon={Route}
+        label="Scanned backend path"
+        tone="backend"
+      />
+      <EvidenceChainItem
+        detail="not runtime tracing"
+        icon={ShieldCheck}
+        label="Static evidence"
+        tone="guard"
+      />
+    </section>
+  );
+}
+
+function EvidenceChainItem({
+  detail,
+  icon: Icon,
+  label,
+  tone
+}: {
+  detail: string;
+  icon: LucideIcon;
+  label: string;
+  tone: "api" | "backend" | "guard" | "page";
+}): JSX.Element {
+  return (
+    <article className={`anlyx-interaction-chain__item anlyx-interaction-chain__item--${tone}`}>
+      <span className="anlyx-interaction-chain__icon" aria-hidden="true">
+        <Icon size={16} strokeWidth={2.5} />
+      </span>
+      <div>
+        <span>{label}</span>
+        <strong>{detail}</strong>
+      </div>
+    </article>
   );
 }
 
@@ -350,6 +419,21 @@ function titleForEndpoint(endpoint: Endpoint): string {
       : undefined;
 
   return handler ?? `${endpoint.method} ${endpoint.path}`;
+}
+
+function formatObservedApiCall(
+  apiCall: PageStoryboard["apiCalls"][number] | undefined,
+  endpoint: Endpoint | undefined
+): string {
+  if (apiCall) {
+    return `${apiCall.method} ${apiCall.path}`;
+  }
+
+  if (endpoint) {
+    return `${endpoint.method} ${endpoint.path}`;
+  }
+
+  return "No API event matched";
 }
 
 function getFlowStoryStats(flow: EndpointFlow | undefined): {

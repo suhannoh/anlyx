@@ -2,7 +2,7 @@
 
 [한국어 문서](./README.ko.md)
 
-Visual flow maps for modern web apps.
+Interaction-first flow maps for modern web apps.
 
 Anlyx overlays your real local frontend app and shows which backend endpoint, service, repository, database table, capture state, API call, and static analysis evidence belongs to the interaction you just triggered.
 

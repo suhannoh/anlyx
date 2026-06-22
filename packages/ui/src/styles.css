@@ -504,7 +504,7 @@ body {
   overflow: hidden;
   min-width: 0;
   min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   background:
     linear-gradient(90deg, rgb(37 99 235 / 4%) 1px, transparent 1px),
     linear-gradient(rgb(37 99 235 / 4%) 1px, transparent 1px), #fbfcff;
@@ -556,6 +556,83 @@ body {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.anlyx-interaction-chain {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--anlyx-color-border);
+  background: rgb(248 251 255 / 88%);
+}
+
+.anlyx-interaction-chain__item {
+  display: grid;
+  align-items: center;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid #dde8f7;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgb(15 23 42 / 5%);
+}
+
+.anlyx-interaction-chain__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.anlyx-interaction-chain__item span:not(.anlyx-interaction-chain__icon) {
+  display: block;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.anlyx-interaction-chain__item strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 3px;
+  color: #111827;
+  font-size: 12px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.anlyx-interaction-chain__item--page .anlyx-interaction-chain__icon {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.anlyx-interaction-chain__item--api .anlyx-interaction-chain__icon {
+  background: #ecfeff;
+  color: #0891b2;
+}
+
+.anlyx-interaction-chain__item--backend .anlyx-interaction-chain__icon {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.anlyx-interaction-chain__item--guard .anlyx-interaction-chain__icon {
+  background: #f0fdf4;
+  color: #16a34a;
 }
 
 .anlyx-flow-story__stage {
@@ -1078,6 +1155,10 @@ body {
 }
 
 @media (max-width: 1320px) {
+  .anlyx-interaction-chain {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .anlyx-flow-story__stage {
     grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
     gap: 20px;
@@ -1096,6 +1177,10 @@ body {
 @media (max-width: 1080px) {
   .anlyx-flow-story {
     overflow: auto;
+  }
+
+  .anlyx-interaction-chain {
+    grid-template-columns: 1fr;
   }
 
   .anlyx-flow-story__stage {

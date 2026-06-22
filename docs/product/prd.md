@@ -40,7 +40,7 @@
 
 - 프로젝트명: **Anlyx**
 - 발음: **앤릭스**
-- 분류: 오픈소스 개발자 도구 / API Flow Storyboard / Architecture Visualizer
+- 분류: 오픈소스 개발자 도구 / API Flow Storyboard / Interaction Flow Inspector
 - v0.1 핵심 대상: **Spring Boot + Next.js App Router**
 - 문서 목적: Anlyx의 제품 방향, MVP 범위, 핵심 기능, 디자인 방향, 기술 스택을 정의한다.
 
@@ -77,19 +77,19 @@ Analyze + Links + X
 ## 2.2 슬로건
 
 ```txt
-Anlyx — Visual flow maps for modern web apps.
+Anlyx — Interaction-first flow maps for modern web apps.
 ```
 
 ## 2.3 한 줄 설명
 
 ```txt
-Anlyx turns pages, APIs, services, and database flows into animated visual maps.
+Anlyx turns real app interactions, APIs, services, and database flows into animated evidence maps.
 ```
 
 ## 2.4 한국어 설명
 
 ```txt
-Anlyx는 프론트 페이지부터 백엔드 엔드포인트, 서비스 레이어, 데이터베이스까지 이어지는 흐름을 애니메이션 맵으로 보여주는 개발자 도구다.
+Anlyx는 실제 프론트 앱 조작에서 발생한 API를 백엔드 엔드포인트, 서비스 레이어, 데이터베이스 흐름까지 이어 보여주는 개발자 도구다.
 ```
 
 ---
