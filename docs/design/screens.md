@@ -56,7 +56,9 @@ I just clicked this in the real app. What API fired, and where does that request
 
 Flow Drawer MUST include:
 
+- The most recent user action that triggered the request when it can be observed, such as a clicked button, link, tab, form submit, or keyboard activation
 - Last matched API event with method, path, status, and latency when available
+- Status meaning for common local-development states, especially `401`/`403` login or permission gates and `5xx` server failures
 - Matched endpoint label
 - Main Flow path using scanned `EndpointFlow.mainPath`
 - Support calls derived from non-main flow nodes/edges or `EndpointFlow.subFlows`
@@ -79,11 +81,15 @@ Inject Mode SHOULD keep a small recent-event timeline inside the drawer.
 
 The timeline MUST include:
 
+- Triggering user action when available
 - Method
 - Request path
 - Match state: `matched`, `unmatched`, or `ignored`
 - HTTP status when available
 - Relative order of events
+- Repeated-event grouping for the same method, path, status, and matched endpoint so polling/auth checks do not flood the drawer
+
+The timeline MUST ignore common local-development implementation noise, including Anlyx runtime requests, Vite internals, Next.js `/_next/*` assets, hot-update files, favicon requests, browser-service config probes such as `/getconfig/*`, and static asset-like URLs. Ignored events are a filtering behavior, not a user-facing error state.
 
 The timeline MUST NOT become Advanced Replay in v0.1. It is a local UI affordance for recently observed browser requests only.
 

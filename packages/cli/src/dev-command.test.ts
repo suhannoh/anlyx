@@ -366,6 +366,29 @@ describe("dev command", () => {
     expect(script).toContain("Evidence");
   });
 
+  it("filters development noise and groups repeated overlay API events", () => {
+    const script = getOverlayClientScript();
+
+    expect(script).toContain('url.pathname.startsWith("/_next/")');
+    expect(script).toContain('url.pathname.startsWith("/getconfig/")');
+    expect(script).toContain('url.pathname.includes("hot-update")');
+    expect(script).toContain("findExistingEventIndex");
+    expect(script).toContain("event.count");
+    expect(script).toContain("login required");
+    expect(script).toContain("DOMContentLoaded");
+  });
+
+  it("captures recent user actions and attaches them to overlay API events", () => {
+    const script = getOverlayClientScript();
+
+    expect(script).toContain("installUserActionTracker");
+    expect(script).toContain("captureUserAction");
+    expect(script).toContain("findActionForRequest");
+    expect(script).toContain("triggeredBy");
+    expect(script).toContain("Clicked");
+    expect(script).toContain("User action");
+  });
+
   it("--no-open disables browser opening", async () => {
     await withTempDir(async (dir) => {
       await writeReportData(dir, scanResult);

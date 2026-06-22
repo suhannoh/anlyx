@@ -587,6 +587,7 @@ export function getOverlayClientScript(): string {
   const state = {
     report: null,
     events: [],
+    actions: [],
     selectedEventId: null,
     open: false,
     loadError: null
@@ -602,12 +603,17 @@ export function getOverlayClientScript(): string {
   function scheduleOverlayMount() {
     const mount = () => window.setTimeout(mountOverlayUi, 0);
 
-    if (document.readyState === "complete") {
+    if (document.body) {
       mount();
       return;
     }
 
-    window.addEventListener("load", mount, { once: true });
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", mount, { once: true });
+      return;
+    }
+
+    mount();
   }
 
   function mountOverlayUi() {
@@ -633,17 +639,20 @@ export function getOverlayClientScript(): string {
     .anlyx-request-top h3 { margin: 0 0 7px; font-size: 12px; color: #475467; letter-spacing: 0; font-weight: 850; }
     .anlyx-request-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .anlyx-request-path { min-width: 0; overflow-wrap: anywhere; font-size: 13px; font-weight: 850; line-height: 1.35; color: #101828; }
+    .anlyx-action-line { display: block; margin: 5px 0 0; color: #667085; font-size: 11px; line-height: 1.35; font-weight: 750; overflow-wrap: anywhere; }
     .anlyx-request-meta { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px 13px; }
     .anlyx-mini-pill { border: 1px solid #d7e0ee; background: #fff; color: #475467; border-radius: 999px; padding: 4px 8px; font-size: 11px; font-weight: 800; white-space: nowrap; }
     .anlyx-mini-pill.good { border-color: #bbf7d0; color: #087443; background: #ecfdf3; }
     .anlyx-mini-pill.warn { border-color: #fed7aa; color: #c2410c; background: #fff7ed; }
-    .anlyx-event { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 10px 12px; border-bottom: 1px solid #edf2f7; cursor: pointer; }
+    .anlyx-mini-pill.danger { border-color: #fecaca; color: #b42318; background: #fff1f2; }
+    .anlyx-event { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 10px 12px; border-bottom: 1px solid #edf2f7; cursor: pointer; }
     .anlyx-event:last-child { border-bottom: 0; }
     .anlyx-event[data-selected="true"] { background: #eef4ff; }
     .anlyx-method { border-radius: 8px; background: #dbeafe; color: #1d4ed8; font-weight: 850; font-size: 11px; padding: 4px 6px; }
     .anlyx-path { min-width: 0; overflow-wrap: anywhere; font-size: 12px; font-weight: 750; color: #182230; }
     .anlyx-pill { border: 1px solid #bbf7d0; color: #087443; background: #ecfdf3; border-radius: 999px; padding: 3px 7px; font-size: 11px; font-weight: 800; white-space: nowrap; }
     .anlyx-pill.unmatched { border-color: #fed7aa; background: #fff7ed; color: #c2410c; }
+    .anlyx-count { border: 1px solid #d7e0ee; background: #f8fafc; color: #475467; border-radius: 999px; padding: 3px 7px; font-size: 11px; font-weight: 850; white-space: nowrap; }
     .anlyx-summary { padding: 12px; display: grid; gap: 8px; }
     .anlyx-kv { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 8px; font-size: 12px; line-height: 1.45; }
     .anlyx-kv span:first-child { color: #667085; font-weight: 750; }
@@ -700,6 +709,7 @@ export function getOverlayClientScript(): string {
       render();
     });
 
+    installUserActionTracker(root);
     installFetchInterceptor();
     installXhrInterceptor();
     loadReport();
@@ -728,13 +738,94 @@ export function getOverlayClientScript(): string {
       const startedAt = performance.now();
       try {
         const response = await originalFetch.apply(this, arguments);
-        recordApiEvent({ method, url, status: response.status, durationMs: performance.now() - startedAt });
+        recordApiEvent({ method, url, status: response.status, durationMs: performance.now() - startedAt, startedAt });
         return response;
       } catch (error) {
-        recordApiEvent({ method, url, status: "failed", durationMs: performance.now() - startedAt });
+        recordApiEvent({ method, url, status: "failed", durationMs: performance.now() - startedAt, startedAt });
         throw error;
       }
     };
+  }
+
+  function installUserActionTracker(root) {
+    document.addEventListener("click", (event) => captureUserAction(event, root), true);
+    document.addEventListener("submit", (event) => captureUserAction(event, root), true);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        captureUserAction(event, root);
+      }
+    }, true);
+  }
+
+  function captureUserAction(event, root) {
+    const target = getActionTarget(event.target);
+    if (!target || root.contains(target)) {
+      return;
+    }
+
+    const action = {
+      id: String(Date.now()) + "-" + Math.random().toString(36).slice(2),
+      type: getActionType(event, target),
+      label: getActionLabel(target),
+      selector: getElementPath(target),
+      at: performance.now(),
+      capturedAt: Date.now()
+    };
+    state.actions = [action].concat(state.actions).slice(0, 20);
+  }
+
+  function getActionTarget(target) {
+    if (!target || !target.closest) {
+      return null;
+    }
+    return target.closest("[data-anlyx-label], button, a, input, select, textarea, label, summary, [role='button'], [role='link'], [role='menuitem'], [role='tab']");
+  }
+
+  function getActionType(event, target) {
+    if (event.type === "submit") {
+      return "Submitted";
+    }
+    if (event.type === "keydown") {
+      return "Pressed";
+    }
+    if (target.tagName === "A" || target.getAttribute("role") === "link") {
+      return "Opened";
+    }
+    return "Clicked";
+  }
+
+  function getActionLabel(target) {
+    const label =
+      target.getAttribute("data-anlyx-label") ||
+      target.getAttribute("aria-label") ||
+      target.getAttribute("title") ||
+      target.getAttribute("placeholder") ||
+      target.name ||
+      target.textContent ||
+      target.value ||
+      getElementPath(target);
+    return compactLabel(label);
+  }
+
+  function compactLabel(value) {
+    const label = String(value || "").replace(/\s+/g, " ").trim();
+    if (!label) {
+      return "unnamed element";
+    }
+    return label.length > 80 ? label.slice(0, 77) + "..." : label;
+  }
+
+  function getElementPath(target) {
+    const tag = String(target.tagName || "element").toLowerCase();
+    if (target.id) {
+      return tag + "#" + target.id;
+    }
+    const testId = target.getAttribute("data-testid");
+    if (testId) {
+      return tag + "[data-testid='" + testId + "']";
+    }
+    const className = String(target.className || "").split(/\s+/).filter(Boolean).slice(0, 2).join(".");
+    return className ? tag + "." + className : tag;
   }
 
   function installXhrInterceptor() {
@@ -755,7 +846,8 @@ export function getOverlayClientScript(): string {
             method: request.method,
             url: request.url,
             status: this.status || "unknown",
-            durationMs: performance.now() - request.startedAt
+            durationMs: performance.now() - request.startedAt,
+            startedAt: request.startedAt
           });
         });
       }
@@ -776,15 +868,59 @@ export function getOverlayClientScript(): string {
       path: normalized.pathname,
       status: event.status,
       durationMs: Math.round(event.durationMs),
+      count: 1,
+      lastSeenAt: Date.now(),
+      triggeredBy: findActionForRequest(event.startedAt),
       matchedEndpoint: matched.endpoint,
       matchedFlow: matched.flow,
       matchedPages: matched.pages
     };
 
+    const existingIndex = findExistingEventIndex(item);
+    if (existingIndex >= 0) {
+      const existing = state.events[existingIndex];
+      const updated = Object.assign({}, existing, {
+        status: item.status,
+        durationMs: item.durationMs,
+        count: (existing.count || 1) + 1,
+        lastSeenAt: item.lastSeenAt,
+        triggeredBy: item.triggeredBy || existing.triggeredBy,
+        matchedEndpoint: item.matchedEndpoint,
+        matchedFlow: item.matchedFlow,
+        matchedPages: item.matchedPages
+      });
+      state.events = [updated].concat(state.events.filter((_, index) => index !== existingIndex)).slice(0, 12);
+      state.selectedEventId = updated.id;
+      state.open = true;
+      render();
+      return;
+    }
+
     state.events = [item].concat(state.events).slice(0, 12);
     state.selectedEventId = item.id;
     state.open = true;
     render();
+  }
+
+  function findExistingEventIndex(item) {
+    return state.events.findIndex((event) => {
+      return event.method === item.method &&
+        event.path === item.path &&
+        String(event.status) === String(item.status) &&
+        getEndpointId(event.matchedEndpoint) === getEndpointId(item.matchedEndpoint);
+    });
+  }
+
+  function getEndpointId(endpoint) {
+    return endpoint && endpoint.id ? endpoint.id : "";
+  }
+
+  function findActionForRequest(startedAt) {
+    const requestStartedAt = Number(startedAt || performance.now());
+    return state.actions.find((action) => {
+      const age = requestStartedAt - action.at;
+      return age >= -50 && age <= 3000;
+    }) || null;
   }
 
   function normalizeUrl(value) {
@@ -799,7 +935,14 @@ export function getOverlayClientScript(): string {
   }
 
   function shouldIgnoreRequest(url) {
-    if (url.pathname.startsWith("/_anlyx/") || url.pathname.startsWith("/@vite/")) {
+    if (
+      url.pathname.startsWith("/_anlyx/") ||
+      url.pathname.startsWith("/@vite/") ||
+      url.pathname.startsWith("/_next/") ||
+      url.pathname.startsWith("/getconfig/") ||
+      url.pathname.includes("hot-update") ||
+      url.pathname === "/favicon.ico"
+    ) {
       return true;
     }
     return /\.(css|js|map|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|otf)$/i.test(url.pathname);
@@ -866,7 +1009,8 @@ export function getOverlayClientScript(): string {
         const matched = Boolean(event.matchedEndpoint);
         return '<div class="anlyx-event" data-event-id="' + escapeHtml(event.id) + '" data-selected="' + String(selected && selected.id === event.id) + '">' +
           '<span class="anlyx-method">' + escapeHtml(event.method) + '</span>' +
-          '<span class="anlyx-path">' + escapeHtml(event.path) + '</span>' +
+          '<span class="anlyx-path">' + escapeHtml(event.path) + renderTimelineAction(event) + '</span>' +
+          '<span class="anlyx-count">' + escapeHtml(event.count && event.count > 1 ? "×" + event.count : "1") + '</span>' +
           '<span class="anlyx-pill ' + (matched ? '' : 'unmatched') + '">' + (matched ? 'matched' : 'unmatched') + '</span>' +
         '</div>';
       }).join("") +
@@ -879,29 +1023,121 @@ export function getOverlayClientScript(): string {
 
     if (!endpoint) {
       return '<section class="anlyx-request-hero"><div class="anlyx-request-top"><div><h3>What just happened</h3><div class="anlyx-request-line">' +
-        '<span class="anlyx-method">' + escapeHtml(event.method) + '</span><span class="anlyx-request-path">' + escapeHtml(event.path) + '</span></div></div>' +
+        '<span class="anlyx-method">' + escapeHtml(event.method) + '</span><span class="anlyx-request-path">' + escapeHtml(event.path) + '</span></div>' + renderActionSummary(event) + '</div>' +
         '<span class="anlyx-mini-pill warn">unmatched</span></div><div class="anlyx-request-meta">' +
-        '<span class="anlyx-mini-pill">status ' + escapeHtml(event.status) + '</span>' +
+        renderStatusPill(event.status) +
         '<span class="anlyx-mini-pill">' + escapeHtml(event.durationMs) + 'ms</span>' +
+        renderRepeatPill(event) +
         '</div></section><section class="anlyx-section"><h3 class="anlyx-section-title">Unmatched request</h3><div class="anlyx-summary">' +
         renderKv("Request", event.method + " " + event.path) +
-        renderKv("Status", String(event.status)) +
+        renderKv("Status", getStatusLabel(event.status)) +
         renderKv("Latency", event.durationMs + "ms") +
+        renderActionDetails(event) +
+        renderStatusExplanation(event.status, false) +
         '<div class="anlyx-empty">No scanned endpoint matched this request. If this should be known, run <strong>anlyx scan</strong> again or check the configured backend paths.</div>' +
       '</div></section>';
     }
 
     return '<section class="anlyx-request-hero"><div class="anlyx-request-top"><div><h3>What just happened</h3><div class="anlyx-request-line">' +
-      '<span class="anlyx-method">' + escapeHtml(event.method) + '</span><span class="anlyx-request-path">' + escapeHtml(event.path) + '</span></div></div>' +
+      '<span class="anlyx-method">' + escapeHtml(event.method) + '</span><span class="anlyx-request-path">' + escapeHtml(event.path) + '</span></div>' + renderActionSummary(event) + '</div>' +
       '<span class="anlyx-mini-pill good">matched</span></div><div class="anlyx-request-meta">' +
       '<span class="anlyx-mini-pill">endpoint ' + escapeHtml(endpoint.method + " " + endpoint.path) + '</span>' +
-      '<span class="anlyx-mini-pill">status ' + escapeHtml(event.status) + '</span>' +
+      renderStatusPill(event.status) +
       '<span class="anlyx-mini-pill">' + escapeHtml(event.durationMs) + 'ms</span>' +
+      renderRepeatPill(event) +
       '<span class="anlyx-mini-pill good">confidence ' + escapeHtml(endpoint.confidence || "unknown") + '</span>' +
     '</div></section>' +
+    renderStatusExplanation(event.status, true) +
+    renderActionDetails(event) +
     renderMainPath(flow) +
     renderSupportCalls(flow) +
     renderLinkedPages(event.matchedPages);
+  }
+
+  function renderTimelineAction(event) {
+    if (!event.triggeredBy) {
+      return "";
+    }
+    return '<span class="anlyx-action-line">' + escapeHtml(formatAction(event.triggeredBy)) + '</span>';
+  }
+
+  function renderActionSummary(event) {
+    if (!event.triggeredBy) {
+      return '<p class="anlyx-action-line">No recent user action captured for this request.</p>';
+    }
+    return '<p class="anlyx-action-line">' + escapeHtml(formatAction(event.triggeredBy)) + '</p>';
+  }
+
+  function renderActionDetails(event) {
+    if (!event.triggeredBy) {
+      return "";
+    }
+    return renderKv("User action", formatAction(event.triggeredBy)) +
+      renderKv("Element", event.triggeredBy.selector || "unknown");
+  }
+
+  function formatAction(action) {
+    return action.type + " " + action.label;
+  }
+
+  function renderRepeatPill(event) {
+    if (!event.count || event.count <= 1) {
+      return "";
+    }
+    return '<span class="anlyx-mini-pill">seen ×' + escapeHtml(event.count) + '</span>';
+  }
+
+  function renderStatusPill(status) {
+    const statusClass = getStatusClass(status);
+    return '<span class="anlyx-mini-pill ' + statusClass + '">' + escapeHtml(getStatusLabel(status)) + '</span>';
+  }
+
+  function renderStatusExplanation(status, matched) {
+    const numeric = Number(status);
+    if (numeric === 401 || numeric === 403) {
+      return '<section class="anlyx-section"><h3 class="anlyx-section-title">Request state</h3><div class="anlyx-empty">' + (matched ? 'This request matched the scanned flow, but' : 'This browser request was observed, but') + ' the app returned <strong>' + escapeHtml(status) + '</strong>. Treat it as a login or permission gate, not as a missing Anlyx flow.</div></section>';
+    }
+    if (numeric >= 500) {
+      return '<section class="anlyx-section"><h3 class="anlyx-section-title">Request state</h3><div class="anlyx-empty">' + (matched ? 'This request reached a known endpoint, but' : 'This request failed before Anlyx could match it, and') + ' the server returned <strong>' + escapeHtml(status) + '</strong>. The flow is still useful for debugging the failing path.</div></section>';
+    }
+    return "";
+  }
+
+  function getStatusLabel(status) {
+    const numeric = Number(status);
+    if (numeric === 401) {
+      return "login required · 401";
+    }
+    if (numeric === 403) {
+      return "permission denied · 403";
+    }
+    if (numeric >= 500) {
+      return "server error · " + status;
+    }
+    if (numeric >= 400) {
+      return "client error · " + status;
+    }
+    if (numeric >= 300) {
+      return "redirect · " + status;
+    }
+    if (numeric >= 200) {
+      return "success · " + status;
+    }
+    return "status " + status;
+  }
+
+  function getStatusClass(status) {
+    const numeric = Number(status);
+    if (numeric === 401 || numeric === 403 || numeric >= 500) {
+      return "danger";
+    }
+    if (numeric >= 400) {
+      return "warn";
+    }
+    if (numeric >= 200 && numeric < 300) {
+      return "good";
+    }
+    return "";
   }
 
   function renderMainPath(flow) {
