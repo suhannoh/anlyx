@@ -576,7 +576,7 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function getOverlayClientScript(): string {
+export function getOverlayClientScript(): string {
   return String.raw`
 (() => {
   if (window.__ANLYX_OVERLAY_INSTALLED__) {
@@ -619,7 +619,7 @@ function getOverlayClientScript(): string {
     style.textContent = ${"`"}
     #anlyx-overlay-root { position: fixed; inset: 0; pointer-events: none; z-index: 2147483647; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #101828; }
     .anlyx-fab { pointer-events: auto; position: absolute; right: 18px; bottom: 18px; height: 44px; min-width: 92px; border: 0; border-radius: 999px; background: #2563eb; color: white; font-weight: 800; font-size: 14px; box-shadow: 0 18px 40px rgba(37, 99, 235, 0.32); cursor: pointer; }
-    .anlyx-drawer { pointer-events: auto; position: absolute; top: 12px; right: 12px; bottom: 12px; width: min(460px, calc(100vw - 24px)); border: 1px solid #dbe4f0; border-radius: 16px; background: rgba(255,255,255,0.97); box-shadow: 0 24px 80px rgba(15, 23, 42, 0.18); overflow: hidden; display: none; }
+    .anlyx-drawer { pointer-events: auto; position: absolute; top: 12px; right: 12px; bottom: 12px; width: min(520px, calc(100vw - 24px)); border: 1px solid #dbe4f0; border-radius: 16px; background: rgba(255,255,255,0.98); box-shadow: 0 24px 80px rgba(15, 23, 42, 0.18); overflow: hidden; display: none; }
     .anlyx-drawer[data-open="true"] { display: grid; grid-template-rows: auto minmax(0, 1fr); }
     .anlyx-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 16px 12px; border-bottom: 1px solid #e6edf6; }
     .anlyx-title { margin: 0; font-size: 15px; line-height: 1.25; font-weight: 850; letter-spacing: 0; }
@@ -628,6 +628,15 @@ function getOverlayClientScript(): string {
     .anlyx-body { overflow: auto; padding: 14px 16px 18px; }
     .anlyx-section { border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; margin-bottom: 12px; overflow: hidden; }
     .anlyx-section-title { margin: 0; padding: 11px 12px; font-size: 11px; text-transform: uppercase; color: #64748b; letter-spacing: .04em; border-bottom: 1px solid #edf2f7; font-weight: 850; }
+    .anlyx-request-hero { border: 1px solid #c7d7fe; border-radius: 16px; background: linear-gradient(180deg, #f8fbff, #fff); margin-bottom: 12px; overflow: hidden; }
+    .anlyx-request-top { padding: 14px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; border-bottom: 1px solid #e6edf6; }
+    .anlyx-request-top h3 { margin: 0 0 7px; font-size: 12px; color: #475467; letter-spacing: 0; font-weight: 850; }
+    .anlyx-request-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .anlyx-request-path { min-width: 0; overflow-wrap: anywhere; font-size: 13px; font-weight: 850; line-height: 1.35; color: #101828; }
+    .anlyx-request-meta { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px 13px; }
+    .anlyx-mini-pill { border: 1px solid #d7e0ee; background: #fff; color: #475467; border-radius: 999px; padding: 4px 8px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .anlyx-mini-pill.good { border-color: #bbf7d0; color: #087443; background: #ecfdf3; }
+    .anlyx-mini-pill.warn { border-color: #fed7aa; color: #c2410c; background: #fff7ed; }
     .anlyx-event { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 10px 12px; border-bottom: 1px solid #edf2f7; cursor: pointer; }
     .anlyx-event:last-child { border-bottom: 0; }
     .anlyx-event[data-selected="true"] { background: #eef4ff; }
@@ -639,11 +648,22 @@ function getOverlayClientScript(): string {
     .anlyx-kv { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 8px; font-size: 12px; line-height: 1.45; }
     .anlyx-kv span:first-child { color: #667085; font-weight: 750; }
     .anlyx-kv span:last-child { min-width: 0; overflow-wrap: anywhere; font-weight: 750; color: #182230; }
-    .anlyx-path-list { display: grid; gap: 8px; padding: 12px; }
-    .anlyx-node { border: 1px solid #d8e4f5; border-left: 4px solid #2563eb; border-radius: 12px; padding: 9px 10px; background: linear-gradient(180deg, #fff, #f8fbff); }
-    .anlyx-node.support { border-left-color: #f97316; background: #fffaf5; }
+    .anlyx-path-list { display: grid; gap: 10px; padding: 12px; }
+    .anlyx-node { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; border: 1px solid #d8e4f5; border-radius: 12px; padding: 10px; background: linear-gradient(180deg, #fff, #f8fbff); }
+    .anlyx-node.support { border-color: #fdba74; background: #fffaf5; }
+    .anlyx-node-index { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 999px; background: #2563eb; color: #fff; font-size: 11px; font-weight: 900; }
+    .anlyx-node.support .anlyx-node-index { background: #f97316; }
     .anlyx-node-type { margin: 0 0 3px; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; color: #64748b; font-weight: 850; }
     .anlyx-node-label { margin: 0; font-size: 12px; line-height: 1.35; font-weight: 850; overflow-wrap: anywhere; }
+    .anlyx-evidence { margin: 8px 0 0; padding: 8px; border: 1px dashed #cbd5e1; border-radius: 10px; background: rgba(248, 250, 252, .8); }
+    .anlyx-evidence-title { margin: 0 0 5px; font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 900; letter-spacing: .04em; }
+    .anlyx-evidence-item { display: grid; gap: 2px; font-size: 11px; line-height: 1.35; color: #475467; }
+    .anlyx-evidence-item strong { color: #182230; overflow-wrap: anywhere; }
+    .anlyx-evidence-item span { overflow-wrap: anywhere; }
+    .anlyx-disclosure { margin-bottom: 12px; border: 1px solid #fed7aa; border-radius: 14px; background: #fffaf5; overflow: hidden; }
+    .anlyx-disclosure summary { cursor: pointer; list-style: none; padding: 11px 12px; display: flex; justify-content: space-between; gap: 10px; align-items: center; font-size: 11px; text-transform: uppercase; color: #9a3412; font-weight: 900; letter-spacing: .04em; }
+    .anlyx-disclosure summary::-webkit-details-marker { display: none; }
+    .anlyx-disclosure-count { border-radius: 999px; border: 1px solid #fdba74; background: #fff; padding: 3px 7px; color: #c2410c; font-size: 11px; font-weight: 900; text-transform: none; letter-spacing: 0; }
     .anlyx-empty { padding: 18px 12px; color: #667085; font-size: 13px; line-height: 1.5; }
     .anlyx-link { color: #2563eb; font-weight: 800; text-decoration: none; }
   ${"`"};
@@ -831,9 +851,9 @@ function getOverlayClientScript(): string {
       return '<section class="anlyx-section"><h3 class="anlyx-section-title">Report data</h3><div class="anlyx-empty">' + escapeHtml(state.loadError) + '</div></section>';
     }
 
-    const timeline = renderTimeline(selected);
     const details = selected ? renderSelectedEvent(selected) : '<section class="anlyx-section"><h3 class="anlyx-section-title">Waiting</h3><div class="anlyx-empty">Use the app normally. When a browser API request fires, Anlyx will match it to the scanned flow.</div></section>';
-    return timeline + details;
+    const timeline = renderTimeline(selected);
+    return details + timeline;
   }
 
   function renderTimeline(selected) {
@@ -858,7 +878,12 @@ function getOverlayClientScript(): string {
     const flow = event.matchedFlow;
 
     if (!endpoint) {
-      return '<section class="anlyx-section"><h3 class="anlyx-section-title">Unmatched request</h3><div class="anlyx-summary">' +
+      return '<section class="anlyx-request-hero"><div class="anlyx-request-top"><div><h3>What just happened</h3><div class="anlyx-request-line">' +
+        '<span class="anlyx-method">' + escapeHtml(event.method) + '</span><span class="anlyx-request-path">' + escapeHtml(event.path) + '</span></div></div>' +
+        '<span class="anlyx-mini-pill warn">unmatched</span></div><div class="anlyx-request-meta">' +
+        '<span class="anlyx-mini-pill">status ' + escapeHtml(event.status) + '</span>' +
+        '<span class="anlyx-mini-pill">' + escapeHtml(event.durationMs) + 'ms</span>' +
+        '</div></section><section class="anlyx-section"><h3 class="anlyx-section-title">Unmatched request</h3><div class="anlyx-summary">' +
         renderKv("Request", event.method + " " + event.path) +
         renderKv("Status", String(event.status)) +
         renderKv("Latency", event.durationMs + "ms") +
@@ -866,12 +891,13 @@ function getOverlayClientScript(): string {
       '</div></section>';
     }
 
-    return '<section class="anlyx-section"><h3 class="anlyx-section-title">Matched request</h3><div class="anlyx-summary">' +
-      renderKv("Request", event.method + " " + event.path) +
-      renderKv("Endpoint", endpoint.method + " " + endpoint.path) +
-      renderKv("Status", String(event.status)) +
-      renderKv("Latency", event.durationMs + "ms") +
-      renderKv("Confidence", endpoint.confidence || "unknown") +
+    return '<section class="anlyx-request-hero"><div class="anlyx-request-top"><div><h3>What just happened</h3><div class="anlyx-request-line">' +
+      '<span class="anlyx-method">' + escapeHtml(event.method) + '</span><span class="anlyx-request-path">' + escapeHtml(event.path) + '</span></div></div>' +
+      '<span class="anlyx-mini-pill good">matched</span></div><div class="anlyx-request-meta">' +
+      '<span class="anlyx-mini-pill">endpoint ' + escapeHtml(endpoint.method + " " + endpoint.path) + '</span>' +
+      '<span class="anlyx-mini-pill">status ' + escapeHtml(event.status) + '</span>' +
+      '<span class="anlyx-mini-pill">' + escapeHtml(event.durationMs) + 'ms</span>' +
+      '<span class="anlyx-mini-pill good">confidence ' + escapeHtml(endpoint.confidence || "unknown") + '</span>' +
     '</div></section>' +
     renderMainPath(flow) +
     renderSupportCalls(flow) +
@@ -880,11 +906,11 @@ function getOverlayClientScript(): string {
 
   function renderMainPath(flow) {
     if (!flow || !Array.isArray(flow.mainPath) || flow.mainPath.length === 0) {
-      return '<section class="anlyx-section"><h3 class="anlyx-section-title">Main path</h3><div class="anlyx-empty">No main path was inferred for this endpoint.</div></section>';
+      return '<section class="anlyx-section"><h3 class="anlyx-section-title">Main flow</h3><div class="anlyx-empty">No main path was inferred for this endpoint.</div></section>';
     }
     const nodeById = new Map((flow.nodes || []).map((node) => [node.id, node]));
-    return '<section class="anlyx-section"><h3 class="anlyx-section-title">Main path</h3><div class="anlyx-path-list">' +
-      flow.mainPath.map((nodeId) => renderNode(nodeById.get(nodeId), false)).join("") +
+    return '<section class="anlyx-section"><h3 class="anlyx-section-title">Main flow</h3><div class="anlyx-path-list">' +
+      flow.mainPath.map((nodeId, index) => renderNode(nodeById.get(nodeId), false, index + 1)).join("") +
     '</div></section>';
   }
 
@@ -897,9 +923,9 @@ function getOverlayClientScript(): string {
     if (support.length === 0) {
       return "";
     }
-    return '<section class="anlyx-section"><h3 class="anlyx-section-title">Support calls</h3><div class="anlyx-path-list">' +
-      support.slice(0, 8).map((node) => renderNode(node, true)).join("") +
-    '</div></section>';
+    return '<details class="anlyx-disclosure" open><summary><span>Support calls</span><span class="anlyx-disclosure-count">' + support.length + '</span></summary><div class="anlyx-path-list">' +
+      support.slice(0, 8).map((node, index) => renderNode(node, true, index + 1)).join("") +
+    '</div></details>';
   }
 
   function renderLinkedPages(pages) {
@@ -907,18 +933,48 @@ function getOverlayClientScript(): string {
       return "";
     }
     return '<section class="anlyx-section"><h3 class="anlyx-section-title">Linked pages</h3><div class="anlyx-path-list">' +
-      pages.slice(0, 6).map((page) => '<div class="anlyx-node"><p class="anlyx-node-type">Page</p><p class="anlyx-node-label">' + escapeHtml(page.route || page.id) + '</p></div>').join("") +
+      pages.slice(0, 6).map((page, index) => '<div class="anlyx-node"><span class="anlyx-node-index">' + escapeHtml(index + 1) + '</span><div><p class="anlyx-node-type">Page</p><p class="anlyx-node-label">' + escapeHtml(page.route || page.id) + '</p></div></div>').join("") +
     '</div></section>';
   }
 
-  function renderNode(node, support) {
+  function renderNode(node, support, index) {
     if (!node) {
-      return '<div class="anlyx-node"><p class="anlyx-node-type">Unknown</p><p class="anlyx-node-label">Missing node data</p></div>';
+      return '<div class="anlyx-node"><span class="anlyx-node-index">' + escapeHtml(index || "?") + '</span><div><p class="anlyx-node-type">Unknown</p><p class="anlyx-node-label">Missing node data</p></div></div>';
     }
     return '<div class="anlyx-node ' + (support ? 'support' : '') + '">' +
-      '<p class="anlyx-node-type">' + escapeHtml(node.type || "node") + ' · ' + escapeHtml(node.confidence || "unknown") + '</p>' +
+      '<span class="anlyx-node-index">' + escapeHtml(index || "?") + '</span><div>' +
+      '<p class="anlyx-node-type">' + escapeHtml(node.type || "node") + ' · confidence ' + escapeHtml(node.confidence || "unknown") + '</p>' +
       '<p class="anlyx-node-label">' + escapeHtml(node.label || node.id) + '</p>' +
+      renderEvidence(node) +
+      '</div>' +
     '</div>';
+  }
+
+  function renderEvidence(node) {
+    const evidence = Array.isArray(node.evidence) && node.evidence.length > 0 ? node.evidence : getFallbackEvidence(node);
+    if (evidence.length === 0) {
+      return "";
+    }
+
+    return '<div class="anlyx-evidence"><p class="anlyx-evidence-title">Evidence</p>' +
+      evidence.slice(0, 2).map((item) => '<div class="anlyx-evidence-item">' +
+        '<strong>' + escapeHtml(item.label || "Evidence") + '</strong>' +
+        (item.detail ? '<span>' + escapeHtml(item.detail) + '</span>' : '') +
+      '</div>').join("") +
+    '</div>';
+  }
+
+  function getFallbackEvidence(node) {
+    if (node.type === "endpoint") {
+      return [{ label: "Endpoint matched", detail: "Derived from scanned backend routes." }];
+    }
+    if (node.type === "database") {
+      return [{ label: "Database table inferred", detail: "Derived from repository/entity metadata." }];
+    }
+    if (node.type === "unknown") {
+      return [{ label: "Analysis stopped", detail: "Anlyx could not resolve this code element." }];
+    }
+    return [{ label: "Code node resolved", detail: "Derived from the scanned static flow graph." }];
   }
 
   function renderKv(label, value) {

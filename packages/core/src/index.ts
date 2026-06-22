@@ -2,12 +2,14 @@ export type {
   AnlyxConfig,
   BackendConfig,
   CaptureConfig,
+  DevConfig,
   FrontendConfig,
   ManualFrontendConfig,
   NextFrontendConfig,
   NormalizedAnlyxConfig,
   NormalizedBackendConfig,
   NormalizedCaptureConfig,
+  NormalizedDevConfig,
   NormalizedFrontendConfig,
   NormalizedManualFrontendConfig,
   NormalizedNextFrontendConfig,
@@ -34,6 +36,7 @@ export type {
 } from "./report-aggregation.js";
 
 export type {
+  AnalysisEvidence,
   ApiCall,
   CaptureResult,
   CaptureStatus,
@@ -56,6 +59,7 @@ export {
   anlyxConfigSchema,
   backendConfigSchema,
   captureConfigSchema,
+  devConfigSchema,
   defineConfig,
   frontendConfigSchema,
   manualFrontendConfigSchema,
@@ -73,6 +77,7 @@ export { validateFixtureExpectedData } from "./fixture-validation.js";
 export { aggregateReportData, matchApiCallToEndpoint } from "./report-aggregation.js";
 
 export {
+  analysisEvidenceSchema,
   apiCallSchema,
   captureResultSchema,
   captureStatusSchema,

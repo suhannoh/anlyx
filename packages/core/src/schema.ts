@@ -5,6 +5,15 @@ export const confidenceLevelSchema = z.enum(["high", "medium", "low", "unknown"]
 export const captureStatusSchema = z.enum(["success", "failed", "pending"]);
 export const supportLevelSchema = z.enum(["basic", "enhanced", "deep"]);
 
+export const analysisEvidenceSchema = z
+  .object({
+    label: z.string(),
+    detail: z.string().optional(),
+    source: z.string().optional(),
+    confidence: confidenceLevelSchema.optional()
+  })
+  .strict();
+
 export const endpointSchema = z
   .object({
     id: z.string(),
@@ -48,6 +57,7 @@ export const flowNodeSchema = z
     filePath: z.string().optional(),
     lineNumber: z.number().optional(),
     confidence: confidenceLevelSchema.optional(),
+    evidence: z.array(analysisEvidenceSchema).optional(),
     metadata: z.record(z.string(), z.unknown()).optional()
   })
   .strict();
@@ -60,7 +70,8 @@ export const flowEdgeSchema = z
     kind: z.enum(["main", "sub", "request", "response", "db", "external", "cache"]),
     label: z.string().optional(),
     animated: z.boolean().optional(),
-    confidence: confidenceLevelSchema.optional()
+    confidence: confidenceLevelSchema.optional(),
+    evidence: z.array(analysisEvidenceSchema).optional()
   })
   .strict();
 
@@ -156,6 +167,7 @@ export type HttpMethod = z.infer<typeof httpMethodSchema>;
 export type ConfidenceLevel = z.infer<typeof confidenceLevelSchema>;
 export type CaptureStatus = z.infer<typeof captureStatusSchema>;
 export type SupportLevel = z.infer<typeof supportLevelSchema>;
+export type AnalysisEvidence = z.infer<typeof analysisEvidenceSchema>;
 export type Endpoint = z.infer<typeof endpointSchema>;
 export type FlowNode = z.infer<typeof flowNodeSchema>;
 export type FlowEdge = z.infer<typeof flowEdgeSchema>;

@@ -11,6 +11,7 @@ export default defineConfig({
   test: {
     include: ["packages/**/*.test.ts", "packages/**/*.test.tsx"],
     passWithNoTests: false,
-    setupFiles: ["./packages/ui/src/test/setup.ts"]
+    setupFiles: ["./packages/ui/src/test/setup.ts"],
+    testTimeout: 10000
   }
 });

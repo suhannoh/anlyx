@@ -37,7 +37,15 @@ export const mockScanResult: ScanResult = scanResultSchema.parse({
           id: "endpoint:get:/api/public/benefits/{id}",
           type: "endpoint",
           label: "GET /api/public/benefits/{id}",
-          confidence: "high"
+          confidence: "high",
+          evidence: [
+            {
+              label: "Matched Spring mapping",
+              detail: '@GetMapping("/api/public/benefits/{id}")',
+              source: "spring-endpoint-scanner",
+              confidence: "high"
+            }
+          ]
         },
         {
           id: "controller:PublicBenefitController#getDetail",
@@ -45,25 +53,63 @@ export const mockScanResult: ScanResult = scanResultSchema.parse({
           label: "PublicBenefitController#getDetail",
           filePath: "backend/src/main/java/com/zup/benefit/PublicBenefitController.java",
           lineNumber: 24,
-          confidence: "unknown"
+          confidence: "unknown",
+          evidence: [
+            {
+              label: "Controller method detected",
+              detail: "PublicBenefitController#getDetail",
+              source: "spring-flow-scanner",
+              confidence: "unknown"
+            }
+          ]
         },
         {
           id: "service:PublicBenefitService#getBenefitDetail",
           type: "service",
           label: "PublicBenefitService#getBenefitDetail",
-          confidence: "high"
+          confidence: "high",
+          evidence: [
+            {
+              label: "Matched from controller field call",
+              detail: "publicBenefitService.getBenefitDetail(...)",
+              source: "spring-flow-scanner",
+              confidence: "high"
+            },
+            {
+              label: "Resolved service class by field type",
+              detail: "PublicBenefitService",
+              source: "spring-flow-scanner",
+              confidence: "high"
+            }
+          ]
         },
         {
           id: "repository:BenefitRepository#findById",
           type: "repository",
           label: "BenefitRepository#findById",
-          confidence: "high"
+          confidence: "high",
+          evidence: [
+            {
+              label: "Repository call detected in method body",
+              detail: "benefitRepository.findById(...)",
+              source: "spring-flow-scanner",
+              confidence: "high"
+            }
+          ]
         },
         {
           id: "database:benefits",
           type: "database",
           label: "benefits",
           confidence: "high",
+          evidence: [
+            {
+              label: "Resolved repository entity",
+              detail: "Benefit -> benefits",
+              source: "spring-flow-scanner",
+              confidence: "high"
+            }
+          ],
           metadata: {
             tableName: "benefits"
           }

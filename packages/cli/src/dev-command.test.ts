@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import { getHelpText, runCli } from "./index.js";
 import {
   buildProxyTargetUrl,
+  getOverlayClientScript,
   getOverlayScriptTag,
   injectOverlayScript,
   readReportData,
@@ -353,6 +354,16 @@ describe("dev command", () => {
     expect(getOverlayScriptTag("http://localhost:4777")).toBe(
       '<script src="http://localhost:4777/_anlyx/overlay.js" defer></script>'
     );
+  });
+
+  it("serves a flow-first overlay drawer for real app interactions", () => {
+    const script = getOverlayClientScript();
+
+    expect(script).toContain("What just happened");
+    expect(script).toContain("anlyx-request-hero");
+    expect(script).toContain("Main flow");
+    expect(script).toContain("Support calls");
+    expect(script).toContain("Evidence");
   });
 
   it("--no-open disables browser opening", async () => {

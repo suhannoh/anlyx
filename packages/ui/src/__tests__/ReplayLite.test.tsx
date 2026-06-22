@@ -17,7 +17,7 @@ describe("Replay Lite", () => {
   it("ReplayControls renders play/pause/restart/loop", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
+    fireEvent.click(screen.getByRole("button", { name: "Process" }));
 
     const controls = screen.getByRole("region", { name: "Process Flow controls" });
     expect(within(controls).getByRole("button", { name: "Play" })).toBeTruthy();
@@ -30,7 +30,7 @@ describe("Replay Lite", () => {
   it("Process Flow tab shows a replay-capable canvas, not a placeholder", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
+    fireEvent.click(screen.getByRole("button", { name: "Process" }));
 
     expect(screen.getByRole("region", { name: "Process Flow map" })).toBeTruthy();
     expect(screen.queryByText("Endpoint Map will render here")).toBeNull();
@@ -41,7 +41,7 @@ describe("Replay Lite", () => {
   it("active node is highlighted after play", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
+    fireEvent.click(screen.getByRole("button", { name: "Process" }));
     fireEvent.click(screen.getByRole("button", { name: "Play" }));
 
     expect(
@@ -55,7 +55,7 @@ describe("Replay Lite", () => {
     vi.useFakeTimers();
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
+    fireEvent.click(screen.getByRole("button", { name: "Process" }));
     fireEvent.click(screen.getByRole("button", { name: "Play" }));
     act(() => {
       vi.advanceTimersByTime(800);
@@ -72,7 +72,7 @@ describe("Replay Lite", () => {
     vi.useFakeTimers();
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
+    fireEvent.click(screen.getByRole("button", { name: "Process" }));
     fireEvent.click(screen.getByRole("button", { name: "Play" }));
     act(() => {
       vi.advanceTimersByTime(4_800);
@@ -92,7 +92,7 @@ describe("Replay Lite", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "GET /api/public/brands BrandController#list" })
     );
-    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
+    fireEvent.click(screen.getByRole("button", { name: "Process" }));
 
     expect(
       screen.getByText(

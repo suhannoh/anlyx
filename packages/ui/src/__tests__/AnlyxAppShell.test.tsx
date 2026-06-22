@@ -16,7 +16,7 @@ describe("AnlyxAppShell", () => {
 
     expect(screen.getByRole("application", { name: "Anlyx application shell" })).toBeTruthy();
     expect(screen.getByText("Anlyx")).toBeTruthy();
-    expect(screen.getByText("Zup")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Project Zup" })).toBeTruthy();
   });
 
   it("renders endpoint list", () => {
@@ -31,7 +31,7 @@ describe("AnlyxAppShell", () => {
   it("renders page list", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
+    fireEvent.click(screen.getByRole("button", { name: "Captures" }));
 
     const pageList = screen.getByRole("list", { name: "Page list" });
     expect(within(pageList).getByText("/benefit/[brandSlug]/[benefitSlugWithId]")).toBeTruthy();
@@ -40,6 +40,8 @@ describe("AnlyxAppShell", () => {
 
   it("renders Endpoint Map canvas", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Structure" }));
 
     expect(screen.getByRole("region", { name: "Endpoint Map" })).toBeTruthy();
     expect(screen.getAllByText("GET /api/public/benefits/{id}").length).toBeGreaterThan(0);
@@ -51,8 +53,9 @@ describe("AnlyxAppShell", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
     const inspector = screen.getByRole("complementary", { name: "Inspector" });
-    expect(within(inspector).getByText("Backend Node")).toBeTruthy();
+    expect(within(inspector).getByText("Flow Evidence")).toBeTruthy();
     expect(within(inspector).getByText("GET /api/public/benefits/{id}")).toBeTruthy();
+    expect(within(inspector).getByText("Analysis evidence")).toBeTruthy();
     expect(within(inspector).getByText("Linked pages")).toBeTruthy();
     expect(within(inspector).getByText("Sub flows")).toBeTruthy();
     expect(within(inspector).getByText("DB tables")).toBeTruthy();
@@ -60,8 +63,6 @@ describe("AnlyxAppShell", () => {
 
   it("renders replay controls", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
 
     const replay = screen.getByRole("region", { name: "Process Flow controls" });
     expect(within(replay).getByRole("button", { name: "Play" })).toBeTruthy();
@@ -72,18 +73,30 @@ describe("AnlyxAppShell", () => {
     expect(within(replay).getByText("Main Flow only")).toBeTruthy();
   });
 
+  it("renders Flow Story as a finished default workspace", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    expect(screen.getByRole("region", { name: "Flow Story canvas" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Flow Story path" })).toBeTruthy();
+    expect(screen.getByText("5 main steps")).toBeTruthy();
+    expect(screen.getByText("3 support calls")).toBeTruthy();
+    expect(screen.getByText("6 evidence items")).toBeTruthy();
+    expect(screen.getByText("Support calls from service")).toBeTruthy();
+  });
+
   it("renders the renamed product view tabs", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
+    expect(screen.getByRole("button", { name: "Flow Story" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Structure" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Connected Frontend" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Process Flow" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Captures" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Process" })).toBeTruthy();
   });
 
   it("renders process flow timeline", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Process Flow" }));
+    fireEvent.click(screen.getByRole("button", { name: "Process" }));
 
     const timeline = screen.getByRole("region", { name: "Process Flow timeline" });
     expect(within(timeline).getByText("Inferred request path")).toBeTruthy();
@@ -112,13 +125,13 @@ describe("AnlyxAppShell", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Collapse navigation panel" }));
 
-    expect(window.localStorage.getItem("anlyx:ui:leftCollapsed")).toBe("true");
+    expect(window.localStorage.getItem("anlyx:ui:v2:leftCollapsed")).toBe("true");
   });
 
   it("displays failed page status", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
+    fireEvent.click(screen.getByRole("button", { name: "Captures" }));
 
     expect(screen.getByText("failed")).toBeTruthy();
     expect(screen.getByText("Login required")).toBeTruthy();
@@ -127,7 +140,7 @@ describe("AnlyxAppShell", () => {
   it("displays pending page status", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
+    fireEvent.click(screen.getByRole("button", { name: "Captures" }));
     fireEvent.click(
       screen.getByRole("button", { name: "/preview/[slug] pending 0 API calls 0 screenshots" })
     );
@@ -140,10 +153,10 @@ describe("AnlyxAppShell", () => {
     ).toBeTruthy();
   });
 
-  it("uses a contextual page inspector in the Connected Frontend tab", () => {
+  it("uses a contextual page inspector in the Captures tab", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Connected Frontend" }));
+    fireEvent.click(screen.getByRole("button", { name: "Captures" }));
 
     const inspector = screen.getByRole("complementary", { name: "Inspector" });
     expect(within(inspector).getByText("Frontend Page")).toBeTruthy();

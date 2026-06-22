@@ -21,6 +21,13 @@ type ConfidenceLevel = "high" | "medium" | "low" | "unknown";
 type CaptureStatus = "success" | "failed" | "pending";
 
 type SupportLevel = "basic" | "enhanced" | "deep";
+
+type AnalysisEvidence = {
+  label: string;
+  detail?: string;
+  source?: string;
+  confidence?: ConfidenceLevel;
+};
 ```
 
 JSON example:
@@ -100,6 +107,7 @@ type FlowNode = {
   filePath?: string;
   lineNumber?: number;
   confidence?: ConfidenceLevel;
+  evidence?: AnalysisEvidence[];
   metadata?: Record<string, unknown>;
 };
 ```
@@ -132,6 +140,7 @@ type FlowEdge = {
   label?: string;
   animated?: boolean;
   confidence?: ConfidenceLevel;
+  evidence?: AnalysisEvidence[];
 };
 ```
 
@@ -147,6 +156,21 @@ JSON example:
   "kind": "main",
   "label": "calls",
   "animated": false,
+  "confidence": "high"
+}
+```
+
+## AnalysisEvidence
+
+`AnalysisEvidence` explains why Anlyx inferred a node or edge. It is product-facing data, not a debug-only field. The viewer SHOULD show this evidence in the inspector so low-confidence, unknown, and best-effort analysis remains understandable.
+
+JSON example:
+
+```json
+{
+  "label": "Detected field call",
+  "detail": "publicBenefitService.getBenefitDetail(...)",
+  "source": "spring-flow-scanner",
   "confidence": "high"
 }
 ```

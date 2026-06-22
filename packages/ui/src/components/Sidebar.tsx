@@ -1,16 +1,16 @@
 import type { Endpoint, PageStoryboard, ScanResult } from "@anlyx/core";
-import { PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
+import { Box, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 
 import { EndpointList } from "./EndpointList.js";
 import { PageList } from "./PageList.js";
 
 type SidebarProps = {
   data: ScanResult;
-  activeView: "structure" | "frontend" | "process";
+  activeView: "flowStory" | "structure" | "frontend" | "process";
   collapsed: boolean;
   selectedEndpointId: string | undefined;
   selectedPageId: string | undefined;
-  onSelectView: (view: "structure" | "frontend" | "process") => void;
+  onSelectView: (view: "flowStory" | "structure" | "frontend" | "process") => void;
   onToggleCollapsed: () => void;
   onSelectEndpoint: (endpoint: Endpoint) => void;
   onSelectPage: (page: PageStoryboard) => void;
@@ -51,7 +51,7 @@ export function Sidebar({
         </div>
         <div>
           <div className="anlyx-brand__name">Anlyx</div>
-          <div className="anlyx-brand__project">{data.projectName}</div>
+          <div className="anlyx-brand__project">Visual flow map</div>
         </div>
         <button
           className="anlyx-panel-toggle"
@@ -63,7 +63,23 @@ export function Sidebar({
         </button>
       </div>
 
+      <button
+        className="anlyx-project-select"
+        type="button"
+        aria-label={`Project ${data.projectName}`}
+      >
+        <Box size={15} strokeWidth={2.4} />
+        <span>{data.projectName}</span>
+      </button>
+
       <nav className="anlyx-tabs" aria-label="Views">
+        <button
+          className={activeView === "flowStory" ? "anlyx-tab anlyx-tab--active" : "anlyx-tab"}
+          type="button"
+          onClick={() => onSelectView("flowStory")}
+        >
+          Flow Story
+        </button>
         <button
           className={activeView === "structure" ? "anlyx-tab anlyx-tab--active" : "anlyx-tab"}
           type="button"
@@ -76,14 +92,14 @@ export function Sidebar({
           type="button"
           onClick={() => onSelectView("frontend")}
         >
-          Connected Frontend
+          Captures
         </button>
         <button
           className={activeView === "process" ? "anlyx-tab anlyx-tab--active" : "anlyx-tab"}
           type="button"
           onClick={() => onSelectView("process")}
         >
-          Process Flow
+          Process
         </button>
       </nav>
 
@@ -91,25 +107,52 @@ export function Sidebar({
         <span className="anlyx-search__label">Search</span>
         <span className="anlyx-search__control">
           <Search size={14} strokeWidth={2.4} />
-          <input placeholder="Search endpoints or pages" type="search" />
+          <input placeholder="Search pages, endpoints, or services" type="search" />
         </span>
       </label>
 
       <div className="anlyx-sidebar__list-region">
-        {activeView === "frontend" ? (
-          <PageList
-            pages={data.pages}
-            selectedPageId={selectedPageId}
-            onSelectPage={onSelectPage}
-          />
-        ) : (
-          <EndpointList
-            endpoints={data.endpoints}
-            selectedEndpointId={selectedEndpointId}
-            onSelectEndpoint={onSelectEndpoint}
-          />
-        )}
+        <PageList pages={data.pages} selectedPageId={selectedPageId} onSelectPage={onSelectPage} />
+        <EndpointList
+          endpoints={data.endpoints}
+          selectedEndpointId={selectedEndpointId}
+          onSelectEndpoint={onSelectEndpoint}
+        />
+        <BackendServiceList data={data} />
       </div>
     </aside>
+  );
+}
+
+function BackendServiceList({ data }: { data: ScanResult }): JSX.Element {
+  const services = [
+    ...new Map(
+      data.flows
+        .flatMap((flow) => [...flow.nodes, ...flow.subFlows.flatMap((subFlow) => subFlow.nodes)])
+        .filter((node) =>
+          ["service", "repository", "mapper", "validator", "utility"].includes(node.type)
+        )
+        .map((node) => [node.id, node])
+    ).values()
+  ];
+
+  if (services.length === 0) {
+    return <></>;
+  }
+
+  return (
+    <section className="anlyx-sidebar-section" aria-labelledby="anlyx-services-heading">
+      <div className="anlyx-section-heading" id="anlyx-services-heading">
+        Backend Services
+      </div>
+      <ul className="anlyx-list anlyx-list--compact" aria-label="Backend service list">
+        {services.map((node) => (
+          <li className="anlyx-service-row" key={node.id}>
+            <Box size={14} strokeWidth={2.3} />
+            <span>{node.label}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

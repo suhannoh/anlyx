@@ -346,6 +346,14 @@ function createDatabaseStep(repositoryClass: JavaClass, index: Map<string, JavaC
     type: "database",
     label: tableName,
     confidence: entityClass ? "high" : "unknown",
+    evidence: [
+      {
+        label: entityClass ? "Resolved repository entity" : "Inferred table from entity name",
+        detail: `${entityName} -> ${tableName}`,
+        source: "spring-flow-scanner",
+        confidence: entityClass ? "high" : "unknown"
+      }
+    ],
     metadata: {
       entityName
     }
@@ -611,7 +619,15 @@ function createEndpointNode(endpoint: Endpoint): FlowNode {
     id: `endpoint:${endpoint.id}`,
     type: "endpoint",
     label: `${endpoint.method} ${endpoint.path}`,
-    confidence: endpoint.confidence ?? "high"
+    confidence: endpoint.confidence ?? "high",
+    evidence: [
+      {
+        label: "Endpoint matched",
+        detail: `${endpoint.method} ${endpoint.path}`,
+        source: "spring-endpoint-scanner",
+        confidence: endpoint.confidence ?? "high"
+      }
+    ]
   };
 }
 
@@ -628,6 +644,14 @@ function createClassNode(
     filePath: javaClass.filePath,
     lineNumber: javaClass.lineNumber,
     confidence,
+    evidence: [
+      {
+        label: evidenceLabelForType(type),
+        detail: methodName ? `${javaClass.className}#${methodName}` : javaClass.className,
+        source: "spring-flow-scanner",
+        confidence
+      }
+    ],
     metadata: {
       className: javaClass.className,
       ...(methodName ? { methodName } : {}),
@@ -650,6 +674,14 @@ function createSubFlowNode(
     filePath: javaClass.filePath,
     lineNumber: javaClass.lineNumber,
     confidence,
+    evidence: [
+      {
+        label: "Detected support call",
+        detail: `${javaClass.className}#${methodName}`,
+        source: "spring-flow-scanner",
+        confidence
+      }
+    ],
     metadata: {
       className: javaClass.className,
       methodName
@@ -696,7 +728,15 @@ function createUnknownNode(
     id: `unknown:${kind}:${labelValue}`,
     type: "unknown",
     label: `${kind}: ${labelValue}`,
-    confidence
+    confidence,
+    evidence: [
+      {
+        label: "Analysis stopped",
+        detail: `Could not resolve ${kind} ${labelValue}`,
+        source: "spring-flow-scanner",
+        confidence
+      }
+    ]
   };
 }
 
@@ -719,8 +759,29 @@ function addMainStep(
     from: fromNode.id,
     to: step.node.id,
     kind: step.edgeKind,
-    confidence: step.confidence
+    confidence: step.confidence,
+    evidence: [
+      {
+        label: "Detected call relationship",
+        detail: `${fromNode.label} -> ${step.node.label}`,
+        source: "spring-flow-scanner",
+        confidence: step.confidence
+      }
+    ]
   });
+}
+
+function evidenceLabelForType(type: FlowNode["type"]): string {
+  switch (type) {
+    case "controller":
+      return "Resolved controller method";
+    case "service":
+      return "Resolved service class by field type";
+    case "repository":
+      return "Repository call detected in method body";
+    default:
+      return "Code node resolved";
+  }
 }
 
 function addUniqueNode(nodes: FlowNode[], node: FlowNode): void {

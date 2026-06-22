@@ -15,6 +15,8 @@ describe("Endpoint Map canvas", () => {
   it("AnlyxAppShell renders Endpoint Map instead of placeholder", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Structure" }));
+
     expect(screen.getByRole("region", { name: "Endpoint Map" })).toBeTruthy();
     expect(screen.queryByText("Endpoint Map will render here")).toBeNull();
   });
@@ -22,6 +24,7 @@ describe("Endpoint Map canvas", () => {
   it("endpoint list click changes selected endpoint", () => {
     render(<AnlyxAppShell data={withSecondEndpoint(mockScanResult)} />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Structure" }));
     fireEvent.click(
       screen.getByRole("button", { name: "GET /api/public/brands BrandController#list" })
     );
@@ -32,6 +35,8 @@ describe("Endpoint Map canvas", () => {
   it("flow node labels are visible", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Structure" }));
+
     const map = screen.getByRole("region", { name: "Endpoint Map" });
     expect(within(map).getByText("GET /api/public/benefits/{id}")).toBeTruthy();
     expect(within(map).getByText("PublicBenefitService#getBenefitDetail")).toBeTruthy();
@@ -40,6 +45,8 @@ describe("Endpoint Map canvas", () => {
   it("unknown node is visible", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Structure" }));
+
     const map = screen.getByRole("region", { name: "Endpoint Map" });
     expect(within(map).getByText("unknown")).toBeTruthy();
   });
@@ -47,6 +54,7 @@ describe("Endpoint Map canvas", () => {
   it("inspector shows selected node details", () => {
     render(<AnlyxAppShell data={mockScanResult} />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Structure" }));
     fireEvent.click(screen.getByRole("button", { name: "Select node benefits" }));
 
     const inspector = screen.getByRole("complementary", { name: "Inspector" });
@@ -57,6 +65,7 @@ describe("Endpoint Map canvas", () => {
   it("empty state is shown when selected endpoint has no flow", () => {
     render(<AnlyxAppShell data={withSecondEndpoint(mockScanResult)} />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Structure" }));
     fireEvent.click(
       screen.getByRole("button", { name: "GET /api/public/brands BrandController#list" })
     );

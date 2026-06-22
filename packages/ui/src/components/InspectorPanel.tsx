@@ -1,11 +1,12 @@
 import type { EndpointFlow, FlowNode, PageStoryboard, ScanResult } from "@anlyx/core";
 
 import type { ReplayLiteState } from "../replay/use-replay-lite.js";
+import { AnalysisEvidenceList } from "./AnalysisEvidenceList.js";
 import { StatusBadge } from "./StatusBadge.js";
 
 type InspectorPanelProps = {
   data: ScanResult;
-  activeView: "structure" | "frontend" | "process";
+  activeView: "flowStory" | "structure" | "frontend" | "process";
   collapsed: boolean;
   selectedFlow: EndpointFlow | undefined;
   selectedNode: FlowNode | undefined;
@@ -92,13 +93,14 @@ export function InspectorPanel({
   }
 
   const linkedPages = selectedNode ? findLinkedPages(data, selectedNode.id) : [];
+  const calls = selectedNode ? findCalls(selectedFlow, selectedNode.id) : [];
 
   return (
     <aside className="anlyx-inspector" role="complementary" aria-label="Inspector">
       <div className="anlyx-panel-heading">
         <div>
           <p className="anlyx-eyebrow">Inspector</p>
-          <h2>{activeView === "process" ? "Process Step" : "Backend Node"}</h2>
+          <h2>{activeView === "process" ? "Process Step" : "Flow Evidence"}</h2>
         </div>
         <button
           className="anlyx-panel-toggle"
@@ -128,6 +130,22 @@ export function InspectorPanel({
             <Field label="Label" value={selectedNode.label} />
             <Field label="File path" value={selectedNode.filePath ?? "Unknown"} />
             <Field label="Line number" value={formatLineNumber(selectedNode.lineNumber)} />
+          </section>
+          <AnalysisEvidenceList node={selectedNode} />
+          <section className="anlyx-inspector-group" aria-label="Calls">
+            <h3>Calls</h3>
+            {calls.length > 0 ? (
+              <ul className="anlyx-call-list">
+                {calls.map((call) => (
+                  <li key={call.id}>
+                    <span>{call.label}</span>
+                    <StatusBadge tone={call.confidence}>{call.confidence}</StatusBadge>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No outgoing calls detected for this node.</p>
+            )}
           </section>
           {selectedNode.metadata ? (
             <section className="anlyx-inspector-group" aria-label="Metadata">
@@ -211,4 +229,28 @@ function findLinkedPages(data: ScanResult, nodeId: string): PageStoryboard[] {
 
 function findDatabaseLabel(flow: EndpointFlow | undefined): string | undefined {
   return flow?.nodes.find((node) => node.type === "database")?.label;
+}
+
+function findCalls(
+  flow: EndpointFlow | undefined,
+  nodeId: string
+): Array<{ id: string; label: string; confidence: "high" | "medium" | "low" | "unknown" }> {
+  if (!flow) {
+    return [];
+  }
+
+  const allNodes = [...flow.nodes, ...flow.subFlows.flatMap((subFlow) => subFlow.nodes)];
+  const allEdges = [...flow.edges, ...flow.subFlows.flatMap((subFlow) => subFlow.edges)];
+
+  return allEdges
+    .filter((edge) => edge.from === nodeId)
+    .map((edge) => {
+      const target = allNodes.find((node) => node.id === edge.to);
+
+      return {
+        id: edge.id,
+        label: target?.label ?? edge.to,
+        confidence: edge.confidence ?? "unknown"
+      };
+    });
 }

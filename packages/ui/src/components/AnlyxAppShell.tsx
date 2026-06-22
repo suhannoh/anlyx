@@ -3,6 +3,7 @@ import type { EndpointFlow, FlowNode, ScanResult } from "@anlyx/core";
 import { Group, Panel, Separator, usePanelRef } from "react-resizable-panels";
 
 import { EndpointMapCanvas } from "./EndpointMapCanvas.js";
+import { FlowStoryView } from "./FlowStoryView.js";
 import { InspectorPanel } from "./InspectorPanel.js";
 import { PageStoryboardView } from "./PageStoryboardView.js";
 import { ProcessFlowView } from "./ProcessFlowView.js";
@@ -13,12 +14,12 @@ export type AnlyxAppShellProps = {
   data: ScanResult;
 };
 
-export type ViewMode = "structure" | "frontend" | "process";
+export type ViewMode = "flowStory" | "structure" | "frontend" | "process";
 
 const STORAGE_KEYS = {
-  leftCollapsed: "anlyx:ui:leftCollapsed",
-  panelLayout: "anlyx:ui:panelLayout",
-  rightCollapsed: "anlyx:ui:rightCollapsed",
+  leftCollapsed: "anlyx:ui:v2:leftCollapsed",
+  panelLayout: "anlyx:ui:v2:panelLayout",
+  rightCollapsed: "anlyx:ui:v2:rightCollapsed",
   selectedEndpointId: "anlyx:ui:selectedEndpointId",
   selectedPageId: "anlyx:ui:selectedPageId"
 } as const;
@@ -30,7 +31,7 @@ const DEFAULT_PANEL_LAYOUT = {
 };
 
 export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
-  const [activeView, setActiveView] = useState<ViewMode>("structure");
+  const [activeView, setActiveView] = useState<ViewMode>("flowStory");
   const [selectedEndpointId, setSelectedEndpointId] = usePersistentString(
     STORAGE_KEYS.selectedEndpointId,
     selectInitialEndpointId(data)
@@ -145,11 +146,23 @@ export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
             onToggleCollapsed={toggleLeftPanel}
             onSelectEndpoint={(endpoint) => {
               setSelectedEndpointId(endpoint.id);
-              setActiveView("structure");
+              if (activeView !== "structure" && activeView !== "process") {
+                setActiveView("flowStory");
+              }
             }}
             onSelectPage={(page) => {
               setSelectedPageId(page.id);
-              setActiveView("frontend");
+              const linkedEndpointId = page.apiCalls.find(
+                (apiCall) => apiCall.endpointId
+              )?.endpointId;
+
+              if (linkedEndpointId) {
+                setSelectedEndpointId(linkedEndpointId);
+              }
+
+              if (activeView !== "frontend") {
+                setActiveView("flowStory");
+              }
             }}
           />
         </Panel>
@@ -161,6 +174,26 @@ export function AnlyxAppShell({ data }: AnlyxAppShellProps): JSX.Element {
             className={activeView === "process" ? "anlyx-main anlyx-main--process" : "anlyx-main"}
             aria-live="polite"
           >
+            {activeView === "flowStory" ? (
+              <FlowStoryView
+                data={data}
+                endpoint={selectedEndpoint}
+                flow={selectedFlow}
+                page={selectedPage}
+                replayDisabled={replayUnavailable}
+                replayLoop={replay.loop}
+                replaySpeed={replaySpeed}
+                replayState={replay.state}
+                replaySteps={replay.steps}
+                selectedNodeId={selectedNode?.id}
+                onPause={replay.pause}
+                onPlay={replay.play}
+                onRestart={replay.restart}
+                onSelectNode={(node) => setSelectedNodeId(node.id)}
+                onSpeedChange={setReplaySpeed}
+                onToggleLoop={replay.toggleLoop}
+              />
+            ) : null}
             {activeView === "structure" ? (
               <EndpointMapCanvas
                 eyebrow="Backend API Structure"
