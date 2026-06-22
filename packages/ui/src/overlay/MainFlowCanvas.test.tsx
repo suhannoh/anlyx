@@ -49,6 +49,51 @@ const accountFlow: EndpointFlow = {
   subFlows: []
 };
 
+const savedBenefitsFlow: EndpointFlow = {
+  endpointId: "GET:/api/account/saved-benefits",
+  nodes: [
+    {
+      id: "endpoint:GET:/api/account/saved-benefits",
+      type: "endpoint",
+      label: "GET /api/account/saved-benefits",
+      confidence: "high"
+    },
+    {
+      id: "controller:AccountController",
+      type: "controller",
+      label: "AccountController#savedBenefits",
+      confidence: "high"
+    },
+    {
+      id: "service:SavedBenefitService",
+      type: "service",
+      label: "SavedBenefitService#list",
+      confidence: "high"
+    },
+    {
+      id: "repository:SavedBenefitRepository",
+      type: "repository",
+      label: "SavedBenefitRepository#findAllByUserAccountOrderBySavedAtDesc",
+      confidence: "high"
+    },
+    {
+      id: "database:saved_benefit",
+      type: "database",
+      label: "saved_benefit",
+      confidence: "high"
+    }
+  ],
+  edges: [],
+  mainPath: [
+    "endpoint:GET:/api/account/saved-benefits",
+    "controller:AccountController",
+    "service:SavedBenefitService",
+    "repository:SavedBenefitRepository",
+    "database:saved_benefit"
+  ],
+  subFlows: []
+};
+
 describe("MainFlowCanvas", () => {
   it("renders the matched backend path with a real React Flow canvas", () => {
     render(
@@ -69,10 +114,12 @@ describe("MainFlowCanvas", () => {
     expect(within(canvas).getAllByText("ZupAccountController#me")).toHaveLength(2);
     expect(within(canvas).getByText("Auth / Session")).toBeTruthy();
     expect(within(canvas).getByText("SessionAuthFilter")).toBeTruthy();
+    expect(within(canvas).getByText("Service")).toBeTruthy();
+    expect(within(canvas).getByText("AccountService#getMe")).toBeTruthy();
     expect(within(canvas).getByText("Result")).toBeTruthy();
     expect(within(canvas).getByText("401 Auth required")).toBeTruthy();
     expect(canvas.querySelector(".react-flow")).toBeTruthy();
-    expect(canvas.querySelectorAll(".react-flow__node")).toHaveLength(4);
+    expect(canvas.querySelectorAll(".react-flow__node")).toHaveLength(5);
   });
 
   it("builds node and edge data for the active request path", () => {
@@ -87,10 +134,61 @@ describe("MainFlowCanvas", () => {
       "API",
       "Controller",
       "Auth / Session",
+      "Service",
       "Result"
     ]);
-    expect(model.edges).toHaveLength(3);
-    expect(model.edges.map((edge) => edge.data?.tone)).toEqual(["blue", "violet", "amber"]);
+    expect(model.edges).toHaveLength(4);
+    expect(model.edges.map((edge) => edge.data?.tone)).toEqual(["blue", "violet", "violet", "amber"]);
     expect(model.edges.every((edge) => edge.type === "anlyxFlowEdge")).toBe(true);
+  });
+
+  it("renders the full scanned backend path for successful requests", () => {
+    const model = buildDrawerFlowModel({
+      flow: savedBenefitsFlow,
+      method: "GET",
+      path: "/api/account/saved-benefits",
+      status: 200
+    });
+
+    expect(model.nodes.map((node) => node.data.label)).toEqual([
+      "API",
+      "Controller",
+      "Service",
+      "Repository",
+      "Database",
+      "Result"
+    ]);
+    expect(model.nodes.map((node) => node.data.value)).toEqual([
+      "GET /api/account/saved-benefits",
+      "AccountController#savedBenefits",
+      "SavedBenefitService#list",
+      "SavedBenefitRepository#findAllByUserAccountOrderBySavedAtDesc",
+      "saved_benefit",
+      "200 OK"
+    ]);
+    expect(model.edges).toHaveLength(5);
+  });
+
+  it("keeps the scanned downstream path visible when auth blocks the live request", () => {
+    const model = buildDrawerFlowModel({
+      flow: savedBenefitsFlow,
+      method: "GET",
+      path: "/api/account/saved-benefits",
+      status: 401
+    });
+
+    expect(model.nodes.map((node) => node.data.label)).toEqual([
+      "API",
+      "Controller",
+      "Auth / Session",
+      "Service",
+      "Repository",
+      "Database",
+      "Result"
+    ]);
+    expect(model.nodes.map((node) => node.data.value)).toContain("SavedBenefitService#list");
+    expect(model.nodes.map((node) => node.data.value)).toContain("SavedBenefitRepository#findAllByUserAccountOrderBySavedAtDesc");
+    expect(model.nodes.map((node) => node.data.value)).toContain("saved_benefit");
+    expect(model.edges).toHaveLength(6);
   });
 });

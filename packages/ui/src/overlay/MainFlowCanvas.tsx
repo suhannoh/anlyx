@@ -136,10 +136,10 @@ export function buildDrawerFlowModel({
       accent: "violet",
       fullValue: "SessionAuthenticationFilter"
     });
-  } else {
-    for (const node of mainNodes.filter((item) => item.type !== "endpoint" && item.type !== "controller")) {
-      nodeSpecs.push(toNodeData(node));
-    }
+  }
+
+  for (const node of mainNodes.filter((item) => item.type !== "endpoint" && item.type !== "controller")) {
+    nodeSpecs.push(toNodeData(node, isAuthBlocked));
   }
 
   nodeSpecs.push({
@@ -156,7 +156,7 @@ export function buildDrawerFlowModel({
     id: `drawer-node-${index}`,
     type: "anlyxFlowNode",
     position: {
-      x: index * 205,
+      x: index * 188,
       y: index === 2 && data.kind === "auth" ? 8 : 36
     },
     data
@@ -193,9 +193,9 @@ function getMainNodes(flow: EndpointFlow | null | undefined): FlowNode[] {
   return flow.mainPath.map((id) => byId.get(id)).filter((node): node is FlowNode => Boolean(node));
 }
 
-function toNodeData(node: FlowNode): AnlyxFlowNodeData {
+function toNodeData(node: FlowNode, blockedByAuth = false): AnlyxFlowNodeData {
   const kind = getKind(node.type);
-  const sub = getNodeSub(kind);
+  const sub = blockedByAuth ? `Scanned ${getNodeSub(kind)?.toLowerCase() ?? "step"}` : getNodeSub(kind);
   return {
     kind,
     label: getNodeLabel(kind),
