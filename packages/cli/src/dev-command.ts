@@ -624,38 +624,34 @@ export function getOverlayClientScript(): string {
 
     const style = document.createElement("style");
     style.textContent = ${"`"}
-    #anlyx-overlay-root { position: fixed; inset: 0; pointer-events: none; z-index: 2147483647; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #101828; }
-    .anlyx-fab { pointer-events: auto; position: absolute; right: 18px; bottom: 18px; height: 44px; min-width: 92px; border: 0; border-radius: 999px; background: #2563eb; color: white; font-weight: 800; font-size: 14px; box-shadow: 0 18px 40px rgba(37, 99, 235, 0.32); cursor: pointer; }
-    .anlyx-drawer { pointer-events: auto; position: absolute; top: 12px; right: 12px; bottom: 12px; width: min(520px, calc(100vw - 24px)); border: 1px solid #dbe4f0; border-radius: 16px; background: rgba(255,255,255,0.98); box-shadow: 0 24px 80px rgba(15, 23, 42, 0.18); overflow: hidden; display: none; }
+    #anlyx-overlay-root { position: fixed; inset: 0; pointer-events: none; z-index: 2147483647; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #0f172a; }
+    .anlyx-fab { pointer-events: auto; position: absolute; right: 18px; bottom: 18px; height: 42px; min-width: 92px; border: 1px solid rgba(255,255,255,.24); border-radius: 999px; background: #0f172a; color: white; font-weight: 850; font-size: 13px; box-shadow: 0 18px 50px rgba(15, 23, 42, 0.28); cursor: pointer; }
+    .anlyx-drawer { pointer-events: auto; position: absolute; top: 12px; right: 12px; bottom: 12px; width: min(880px, calc(100vw - 24px)); border: 1px solid rgba(15, 23, 42, .12); border-radius: 18px; background: rgba(248, 250, 252, .98); box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22); overflow: hidden; display: none; }
     .anlyx-drawer[data-open="true"] { display: grid; grid-template-rows: auto minmax(0, 1fr); }
-    .anlyx-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 16px 12px; border-bottom: 1px solid #e6edf6; }
-    .anlyx-title { margin: 0; font-size: 15px; line-height: 1.25; font-weight: 850; letter-spacing: 0; }
-    .anlyx-subtitle { margin: 4px 0 0; font-size: 12px; color: #667085; }
-    .anlyx-close { border: 1px solid #d7e0ee; background: #fff; border-radius: 10px; width: 34px; height: 34px; cursor: pointer; font-size: 18px; line-height: 1; }
-    .anlyx-body { overflow: auto; padding: 12px 14px 16px; }
-    .anlyx-section { border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; margin-bottom: 10px; overflow: hidden; }
-    .anlyx-section-title { margin: 0; padding: 9px 10px; font-size: 11px; text-transform: uppercase; color: #64748b; letter-spacing: .04em; border-bottom: 1px solid #edf2f7; font-weight: 850; }
-    .anlyx-request-hero { border: 1px solid #c7d7fe; border-radius: 16px; background: linear-gradient(180deg, #f8fbff, #fff); margin-bottom: 10px; overflow: hidden; }
-    .anlyx-request-top { padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; border-bottom: 1px solid #e6edf6; }
-    .anlyx-request-top h3 { margin: 0 0 7px; font-size: 12px; color: #475467; letter-spacing: 0; font-weight: 850; }
+    .anlyx-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid rgba(15, 23, 42, .08); background: rgba(255,255,255,.88); }
+    .anlyx-title { margin: 0; font-size: 15px; line-height: 1.2; font-weight: 900; letter-spacing: 0; }
+    .anlyx-subtitle { margin: 3px 0 0; font-size: 11px; color: #64748b; font-weight: 650; }
+    .anlyx-close { border: 1px solid #e2e8f0; background: #fff; border-radius: 10px; width: 32px; height: 32px; cursor: pointer; font-size: 17px; line-height: 1; color: #0f172a; box-shadow: 0 1px 2px rgba(15, 23, 42, .06); }
+    .anlyx-body { overflow: auto; padding: 12px; background: #f8fafc; }
+    .anlyx-section { border: 1px solid rgba(15, 23, 42, .08); border-radius: 14px; background: #fff; margin-bottom: 10px; overflow: hidden; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
+    .anlyx-section-title { margin: 0; padding: 10px 12px; font-size: 10px; text-transform: uppercase; color: #64748b; letter-spacing: .08em; border-bottom: 1px solid #eef2f7; font-weight: 900; }
+    .anlyx-request-hero { border: 1px solid rgba(37, 99, 235, .16); border-radius: 16px; background: #fff; margin-bottom: 10px; overflow: hidden; box-shadow: 0 1px 2px rgba(37, 99, 235, .06); }
+    .anlyx-request-top { padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; border-bottom: 1px solid #eef2f7; }
+    .anlyx-request-top h3 { margin: 0 0 7px; font-size: 11px; color: #64748b; letter-spacing: .04em; text-transform: uppercase; font-weight: 900; }
     .anlyx-request-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .anlyx-request-path { min-width: 0; overflow-wrap: anywhere; font-size: 13px; font-weight: 850; line-height: 1.35; color: #101828; }
     .anlyx-action-line { display: block; margin: 5px 0 0; color: #667085; font-size: 11px; line-height: 1.35; font-weight: 750; overflow-wrap: anywhere; }
-    .anlyx-request-meta { display: flex; flex-wrap: wrap; gap: 5px; padding: 8px 12px 10px; }
-    .anlyx-flow-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 10px 12px 12px; border-top: 1px solid #eef2f7; background: #fbfdff; }
-    .anlyx-summary-step { display: grid; grid-template-columns: 1fr; gap: 5px; align-items: start; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; padding: 8px; min-width: 0; }
-    .anlyx-step-icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 8px; background: #eef4ff; color: #2563eb; font-size: 12px; font-weight: 900; }
+    .anlyx-request-meta { display: flex; flex-wrap: wrap; gap: 6px; padding: 9px 12px 0; }
+    .anlyx-flow-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 10px 12px 12px; }
+    .anlyx-summary-step { position: relative; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 9px; align-items: center; border: 1px solid #e2e8f0; border-radius: 13px; background: #fff; padding: 10px; min-width: 0; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
+    .anlyx-step-icon { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 10px; background: #eff6ff; color: #2563eb; font-size: 13px; font-weight: 900; }
     .anlyx-summary-step[data-tone="good"] .anlyx-step-icon { background: #dcfae6; color: #087443; }
     .anlyx-summary-step[data-tone="warn"] .anlyx-step-icon { background: #fff7ed; color: #c2410c; }
     .anlyx-summary-step[data-tone="danger"] .anlyx-step-icon { background: #fff1f2; color: #b42318; }
-    .anlyx-step-kicker { margin: 0 0 2px; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: #667085; font-weight: 900; }
-    .anlyx-step-title { margin: 0; font-size: 11px; line-height: 1.3; color: #101828; font-weight: 850; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .anlyx-step-subtitle { margin: 3px 0 0; font-size: 10px; line-height: 1.3; color: #667085; font-weight: 700; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-    .anlyx-metric-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 10px; }
-    .anlyx-metric { border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; padding: 7px; min-width: 0; }
-    .anlyx-metric-label { margin: 0 0 3px; color: #667085; font-size: 9px; line-height: 1.2; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
-    .anlyx-metric-value { margin: 0; color: #101828; font-size: 11px; line-height: 1.3; font-weight: 850; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .anlyx-mini-pill { border: 1px solid #d7e0ee; background: #fff; color: #475467; border-radius: 999px; padding: 4px 8px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .anlyx-step-kicker { margin: 0 0 2px; font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: #64748b; font-weight: 950; }
+    .anlyx-step-title { margin: 0; font-size: 12px; line-height: 1.28; color: #0f172a; font-weight: 900; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .anlyx-step-subtitle { margin: 3px 0 0; font-size: 10px; line-height: 1.25; color: #64748b; font-weight: 700; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+    .anlyx-mini-pill { border: 1px solid #e2e8f0; background: #fff; color: #475569; border-radius: 999px; padding: 4px 8px; font-size: 10px; font-weight: 850; white-space: nowrap; box-shadow: 0 1px 1px rgba(15, 23, 42, .03); }
     .anlyx-mini-pill.good { border-color: #bbf7d0; color: #087443; background: #ecfdf3; }
     .anlyx-mini-pill.warn { border-color: #fed7aa; color: #c2410c; background: #fff7ed; }
     .anlyx-mini-pill.danger { border-color: #fecaca; color: #b42318; background: #fff1f2; }
@@ -676,20 +672,41 @@ export function getOverlayClientScript(): string {
     .anlyx-pill.unmatched { border-color: #fed7aa; background: #fff7ed; color: #c2410c; }
     .anlyx-count { border: 1px solid #d7e0ee; background: #f8fafc; color: #475467; border-radius: 999px; padding: 3px 7px; font-size: 11px; font-weight: 850; white-space: nowrap; }
     .anlyx-summary { padding: 12px; display: grid; gap: 8px; }
-    .anlyx-diagnostic-card { margin: 10px 12px 0; border: 1px solid #fed7aa; border-radius: 12px; background: #fff7ed; color: #7a2e0e; overflow: hidden; }
-    .anlyx-diagnostic-card.danger { border-color: #fecaca; background: #fff1f2; color: #7a271a; }
-    .anlyx-diagnostic-head { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px; padding: 10px; align-items: start; }
+    .anlyx-diagnostic-card { margin: 0 0 10px; border: 1px solid #fed7aa; border-radius: 14px; background: #fff7ed; color: #7a2e0e; overflow: hidden; }
+    .anlyx-diagnostic-card.danger { border-color: #fecaca; background: #fff5f5; color: #7a271a; }
+    .anlyx-diagnostic-head { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px; padding: 10px 12px; align-items: start; }
     .anlyx-diagnostic-icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 8px; background: #ffedd5; color: #c2410c; font-size: 12px; font-weight: 950; }
     .anlyx-diagnostic-card.danger .anlyx-diagnostic-icon { background: #fee2e2; color: #b42318; }
     .anlyx-diagnostic-title { margin: 0; color: inherit; font-size: 12px; line-height: 1.3; font-weight: 900; }
     .anlyx-diagnostic-body { margin: 3px 0 0; color: #667085; font-size: 11px; line-height: 1.35; font-weight: 700; }
-    .anlyx-diagnostic-next { display: grid; gap: 5px; margin: 0; padding: 9px 10px 10px 44px; border-top: 1px solid rgba(251, 146, 60, .35); background: rgba(255, 255, 255, .48); }
+    .anlyx-diagnostic-next { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0 12px 11px 46px; border-top: 0; background: transparent; list-style: none; }
     .anlyx-diagnostic-card.danger .anlyx-diagnostic-next { border-top-color: rgba(248, 113, 113, .35); }
-    .anlyx-diagnostic-next li { margin: 0; color: #344054; font-size: 11px; line-height: 1.35; font-weight: 760; }
-    .anlyx-kv { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 8px; font-size: 12px; line-height: 1.45; }
-    .anlyx-kv span:first-child { color: #667085; font-weight: 750; }
-    .anlyx-kv span:last-child { min-width: 0; overflow-wrap: anywhere; font-weight: 750; color: #182230; }
+    .anlyx-diagnostic-next li { margin: 0; border: 1px solid rgba(15, 23, 42, .08); border-radius: 999px; background: rgba(255,255,255,.8); color: #334155; padding: 4px 7px; font-size: 10px; line-height: 1.2; font-weight: 800; }
     .anlyx-path-list { display: grid; gap: 10px; padding: 12px; }
+    .anlyx-flow-map-section { background: #fff; }
+    .anlyx-flow-board { margin: 12px; border: 1px solid #e2e8f0; border-radius: 16px; background: #f8fafc; overflow-x: auto; box-shadow: inset 0 1px 0 rgba(255,255,255,.9); }
+    .anlyx-map-lane { display: flex; align-items: stretch; gap: 0; min-width: max-content; padding: 14px; }
+    .anlyx-map-node { position: relative; width: 124px; min-height: 134px; border: 1px solid #dbeafe; border-top: 3px solid #2563eb; border-radius: 14px; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .05); padding: 10px; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 6px; flex: 0 0 auto; }
+    .anlyx-map-node.support { border-color: #fdba74; border-top-color: #f97316; background: #fffaf5; }
+    .anlyx-map-node[data-node-type="endpoint"] { border-top-color: #2563eb; }
+    .anlyx-map-node[data-node-type="controller"] { border-top-color: #4f46e5; }
+    .anlyx-map-node[data-node-type="service"] { border-top-color: #7c3aed; }
+    .anlyx-map-node[data-node-type="repository"] { border-top-color: #f97316; }
+    .anlyx-map-node[data-node-type="database"] { border-color: #99f6e4; border-top-color: #0f766e; background: #f0fdfa; }
+    .anlyx-map-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .anlyx-map-icon { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 9px; background: #eef4ff; color: #2563eb; font-size: 9px; line-height: 1; font-weight: 950; }
+    .anlyx-map-node[data-node-type="controller"] .anlyx-map-icon { background: #eef2ff; color: #4f46e5; }
+    .anlyx-map-node[data-node-type="service"] .anlyx-map-icon { background: #f5f3ff; color: #7c3aed; }
+    .anlyx-map-node[data-node-type="repository"] .anlyx-map-icon, .anlyx-map-node.support .anlyx-map-icon { background: #fff7ed; color: #f97316; }
+    .anlyx-map-node[data-node-type="database"] .anlyx-map-icon { background: #ccfbf1; color: #0f766e; }
+    .anlyx-map-index { color: #94a3b8; font-size: 12px; font-weight: 950; }
+    .anlyx-map-type { margin: 0; color: #667085; font-size: 9px; line-height: 1.2; font-weight: 950; letter-spacing: .05em; text-transform: uppercase; }
+    .anlyx-map-label { margin: 0; color: #0f172a; font-size: 12px; line-height: 1.22; font-weight: 900; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+    .anlyx-map-confidence { align-self: end; width: fit-content; border: 1px solid #bbf7d0; background: #ecfdf3; color: #087443; border-radius: 999px; padding: 4px 6px; font-size: 8px; line-height: 1.1; font-weight: 900; text-transform: uppercase; }
+    .anlyx-map-connector { position: relative; display: grid; place-items: center; width: 22px; flex: 0 0 22px; }
+    .anlyx-map-connector::before { content: ""; width: 100%; height: 2px; border-radius: 999px; background: #2563eb; box-shadow: 0 0 0 3px #eff6ff; }
+    .anlyx-map-connector::after { content: ""; position: absolute; right: 1px; width: 8px; height: 8px; border-top: 2px solid #2563eb; border-right: 2px solid #2563eb; transform: rotate(45deg); background: #fbfdff; }
+    .anlyx-support-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px; background-image: linear-gradient(#fff7ed 1px, transparent 1px), linear-gradient(90deg, #fff7ed 1px, transparent 1px); background-size: 20px 20px; }
     .anlyx-node-chain { position: relative; display: grid; gap: 0; padding: 12px; }
     .anlyx-flow-rail { position: absolute; top: 18px; bottom: 18px; left: 25px; width: 2px; border-radius: 999px; background: linear-gradient(180deg, #93c5fd, #bfdbfe 65%, #dbeafe); }
     .anlyx-node { position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; border: 1px solid #d8e4f5; border-radius: 12px; padding: 10px; background: linear-gradient(180deg, #fff, #f8fbff); box-shadow: 0 8px 24px rgba(15, 23, 42, .04); }
@@ -729,6 +746,15 @@ export function getOverlayClientScript(): string {
     .anlyx-disclosure-count { border-radius: 999px; border: 1px solid #fdba74; background: #fff; padding: 3px 7px; color: #c2410c; font-size: 11px; font-weight: 900; text-transform: none; letter-spacing: 0; }
     .anlyx-empty { padding: 18px 12px; color: #667085; font-size: 13px; line-height: 1.5; }
     .anlyx-link { color: #2563eb; font-weight: 800; text-decoration: none; }
+    @media (max-width: 700px) {
+      .anlyx-drawer { top: 8px; right: 8px; bottom: 8px; width: calc(100vw - 16px); border-radius: 14px; }
+      .anlyx-map-lane { display: grid; min-width: 0; gap: 10px; padding: 12px; }
+      .anlyx-map-node { width: auto; min-height: 116px; }
+      .anlyx-map-connector { width: auto; height: 18px; }
+      .anlyx-map-connector::before { width: 2px; height: 100%; }
+      .anlyx-map-connector::after { right: auto; bottom: 1px; transform: rotate(135deg); }
+      .anlyx-support-grid { grid-template-columns: 1fr; }
+    }
   ${"`"};
     document.head.appendChild(style);
 
@@ -1140,11 +1166,8 @@ export function getOverlayClientScript(): string {
         renderStatusPill(event.status) +
         '<span class="anlyx-mini-pill">' + escapeHtml(event.durationMs) + 'ms</span>' +
         renderRepeatPill(event) +
-        '</div>' + renderFlowSummary(event, null) + '</section><section class="anlyx-section"><h3 class="anlyx-section-title">Request facts</h3>' +
-        renderRequestMetrics(event, null) +
-        '<div class="anlyx-summary">' +
-        renderStatusBanner(event.status, false) +
-      '</div></section>';
+        '</div>' + renderFlowSummary(event, null) + '</section>' +
+        renderStatusBanner(event.status, false);
     }
 
     return '<section class="anlyx-request-hero"><div class="anlyx-request-top"><div><h3>What just happened</h3><div class="anlyx-request-line">' +
@@ -1156,7 +1179,6 @@ export function getOverlayClientScript(): string {
       renderRepeatPill(event) +
       '<span class="anlyx-mini-pill good">confidence ' + escapeHtml(endpoint.confidence || "unknown") + '</span>' +
     '</div>' + renderFlowSummary(event, endpoint) + '</section>' +
-    '<section class="anlyx-section"><h3 class="anlyx-section-title">Request facts</h3>' + renderRequestMetrics(event, endpoint) + '</section>' +
     renderStatusBanner(event.status, true) +
     renderMainPath(flow) +
     renderSupportCalls(flow) +
@@ -1178,43 +1200,6 @@ export function getOverlayClientScript(): string {
       '<div><p class="anlyx-step-kicker">' + escapeHtml(kicker) + '</p><p class="anlyx-step-title">' + escapeHtml(title) + '</p>' +
       (subtitle ? '<p class="anlyx-step-subtitle">' + escapeHtml(subtitle) + '</p>' : '') +
       '</div></div>';
-  }
-
-  function renderRequestMetrics(event, endpoint) {
-    return '<div class="anlyx-metric-grid">' +
-      renderMetric("Method", event.method) +
-      renderMetric("Status", getStatusLabel(event.status)) +
-      renderMetric("Latency", event.durationMs + "ms") +
-      renderMetric("Endpoint", endpoint ? endpoint.path : "unmatched") +
-      renderMetric("Action", event.triggeredBy ? formatAction(event.triggeredBy) : "none captured") +
-      renderMetric("Element", event.triggeredBy ? event.triggeredBy.selector || "unknown" : "unknown") +
-    '</div>';
-  }
-
-  function renderMetric(label, value) {
-    return '<div class="anlyx-metric"><p class="anlyx-metric-label">' + escapeHtml(label) + '</p><p class="anlyx-metric-value">' + escapeHtml(value) + '</p></div>';
-  }
-
-  function renderTimelineAction(event) {
-    if (!event.triggeredBy) {
-      return "";
-    }
-    return '<span class="anlyx-action-line">' + escapeHtml(formatAction(event.triggeredBy)) + '</span>';
-  }
-
-  function renderActionSummary(event) {
-    if (!event.triggeredBy) {
-      return '<p class="anlyx-action-line">No recent user action captured for this request.</p>';
-    }
-    return '<p class="anlyx-action-line">' + escapeHtml(formatAction(event.triggeredBy)) + '</p>';
-  }
-
-  function renderActionDetails(event) {
-    if (!event.triggeredBy) {
-      return "";
-    }
-    return renderKv("User action", formatAction(event.triggeredBy)) +
-      renderKv("Element", event.triggeredBy.selector || "unknown");
   }
 
   function formatAction(action) {
@@ -1325,9 +1310,10 @@ export function getOverlayClientScript(): string {
       return '<section class="anlyx-section"><h3 class="anlyx-section-title">Main flow</h3><div class="anlyx-empty">No main path was inferred for this endpoint.</div></section>';
     }
     const nodeById = new Map((flow.nodes || []).map((node) => [node.id, node]));
-    return '<section class="anlyx-section"><h3 class="anlyx-section-title">Main flow</h3><div class="anlyx-node-chain"><span class="anlyx-flow-rail" aria-hidden="true"></span>' +
-      flow.mainPath.map((nodeId, index) => renderNode(nodeById.get(nodeId), false, index + 1)).join("") +
-    '</div></section>';
+    const nodes = flow.mainPath.map((nodeId) => nodeById.get(nodeId));
+    return '<section class="anlyx-section anlyx-flow-map-section"><h3 class="anlyx-section-title">Main flow map</h3><div class="anlyx-flow-board"><div class="anlyx-map-lane">' +
+      nodes.map((node, index) => renderMapNode(node, false, index + 1) + (index < nodes.length - 1 ? renderMapConnector() : "")).join("") +
+    '</div></div></section>';
   }
 
   function renderSupportCalls(flow) {
@@ -1339,8 +1325,8 @@ export function getOverlayClientScript(): string {
     if (support.length === 0) {
       return "";
     }
-    return '<details class="anlyx-disclosure" open><summary><span>Support calls</span><span class="anlyx-disclosure-count">' + support.length + '</span></summary><div class="anlyx-node-chain"><span class="anlyx-flow-rail" aria-hidden="true"></span>' +
-      support.slice(0, 8).map((node, index) => renderNode(node, true, index + 1)).join("") +
+    return '<details class="anlyx-disclosure" open><summary><span>Support calls</span><span class="anlyx-disclosure-count">' + support.length + '</span></summary><div class="anlyx-support-grid">' +
+      support.slice(0, 8).map((node, index) => renderMapNode(node, true, index + 1)).join("") +
     '</div></details>';
   }
 
@@ -1364,6 +1350,23 @@ export function getOverlayClientScript(): string {
       '<p class="anlyx-node-label">' + escapeHtml(node.label || node.id) + '</p>' +
       renderEvidence(node) +
       '</div>' +
+    '</div>';
+  }
+
+  function renderMapConnector() {
+    return '<span class="anlyx-map-connector" aria-hidden="true"></span>';
+  }
+
+  function renderMapNode(node, support, index) {
+    if (!node) {
+      return '<div class="anlyx-map-node" data-node-type="unknown"><div class="anlyx-map-top"><span class="anlyx-map-icon">?</span><span class="anlyx-map-index">' + escapeHtml(index || "?") + '</span></div><p class="anlyx-map-type">Unknown</p><p class="anlyx-map-label">Missing node data</p><span class="anlyx-map-confidence">confidence unknown</span></div>';
+    }
+    const nodeType = String(node.type || "node").toLowerCase();
+    return '<div class="anlyx-map-node ' + (support ? 'support' : '') + '" data-node-type="' + escapeHtml(nodeType) + '">' +
+      '<div class="anlyx-map-top"><span class="anlyx-map-icon">' + escapeHtml(getNodeTypeIcon(nodeType)) + '</span><span class="anlyx-map-index">' + escapeHtml(index || "?") + '</span></div>' +
+      '<p class="anlyx-map-type">' + escapeHtml(getNodeTypeLabel(nodeType)) + '</p>' +
+      '<p class="anlyx-map-label">' + escapeHtml(node.label || node.id) + '</p>' +
+      '<span class="anlyx-map-confidence">confidence ' + escapeHtml(node.confidence || "unknown") + '</span>' +
     '</div>';
   }
 
@@ -1451,10 +1454,6 @@ export function getOverlayClientScript(): string {
       return [{ label: "Analysis stopped", detail: "Anlyx could not resolve this code element." }];
     }
     return [{ label: "Code node resolved", detail: "Derived from the scanned static flow graph." }];
-  }
-
-  function renderKv(label, value) {
-    return '<div class="anlyx-kv"><span>' + escapeHtml(label) + '</span><span>' + escapeHtml(value) + '</span></div>';
   }
 
   function escapeHtml(value) {

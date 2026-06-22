@@ -69,15 +69,15 @@ Flow Drawer MUST include:
 - A compact empty state for unmatched requests
 - A compact error state when report data cannot be loaded
 
-Flow Drawer SHOULD use a narrow, readable layout:
+Flow Drawer SHOULD use a wide, visual inspection layout inspired by modern Sheet/Card/Badge systems:
 
 - Top visual summary that separates user action, browser request, and request result into distinct compact cards
 - On desktop drawer width, the action/request/result summary should fit into a single row when possible
-- Request facts grouped as small metric cards instead of a long key-value text block
-- Main path cards presented as a step chain so Controller, Service, Repository, and Database order is visually scannable
-- Main path nodes should use a visible step rail, type labels, and confidence chips so the backend topology reads before the node text
+- Repeated request facts should be removed when the same information is already visible in summary badges or flow nodes
+- Main path presented as a visual flow map so Endpoint, Controller, Service, Repository, and Database order is understandable before reading the text
+- Main path nodes should use distinct shapes, connector arrows, type labels, and confidence chips so the backend topology reads before the node text
 - Horizontal or vertical main path cards depending on drawer width
-- Support calls grouped below the main path
+- Support calls grouped below the main path as branch cards rather than mixed into the primary path
 - Evidence and metadata collapsed into small sections rather than always-open large panels
 - Evidence inside flow nodes should be collapsed by default so the chain is visible before detailed proof text
 - Blocked, failed, and unmatched requests should render actionable diagnostic cards with a short cause and next checks, not only a status sentence

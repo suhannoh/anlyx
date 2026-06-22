@@ -386,7 +386,7 @@ describe("dev command", () => {
     expect(script).toContain("findActionForRequest");
     expect(script).toContain("triggeredBy");
     expect(script).toContain("Clicked");
-    expect(script).toContain("User action");
+    expect(script).toContain("Action");
   });
 
   it("keeps a short-lived user action across client navigation", () => {
@@ -405,10 +405,10 @@ describe("dev command", () => {
     expect(script).toContain("anlyx-flow-summary");
     expect(script).toContain("anlyx-summary-step");
     expect(script).toContain("anlyx-step-icon");
-    expect(script).toContain("anlyx-metric-grid");
-    expect(script).toContain("anlyx-node-chain");
     expect(script).toContain("renderFlowSummary");
-    expect(script).toContain("renderRequestMetrics");
+    expect(script).toContain("What just happened");
+    expect(script).not.toContain("Request facts");
+    expect(script).not.toContain("renderRequestMetrics");
   });
 
   it("keeps the flow drawer compact enough to scan before details", () => {
@@ -423,10 +423,13 @@ describe("dev command", () => {
   it("renders flow nodes as a visual topology instead of plain text cards", () => {
     const script = getOverlayClientScript();
 
-    expect(script).toContain("anlyx-flow-rail");
+    expect(script).toContain("anlyx-flow-board");
+    expect(script).toContain("anlyx-map-node");
+    expect(script).toContain("anlyx-map-connector");
+    expect(script).toContain("renderMapNode");
+    expect(script).toContain("renderMapConnector");
+    expect(script).toContain("Main flow map");
     expect(script).toContain("data-node-type");
-    expect(script).toContain("anlyx-node-type-pill");
-    expect(script).toContain("anlyx-node-confidence");
     expect(script).toContain("getNodeTypeIcon");
     expect(script).toContain("getNodeTypeLabel");
   });
