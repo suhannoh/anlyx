@@ -676,8 +676,16 @@ export function getOverlayClientScript(): string {
     .anlyx-pill.unmatched { border-color: #fed7aa; background: #fff7ed; color: #c2410c; }
     .anlyx-count { border: 1px solid #d7e0ee; background: #f8fafc; color: #475467; border-radius: 999px; padding: 3px 7px; font-size: 11px; font-weight: 850; white-space: nowrap; }
     .anlyx-summary { padding: 12px; display: grid; gap: 8px; }
-    .anlyx-status-banner { margin: 10px 12px 0; border: 1px solid #fed7aa; border-radius: 12px; background: #fff7ed; color: #9a3412; padding: 9px 10px; font-size: 12px; line-height: 1.45; font-weight: 750; }
-    .anlyx-status-banner.danger { border-color: #fecaca; background: #fff1f2; color: #b42318; }
+    .anlyx-diagnostic-card { margin: 10px 12px 0; border: 1px solid #fed7aa; border-radius: 12px; background: #fff7ed; color: #7a2e0e; overflow: hidden; }
+    .anlyx-diagnostic-card.danger { border-color: #fecaca; background: #fff1f2; color: #7a271a; }
+    .anlyx-diagnostic-head { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px; padding: 10px; align-items: start; }
+    .anlyx-diagnostic-icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 8px; background: #ffedd5; color: #c2410c; font-size: 12px; font-weight: 950; }
+    .anlyx-diagnostic-card.danger .anlyx-diagnostic-icon { background: #fee2e2; color: #b42318; }
+    .anlyx-diagnostic-title { margin: 0; color: inherit; font-size: 12px; line-height: 1.3; font-weight: 900; }
+    .anlyx-diagnostic-body { margin: 3px 0 0; color: #667085; font-size: 11px; line-height: 1.35; font-weight: 700; }
+    .anlyx-diagnostic-next { display: grid; gap: 5px; margin: 0; padding: 9px 10px 10px 44px; border-top: 1px solid rgba(251, 146, 60, .35); background: rgba(255, 255, 255, .48); }
+    .anlyx-diagnostic-card.danger .anlyx-diagnostic-next { border-top-color: rgba(248, 113, 113, .35); }
+    .anlyx-diagnostic-next li { margin: 0; color: #344054; font-size: 11px; line-height: 1.35; font-weight: 760; }
     .anlyx-kv { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 8px; font-size: 12px; line-height: 1.45; }
     .anlyx-kv span:first-child { color: #667085; font-weight: 750; }
     .anlyx-kv span:last-child { min-width: 0; overflow-wrap: anywhere; font-weight: 750; color: #182230; }
@@ -1136,7 +1144,6 @@ export function getOverlayClientScript(): string {
         renderRequestMetrics(event, null) +
         '<div class="anlyx-summary">' +
         renderStatusBanner(event.status, false) +
-        '<div class="anlyx-empty">No scanned endpoint matched this request. If this should be known, run <strong>anlyx scan</strong> again or check the configured backend paths.</div>' +
       '</div></section>';
     }
 
@@ -1227,14 +1234,53 @@ export function getOverlayClientScript(): string {
   }
 
   function renderStatusBanner(status, matched) {
+    return renderDiagnosticCard(status, matched);
+  }
+
+  function renderDiagnosticCard(status, matched) {
     const numeric = Number(status);
     if (numeric === 401 || numeric === 403) {
-      return '<div class="anlyx-status-banner danger">' + (matched ? 'Matched flow, but' : 'Observed request, but') + ' the app returned <strong>' + escapeHtml(status) + '</strong>. This usually means a login or permission gate.</div>';
+      return renderDiagnostic("danger", "!", matched ? "Known flow blocked by auth" : "Request blocked before matching", (matched ? "Anlyx found the scanned backend path, but" : "The browser request was observed, but") + " the app returned " + status + ". This usually means a login or permission gate.", getDiagnosticActions("auth", matched));
     }
     if (numeric >= 500) {
-      return '<div class="anlyx-status-banner danger">' + (matched ? 'Known endpoint reached, but' : 'Request failed while unmatched, and') + ' the server returned <strong>' + escapeHtml(status) + '</strong>. Use the flow to debug the failing path.</div>';
+      return renderDiagnostic("danger", "!", matched ? "Known flow reached a server error" : "Unmatched request returned a server error", (matched ? "The request reached a scanned endpoint, but" : "The request failed before Anlyx could match it, and") + " the server returned " + status + ".", getDiagnosticActions("server", matched));
+    }
+    if (!matched) {
+      return renderDiagnostic("warn", "?", "No scanned endpoint matched", "Anlyx saw this browser request, but no scanned endpoint path matched it.", getDiagnosticActions("unmatched", matched));
     }
     return "";
+  }
+
+  function renderDiagnostic(tone, icon, title, body, actions) {
+    return '<div class="anlyx-diagnostic-card ' + escapeHtml(tone || "") + '">' +
+      '<div class="anlyx-diagnostic-head"><span class="anlyx-diagnostic-icon">' + escapeHtml(icon) + '</span><div>' +
+      '<p class="anlyx-diagnostic-title">' + escapeHtml(title) + '</p>' +
+      '<p class="anlyx-diagnostic-body">' + escapeHtml(body) + '</p>' +
+      '</div></div>' +
+      '<ul class="anlyx-diagnostic-next">' + actions.map((action) => '<li>' + escapeHtml(action) + '</li>').join("") + '</ul>' +
+    '</div>';
+  }
+
+  function getDiagnosticActions(kind, matched) {
+    if (kind === "auth") {
+      return [
+        "Check login/session state in the real app",
+        "Retry the same click after authenticating",
+        matched ? "Use the main flow below to see which handler was still reached" : "Run anlyx scan again if this endpoint should be known"
+      ];
+    }
+    if (kind === "server") {
+      return [
+        "Check the backend terminal logs for this request",
+        matched ? "Trace the highlighted main flow below" : "Run anlyx scan again if this endpoint should be known",
+        "Confirm local API base URL and backend port"
+      ];
+    }
+    return [
+      "Run anlyx scan again",
+      "Check backend sourceDir and API base URL",
+      "Confirm the browser path matches the scanned endpoint path"
+    ];
   }
 
   function getStatusLabel(status) {

@@ -442,6 +442,17 @@ describe("dev command", () => {
     expect(script).toContain("renderTimelineStatus");
   });
 
+  it("renders actionable diagnostic cards for blocked or unmatched requests", () => {
+    const script = getOverlayClientScript();
+
+    expect(script).toContain("anlyx-diagnostic-card");
+    expect(script).toContain("anlyx-diagnostic-next");
+    expect(script).toContain("renderDiagnosticCard");
+    expect(script).toContain("getDiagnosticActions");
+    expect(script).toContain("Check login/session state");
+    expect(script).toContain("Run anlyx scan again");
+  });
+
   it("--no-open disables browser opening", async () => {
     await withTempDir(async (dir) => {
       await writeReportData(dir, scanResult);

@@ -80,6 +80,7 @@ Flow Drawer SHOULD use a narrow, readable layout:
 - Support calls grouped below the main path
 - Evidence and metadata collapsed into small sections rather than always-open large panels
 - Evidence inside flow nodes should be collapsed by default so the chain is visible before detailed proof text
+- Blocked, failed, and unmatched requests should render actionable diagnostic cards with a short cause and next checks, not only a status sentence
 
 ## API Event Timeline
 
