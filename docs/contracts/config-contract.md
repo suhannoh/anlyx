@@ -24,6 +24,7 @@ type AnlyxConfig = {
   backend: SpringBackendConfig | OpenApiBackendConfig;
   frontend: NextFrontendConfig | ManualFrontendConfig;
   server?: ServerConfig;
+  dev?: DevConfig;
 };
 ```
 
@@ -138,6 +139,11 @@ Rules:
 type ServerConfig = {
   port?: number;
   openBrowser?: boolean;
+  mode?: "inject" | "overlay" | "viewer";
+};
+
+type DevConfig = {
+  command?: string;
 };
 ```
 
@@ -145,6 +151,24 @@ Rules:
 
 - Default port SHOULD be `4777`.
 - `openBrowser` SHOULD default to `true` for `dev`.
+- `mode` SHOULD default to `"inject"`.
+- `mode = "inject"` MUST keep `frontend.baseUrl` as the real app URL and serve only Anlyx runtime assets and data from the Anlyx server.
+- `mode = "inject"` MUST make `/_anlyx/overlay.js` usable from the real app origin, including report data access through CORS-safe Anlyx runtime endpoints.
+- `mode = "overlay"` MAY proxy `frontend.baseUrl` through the Anlyx server and inject the local overlay script into HTML responses as a fallback/debug mode.
+- `mode = "viewer"` MUST serve the standalone local viewer directly at the server root.
+- Inject Mode and Overlay Mode MUST keep the standalone viewer reachable at an Anlyx-owned debug path such as `/_anlyx/viewer`.
+- Anlyx-owned runtime endpoints MUST use the `/_anlyx/*` namespace. `/api/report-data` MAY remain available as a compatibility alias for the standalone viewer.
+
+## Dev Config
+
+Rules:
+
+- `dev.command` MAY define the frontend development command, for example `"npm run dev"`.
+- If `dev.command` is present, `anlyx dev` SHOULD check `frontend.baseUrl` first and only start the command when the frontend is not already reachable.
+- If `.anlyx/report-data.json` is missing, `anlyx dev` SHOULD run a lightweight scan before starting the runtime.
+- Analysis or scan failures MUST be reported clearly and MUST NOT be hidden behind a blank overlay.
+- Next.js users SHOULD use `AnlyxDevOverlay` from `anlyx/next` to render the local overlay script during development.
+- `AnlyxDevOverlay` MUST render nothing when `NODE_ENV = "production"`.
 
 ## Spring Boot + Next.js Example
 
@@ -189,7 +213,12 @@ export default defineConfig({
 
   server: {
     port: 4777,
-    openBrowser: true
+    openBrowser: true,
+    mode: "inject"
+  },
+
+  dev: {
+    command: "npm run dev"
   }
 });
 ```
@@ -215,7 +244,12 @@ export default defineConfig({
   },
 
   server: {
-    port: 4777
+    port: 4777,
+    mode: "inject"
+  },
+
+  dev: {
+    command: "npm run dev"
   }
 });
 ```

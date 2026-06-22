@@ -7,6 +7,9 @@ import { describe, expect, it } from "vitest";
 
 import { getHelpText, runCli } from "./index.js";
 import {
+  buildProxyTargetUrl,
+  getOverlayScriptTag,
+  injectOverlayScript,
   readReportData,
   runDevCommand,
   type DevCommandDependencies,
@@ -84,8 +87,10 @@ const config: NormalizedAnlyxConfig = {
   },
   server: {
     port: 4777,
-    openBrowser: true
-  }
+    openBrowser: true,
+    mode: "inject"
+  },
+  dev: {}
 };
 
 describe("dev command", () => {
@@ -110,11 +115,49 @@ describe("dev command", () => {
     });
   });
 
-  it('missing report-data throws clear "Run anlyx scan first" error', async () => {
+  it("runs scan once when report-data is missing", async () => {
     await withTempDir(async (dir) => {
-      await expect(runDevCommand({ cwd: dir, dependencies: fakeDependencies() })).rejects.toThrow(
-        /Run "anlyx scan" first/
-      );
+      let scans = 0;
+
+      await runDevCommand({
+        cwd: dir,
+        open: false,
+        dependencies: fakeDependencies({
+          async runScanCommand(options) {
+            const scanCwd = options?.cwd ?? dir;
+            scans += 1;
+            await writeReportData(scanCwd, scanResult);
+            return {
+              outputDir: join(scanCwd, ".anlyx"),
+              reportDataPath: join(scanCwd, ".anlyx", "report-data.json"),
+              endpointsPath: join(scanCwd, ".anlyx", "endpoints.json"),
+              flowsPath: join(scanCwd, ".anlyx", "flows.json"),
+              pagesPath: join(scanCwd, ".anlyx", "pages.json"),
+              endpointCount: 1,
+              flowCount: 1,
+              pageCount: 1,
+              issues: []
+            };
+          }
+        })
+      });
+
+      expect(scans).toBe(1);
+    });
+  });
+
+  it("reports scan failure when report-data is missing and auto scan fails", async () => {
+    await withTempDir(async (dir) => {
+      await expect(
+        runDevCommand({
+          cwd: dir,
+          dependencies: fakeDependencies({
+            async runScanCommand() {
+              throw new Error("backend source missing");
+            }
+          })
+        })
+      ).rejects.toThrow(/Automatic scan failed: backend source missing/);
     });
   });
 
@@ -149,7 +192,7 @@ describe("dev command", () => {
         port: 5999,
         open: false,
         dependencies: fakeDependencies({
-          config: { ...config, server: { port: 4888, openBrowser: true } },
+          config: { ...config, server: { port: 4888, openBrowser: true, mode: "inject" } },
           createLocalUiServer({ port }) {
             ports.push(port);
             return Promise.resolve({ url: `http://localhost:${port}` });
@@ -181,6 +224,135 @@ describe("dev command", () => {
       expect(ports).toEqual([4777]);
       expect(result.port).toBe(4777);
     });
+  });
+
+  it("passes frontend base URL and server mode to the local UI server", async () => {
+    await withTempDir(async (dir) => {
+      await writeReportData(dir, scanResult);
+      const seen: Array<{ frontendBaseUrl: string; mode: string }> = [];
+
+      await runDevCommand({
+        cwd: dir,
+        open: false,
+        dependencies: fakeDependencies({
+          config: { ...config, server: { port: 4777, openBrowser: true, mode: "viewer" } },
+          createLocalUiServer({ frontendBaseUrl, mode, port }) {
+            seen.push({ frontendBaseUrl, mode });
+            return Promise.resolve({ url: `http://localhost:${port}` });
+          }
+        })
+      });
+
+      expect(seen).toEqual([{ frontendBaseUrl: "http://localhost:3000", mode: "viewer" }]);
+    });
+  });
+
+  it("opens the real frontend in inject mode", async () => {
+    await withTempDir(async (dir) => {
+      await writeReportData(dir, scanResult);
+      const opened: string[] = [];
+
+      const result = await runDevCommand({
+        cwd: dir,
+        dependencies: fakeDependencies({
+          openBrowser(url) {
+            opened.push(url);
+          }
+        })
+      });
+
+      expect(opened).toEqual(["http://localhost:3000"]);
+      expect(result).toMatchObject({
+        url: "http://localhost:4777",
+        frontendUrl: "http://localhost:3000",
+        mode: "inject",
+        scriptTag: '<script src="http://localhost:4777/_anlyx/overlay.js" defer></script>'
+      });
+    });
+  });
+
+  it("starts configured frontend dev command when frontend is not reachable", async () => {
+    await withTempDir(async (dir) => {
+      await writeReportData(dir, scanResult);
+      const commands: Array<{ command: string; cwd: string }> = [];
+
+      const result = await runDevCommand({
+        cwd: dir,
+        open: false,
+        dependencies: fakeDependencies({
+          config: {
+            ...config,
+            dev: {
+              command: "npm run dev"
+            }
+          },
+          async isFrontendReachable() {
+            return false;
+          },
+          startFrontendDevServer({ command, cwd }) {
+            commands.push({ command, cwd });
+            return { stop: () => undefined };
+          }
+        })
+      });
+
+      expect(commands).toEqual([{ command: "npm run dev", cwd: dir }]);
+      expect(result.frontendStarted).toBe(true);
+    });
+  });
+
+  it("does not start configured frontend dev command when frontend is already reachable", async () => {
+    await withTempDir(async (dir) => {
+      await writeReportData(dir, scanResult);
+      let started = false;
+
+      const result = await runDevCommand({
+        cwd: dir,
+        open: false,
+        dependencies: fakeDependencies({
+          config: {
+            ...config,
+            dev: {
+              command: "npm run dev"
+            }
+          },
+          async isFrontendReachable() {
+            return true;
+          },
+          startFrontendDevServer() {
+            started = true;
+            return { stop: () => undefined };
+          }
+        })
+      });
+
+      expect(started).toBe(false);
+      expect(result.frontendStarted).toBe(false);
+    });
+  });
+
+  it("injects overlay script before the closing body tag", () => {
+    expect(injectOverlayScript("<html><body><main>App</main></body></html>")).toBe(
+      '<html><body><main>App</main><script src="/_anlyx/overlay.js" defer></script></body></html>'
+    );
+  });
+
+  it("does not inject overlay script twice", () => {
+    const html = '<html><body><script src="/_anlyx/overlay.js" defer></script></body></html>';
+
+    expect(injectOverlayScript(html)).toBe(html);
+  });
+
+  it("builds proxy target URL using configured frontend origin", () => {
+    expect(buildProxyTargetUrl("http://localhost:3000/app", "/benefits?id=1")).toBe(
+      "http://localhost:3000/benefits?id=1"
+    );
+  });
+
+  it("builds an absolute overlay script tag for inject mode", () => {
+    expect(getOverlayScriptTag("http://localhost:4777")).toBe(
+      '<script src="http://localhost:4777/_anlyx/overlay.js" defer></script>'
+    );
   });
 
   it("--no-open disables browser opening", async () => {
@@ -221,7 +393,9 @@ describe("dev command", () => {
 
       expect(exitCode).toBe(0);
       expect(ports).toEqual([4777]);
-      expect(writes.join("\n")).toContain("Started Anlyx UI at http://localhost:4777");
+      expect(writes.join("\n")).toContain("Started Anlyx runtime at http://localhost:4777");
+      expect(writes.join("\n")).toContain("Open your app at http://localhost:3000");
+      expect(writes.join("\n")).not.toContain("Inject during local development");
     });
   });
 

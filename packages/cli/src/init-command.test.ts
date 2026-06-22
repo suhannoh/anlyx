@@ -93,6 +93,10 @@ describe("init command", () => {
     expect(createDefaultConfigTemplate()).toContain("port: 4777");
   });
 
+  it("generated config includes frontend dev command", () => {
+    expect(createDefaultConfigTemplate()).toContain('command: "npm run dev"');
+  });
+
   it("CLI help text mentions init", async () => {
     const writes: string[] = [];
     const exitCode = await runCli(["--help"], {

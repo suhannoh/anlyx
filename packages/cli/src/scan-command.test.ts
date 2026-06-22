@@ -69,8 +69,10 @@ const springNextConfig: NormalizedAnlyxConfig = {
   },
   server: {
     port: 4777,
-    openBrowser: true
-  }
+    openBrowser: true,
+    mode: "overlay"
+  },
+  dev: {}
 };
 
 describe("scan command", () => {

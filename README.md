@@ -4,7 +4,7 @@
 
 Visual flow maps for modern web apps.
 
-Anlyx turns frontend pages, backend endpoints, services, repositories, database tables, capture status, and API calls into a local visual viewer for onboarding and codebase exploration.
+Anlyx overlays your real local frontend app and shows which backend endpoint, service, repository, database table, capture state, API call, and static analysis evidence belongs to the interaction you just triggered.
 
 > Status: v0.1.2 patch release preparation. Actual npm publish requires separate approval.
 
@@ -18,6 +18,7 @@ Anlyx answers questions that usually require jumping between routes, Swagger/Ope
 - Which controller, service, repository, and database table are involved?
 - Which logic is the main request path, and which logic is supporting detail?
 - What page state was captured when the API call happened?
+- Why did Anlyx infer this node, edge, or confidence level?
 
 ## Current Support
 
@@ -41,7 +42,11 @@ After the approved 0.1.2 publish:
 
 ```bash
 npm install -D anlyx@0.1.2
+npx anlyx init
+npx anlyx dev
 ```
+
+The target Anlyx developer experience is this three-command path: install, initialize, then run `npx anlyx dev`. The dev command should become the single entrypoint that prepares analysis data, starts the Anlyx runtime, opens the real local frontend, and wires the overlay in development.
 
 Before publish, use the local workspace:
 
@@ -75,7 +80,11 @@ export default {
   },
   server: {
     port: 4777,
-    openBrowser: true
+    openBrowser: true,
+    mode: "inject"
+  },
+  dev: {
+    command: "npm run dev"
   }
 };
 ```
@@ -129,19 +138,55 @@ npx anlyx scan --skip-capture
 
 This writes `.anlyx/report-data.json` using static adapter output only. Pages remain `pending` until capture runs.
 
-### Open Local Viewer
+### Open The Local Overlay
 
 ```bash
-npx anlyx dev --no-open
+npx anlyx dev
 ```
 
-Open [http://localhost:4777](http://localhost:4777). The viewer has three main tabs:
+The intended path is that `anlyx dev` is the only command users need during local development. It should detect or start the real frontend, keep the app at `frontend.baseUrl`, start the Anlyx runtime at [http://localhost:4777](http://localhost:4777), and open the real app URL.
 
+In a Next.js App Router app, add the development-only helper to your root layout:
+
+```tsx
+import { AnlyxDevOverlay } from "anlyx/next";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <body>
+        {children}
+        <AnlyxDevOverlay />
+      </body>
+    </html>
+  );
+}
+```
+
+`AnlyxDevOverlay` renders nothing in production. It only emits the local overlay script outside production builds.
+
+For special setups, the raw fallback script is:
+
+```html
+<script src="http://localhost:4777/_anlyx/overlay.js" defer></script>
+```
+
+The app still runs on its own origin, so auth, theme, cookies, localStorage, and hydration behave like the normal development environment.
+
+- Click the real app normally.
+- When a browser `fetch` or `XMLHttpRequest` API call fires, Anlyx matches it to scanned endpoints.
+- The Anlyx button opens a right-side Flow Drawer with the matched request, main path, support calls, confidence, linked pages, and evidence.
+
+The standalone debug viewer remains available at [http://localhost:4777/\_anlyx/viewer](http://localhost:4777/_anlyx/viewer):
+
+- Flow Story: one request-centric workspace that combines the matched frontend page preview, API endpoint, backend flow graph, inspector evidence, calls, metadata, and Replay Lite controls.
 - Structure: backend API structure from Endpoint to Controller, Service, Repository, and Database.
-- Connected Frontend: frontend page storyboard, capture status, API calls, and linked backend endpoints. When `--skip-capture` is used, the page remains `pending` and the viewer keeps a product-style empty storyboard instead of hiding the state.
-- Process Flow: request/response replay from the scanned static flow graph, including inferred request path, branch calls, database arrival, and return path. This is not runtime tracing.
+- Captures: frontend page storyboard, capture status, API calls, and linked backend endpoints. When `--skip-capture` is used, the page remains `pending` and the viewer keeps a product-style empty storyboard instead of hiding the state.
+- Process: request/response replay from the scanned static flow graph, including inferred request path, branch calls, database arrival, and return path. This is not runtime tracing.
 
-The v0.1 viewer is request-centric: it shows how an endpoint is structured, which frontend pages connect to it, and how the scanned request flow moves through the application.
+Use `server.mode: "viewer"` when you want the standalone viewer directly at `/`. `server.mode: "overlay"` remains available as a fallback/debug proxy mode, but Inject Mode is the default product path.
+
+The v0.1 experience is request-centric: it shows how an endpoint is structured, which frontend pages connect to it, why Anlyx inferred each step, and how the scanned request flow moves through the application.
 
 The viewer keeps React Flow as its graph engine and adds a focused visual system around it:
 
@@ -206,7 +251,7 @@ Run:
 npx anlyx scan --skip-capture
 ```
 
-If it fails, check the config path, backend source directory, frontend app directory, and the terminal error. `anlyx dev` reads report data but does not create it.
+If it fails, check the config path, backend source directory, frontend app directory, and the terminal error. `anlyx dev` will run a lightweight scan when report data is missing, but `anlyx scan --skip-capture` is still useful for isolating scan problems.
 
 ### Pages are pending
 

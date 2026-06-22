@@ -2,7 +2,7 @@
 
 [English README](./README.md)
 
-Anlyx는 현대 웹 앱의 프론트 페이지, 백엔드 엔드포인트, 서비스, Repository, 데이터베이스 테이블, 캡처 상태, API 호출을 하나의 로컬 시각화 뷰어로 연결하는 개발자 도구입니다.
+Anlyx는 실제 로컬 프론트엔드 앱 위에 오버레이를 띄우고, 방금 누른 버튼이나 컴포넌트에서 발생한 API가 어떤 백엔드 엔드포인트, 서비스, Repository, 데이터베이스 테이블, 캡처 상태, 정적 분석 근거와 연결되는지 보여주는 개발자 도구입니다.
 
 > 현재 상태: v0.1.2 patch release 준비 단계입니다. 실제 npm publish는 별도 승인 후 진행합니다.
 
@@ -16,6 +16,7 @@ Anlyx는 보통 라우트, Swagger/OpenAPI, 백엔드 코드, 데이터베이스
 - 이 API는 어떤 Controller, Service, Repository, DB Table과 연결되는가?
 - 어떤 호출이 핵심 경로이고 어떤 호출이 보조 흐름인가?
 - API 호출 시점의 화면 상태는 어떻게 캡처되었는가?
+- Anlyx가 이 node, edge, confidence를 왜 그렇게 추론했는가?
 
 ## Current Support
 
@@ -39,7 +40,11 @@ v0.1 Deep Support는 Spring Boot + Next.js App Router로 제한합니다. FastAP
 
 ```bash
 npm install -D anlyx@0.1.2
+npx anlyx init
+npx anlyx dev
 ```
+
+Anlyx의 목표 개발 경험은 이 3단계입니다. 설치하고, 설정을 만들고, `npx anlyx dev` 하나로 분석 데이터 준비, Anlyx runtime 실행, 실제 로컬 프론트엔드 열기, 개발 overlay 연결까지 처리하는 방향입니다.
 
 publish 전 로컬 workspace에서는 다음처럼 사용합니다.
 
@@ -73,7 +78,11 @@ export default {
   },
   server: {
     port: 4777,
-    openBrowser: true
+    openBrowser: true,
+    mode: "inject"
+  },
+  dev: {
+    command: "npm run dev"
   }
 };
 ```
@@ -125,19 +134,55 @@ npx anlyx scan --skip-capture
 
 이 명령은 정적 adapter 결과만 사용해 `.anlyx/report-data.json`을 생성합니다. capture를 실행하기 전의 page는 `pending` 상태로 남습니다.
 
-### Open local viewer
+### Open local overlay
 
 ```bash
-npx anlyx dev --no-open
+npx anlyx dev
 ```
 
-[http://localhost:4777](http://localhost:4777)을 엽니다. 뷰어는 세 개의 주요 탭으로 구성됩니다.
+최종 목표는 로컬 개발 중 사용자가 `anlyx dev` 하나만 실행하면 되는 것입니다. 이 명령은 실제 프론트엔드를 감지하거나 실행하고, 앱은 `frontend.baseUrl`에 그대로 둔 채, [http://localhost:4777](http://localhost:4777)에 Anlyx runtime을 띄우고 실제 앱 URL을 엽니다.
 
+Next.js App Router 앱에서는 root layout에 개발 전용 helper를 추가합니다.
+
+```tsx
+import { AnlyxDevOverlay } from "anlyx/next";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <body>
+        {children}
+        <AnlyxDevOverlay />
+      </body>
+    </html>
+  );
+}
+```
+
+`AnlyxDevOverlay`는 production에서 아무것도 렌더링하지 않습니다. production build에 overlay script가 들어가지 않게 막고, 개발 중에만 로컬 overlay script를 렌더링합니다.
+
+특수한 환경에서는 아래 raw fallback script를 직접 사용할 수 있습니다.
+
+```html
+<script src="http://localhost:4777/_anlyx/overlay.js" defer></script>
+```
+
+앱은 자기 origin에서 그대로 실행되므로 auth, theme, cookie, localStorage, hydration 동작이 평소 개발환경과 달라지지 않습니다.
+
+- 실제 앱을 평소처럼 클릭합니다.
+- 브라우저 `fetch` 또는 `XMLHttpRequest` API 호출이 발생하면 Anlyx가 스캔된 엔드포인트와 매칭합니다.
+- Anlyx 버튼은 matched request, main path, support calls, confidence, linked pages, evidence를 보여주는 우측 Flow Drawer를 엽니다.
+
+Standalone debug viewer는 [http://localhost:4777/\_anlyx/viewer](http://localhost:4777/_anlyx/viewer)에서 계속 사용할 수 있습니다.
+
+- Flow Story: matched frontend page preview, API endpoint, backend flow graph, inspector evidence, calls, metadata, Replay Lite controls를 한 화면에서 보여주는 request-centric workspace.
 - Structure: Endpoint에서 Controller, Service, Repository, Database로 이어지는 backend API structure.
-- Connected Frontend: frontend page storyboard, capture status, API calls, linked backend endpoints. `--skip-capture`를 사용하면 page는 `pending`으로 남고, viewer는 이 상태를 숨기지 않고 제품형 empty storyboard로 보여줍니다.
-- Process Flow: scanned static flow graph에서 파생한 request/response replay, inferred request path, branch calls, database arrival, return path. runtime tracing은 아닙니다.
+- Captures: frontend page storyboard, capture status, API calls, linked backend endpoints. `--skip-capture`를 사용하면 page는 `pending`으로 남고, viewer는 이 상태를 숨기지 않고 제품형 empty storyboard로 보여줍니다.
+- Process: scanned static flow graph에서 파생한 request/response replay, inferred request path, branch calls, database arrival, return path. runtime tracing은 아닙니다.
 
-v0.1 viewer는 request-centric architecture viewer입니다. 하나의 endpoint가 어떻게 구성되어 있고, 어떤 frontend page와 연결되며, scan된 request flow가 애플리케이션 안에서 어떻게 이동하는지 보여줍니다.
+Standalone viewer를 `/`에서 바로 보고 싶다면 `server.mode: "viewer"`를 사용합니다. `server.mode: "overlay"`는 fallback/debug proxy mode로 남기지만, 기본 제품 경로는 Inject Mode입니다.
+
+v0.1 경험은 request-centric architecture viewer입니다. 하나의 endpoint가 어떻게 구성되어 있고, 어떤 frontend page와 연결되며, Anlyx가 각 단계를 왜 추론했는지와 scan된 request flow가 애플리케이션 안에서 어떻게 이동하는지 보여줍니다.
 
 뷰어는 React Flow를 그래프 엔진으로 유지하고, 그 위에 필요한 시각 시스템만 얹습니다.
 
@@ -202,7 +247,7 @@ sourceDir이 ./frontend/src일 때 ./frontend/src/app
 npx anlyx scan --skip-capture
 ```
 
-실패하면 config 경로, backend source directory, frontend app directory, 터미널 에러를 확인합니다. `anlyx dev`는 report data를 읽기만 하며 자동으로 scan하지 않습니다.
+실패하면 config 경로, backend source directory, frontend app directory, 터미널 에러를 확인합니다. `anlyx dev`는 report data가 없을 때 lightweight scan을 실행하지만, scan 문제만 분리해서 볼 때는 `anlyx scan --skip-capture`가 여전히 유용합니다.
 
 ### Pages are pending
 

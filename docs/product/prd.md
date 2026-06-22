@@ -48,11 +48,11 @@
 
 # 1. 프로젝트 개요
 
-**Anlyx**는 프론트 페이지, 백엔드 엔드포인트, 서비스 레이어, Repository, 데이터베이스 흐름을 하나의 인터랙티브 플로우 맵과 스토리보드로 시각화하는 개발자 도구다.
+**Anlyx**는 실제 로컬 프론트엔드 앱 위에 얇은 개발자 오버레이를 올리고, 사용자가 앱에서 버튼이나 컴포넌트를 눌러 발생시킨 API 요청이 어떤 백엔드 엔드포인트, 서비스 레이어, Repository, 데이터베이스 흐름으로 이어지는지 즉시 보여주는 개발자 도구다.
 
-개발자는 Anlyx를 통해 Swagger처럼 엔드포인트 목록을 확인하고, 특정 엔드포인트를 클릭하면 해당 요청이 어떤 Controller, Service, Repository, Database Table, Frontend Page와 연결되는지 한눈에 볼 수 있다.
+개발자는 Anlyx를 통해 별도의 목록 화면에서 엔드포인트를 고르는 대신, 평소처럼 로컬 앱을 사용한다. Anlyx는 브라우저에서 관찰한 API 요청을 스캔된 정적 분석 결과와 매칭하고, 우측 Flow Drawer에서 해당 요청이 어떤 Controller, Service, Repository, Database Table, Frontend Page와 연결되는지 보여준다.
 
-또한 프론트 화면에서 시작된 요청이 백엔드와 데이터베이스를 거쳐 다시 화면으로 돌아오는 흐름을 애니메이션으로 재생하여, 정적인 문서가 아니라 **“살아있는 애플리케이션 구조 지도”**처럼 보여주는 것을 목표로 한다.
+또한 프론트 화면에서 시작된 요청이 백엔드와 데이터베이스를 거쳐 다시 화면으로 돌아오는 흐름을 애니메이션으로 재생하여, 정적인 문서가 아니라 **“실제 앱에서 바로 열리는 애플리케이션 구조 지도”**처럼 보여주는 것을 목표로 한다.
 
 ---
 
@@ -167,16 +167,17 @@ Controller, Service, Repository, Database가 실제로 어떻게 이어지는지
 
 ## 6.1 전체 목표
 
-1. Swagger처럼 백엔드 엔드포인트를 리스트화한다.
-2. 엔드포인트 클릭 시 내부 처리 흐름을 플로우 차트로 보여준다.
-3. Main Flow와 Sub Flow를 구분해 복잡한 호출 구조를 읽기 쉽게 만든다.
-4. 프론트 페이지에서 백엔드로 요청이 이동하고, DB 처리 후 다시 화면으로 응답이 돌아오는 과정을 애니메이션으로 보여준다.
-5. 실제 프론트 Page 단위만 탐색하고, Playwright 기반으로 화면을 캡처해 스토리보드로 만든다.
-6. 세로로 긴 페이지는 Desktop 기준으로 여러 구간으로 나누어 캡처한다.
-7. npm 기반 CLI로 설치 및 실행할 수 있게 한다.
-8. 결과물을 로컬 웹 UI에서 확인할 수 있게 한다.
-9. v0.1에서는 Spring Boot + Next.js App Router 조합을 가장 완성도 있게 지원한다.
-10. 다른 백엔드는 OpenAPI 기반 Basic Support를 제공한다.
+1. `anlyx dev`가 로컬 Anlyx 런타임 서버를 띄우고, 실제 프론트 앱은 기존 `frontend.baseUrl`에서 그대로 실행되도록 유지한다.
+2. 사용자가 실제 앱에서 버튼이나 컴포넌트를 눌렀을 때 발생한 API 요청을 브라우저에서 관찰한다.
+3. 관찰된 요청을 스캔된 엔드포인트와 매칭하고, 우측 Flow Drawer에서 내부 처리 흐름을 보여준다.
+4. Main Flow와 Sub Flow를 구분해 복잡한 호출 구조를 읽기 쉽게 만든다.
+5. 프론트 페이지에서 백엔드로 요청이 이동하고, DB 처리 후 다시 화면으로 응답이 돌아오는 과정을 애니메이션으로 보여준다.
+6. 실제 프론트 Page 단위만 탐색하고, Playwright 기반으로 화면을 캡처해 fallback/debug 스토리보드로 만든다.
+7. 세로로 긴 페이지는 Desktop 기준으로 여러 구간으로 나누어 캡처한다.
+8. npm 기반 CLI로 설치 및 실행할 수 있게 한다.
+9. 결과물을 실제 앱 위에 주입된 로컬 오버레이와 fallback/debug 로컬 웹 UI에서 확인할 수 있게 한다.
+10. v0.1에서는 Spring Boot + Next.js App Router 조합을 가장 완성도 있게 지원한다.
+11. 다른 백엔드는 OpenAPI 기반 Basic Support를 제공한다.
 
 ## 6.2 v0.1 목표
 
@@ -1093,7 +1094,26 @@ npx anlyx scan
 
 ## 15.3 dev
 
-로컬 웹 UI를 실행한다.
+로컬 Anlyx 런타임 서버를 실행한다.
+
+최종 사용자 경험은 다음 3단계로 수렴해야 한다.
+
+```bash
+npm i -D anlyx
+npx anlyx init
+npx anlyx dev
+```
+
+사용자는 이 3단계 외에 `localhost:4777`, `/_anlyx/overlay.js`, `report-data` endpoint, 수동 script tag 주입을 알 필요가 없어야 한다.
+
+`npx anlyx dev`는 장기적으로 다음 작업을 하나의 개발 명령으로 처리한다.
+
+- 필요한 경우 scan을 자동 실행하거나 stale 상태를 감지한다.
+- 실제 프론트엔드 dev server를 실행하거나 이미 실행 중인 서버를 감지한다.
+- Anlyx runtime을 실행한다.
+- 개발 모드에서만 overlay script를 실제 프론트엔드에 자동 주입한다.
+- 실제 앱 URL을 연다.
+- 앱 실행 자체는 막지 않고, Anlyx 분석 실패나 대기 상태는 overlay 안에서 표시한다.
 
 ```bash
 npx anlyx dev
@@ -1103,6 +1123,39 @@ npx anlyx dev
 
 ```txt
 http://localhost:4777
+```
+
+기본 모드인 Inject Mode에서는 `http://localhost:4777`이 실제 앱을 대신 보여주지 않는다. 실제 앱은 기존 개발 서버인 `frontend.baseUrl`에서 그대로 열고, Anlyx는 로컬 전용 스크립트와 report data API를 제공한다.
+
+Next.js App Router에서는 다음 dev-only helper를 root layout에 추가하는 것을 기본 경로로 한다.
+
+```tsx
+import { AnlyxDevOverlay } from "anlyx/next";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <body>
+        {children}
+        <AnlyxDevOverlay />
+      </body>
+    </html>
+  );
+}
+```
+
+`AnlyxDevOverlay`는 production에서 아무것도 렌더링하지 않아야 한다. 특수한 환경이나 디버깅에서는 다음 raw script tag를 fallback으로 사용할 수 있다.
+
+```html
+<script src="http://localhost:4777/_anlyx/overlay.js" defer></script>
+```
+
+스크립트는 실제 앱 origin 안에서 실행되므로, 프록시 origin 차이로 인해 hydration, auth, theme, cookie, localStorage 동작이 달라지는 문제를 피한다.
+
+Standalone debug viewer는 다음 경로에서 계속 사용할 수 있다.
+
+```txt
+http://localhost:4777/_anlyx/viewer
 ```
 
 포트 변경:
@@ -1161,7 +1214,12 @@ export default defineConfig({
 
   server: {
     port: 4777,
-    openBrowser: true
+    openBrowser: true,
+    mode: "inject"
+  },
+
+  dev: {
+    command: "npm run dev"
   }
 });
 ```
@@ -1187,7 +1245,12 @@ export default defineConfig({
   },
 
   server: {
-    port: 4777
+    port: 4777,
+    mode: "inject"
+  },
+
+  dev: {
+    command: "npm run dev"
   }
 });
 ```

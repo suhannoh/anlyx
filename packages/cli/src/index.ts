@@ -171,6 +171,19 @@ export async function runCli(args: string[] = process.argv.slice(2), options: Cl
         ...(options.dependencies ? { dependencies: options.dependencies } : {})
       });
 
+      if (result.mode === "inject") {
+        write(`Started Anlyx runtime at ${result.url}`);
+        if (result.scanRan) {
+          write("Prepared analysis data with automatic scan.");
+        }
+        if (result.frontendStarted) {
+          write("Started configured frontend dev command.");
+        }
+        write(`Open your app at ${result.frontendUrl}`);
+        write(`Standalone debug viewer: ${result.url}/_anlyx/viewer`);
+        return 0;
+      }
+
       write(`Started Anlyx UI at ${result.url}`);
       return 0;
     } catch (error) {

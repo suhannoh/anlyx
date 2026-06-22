@@ -601,7 +601,12 @@ export default defineConfig({
 
   server: {
     port: 4777,
+    mode: "inject",
     openBrowser: true
+  },
+
+  dev: {
+    command: "npm run dev"
   }
 });
 ```
@@ -1126,7 +1131,10 @@ v0.1 구현 완료 여부를 판단하는 체크리스트를 정의한다.
 CLI
 - [ ] npx anlyx init 실행 시 anlyx.config.ts가 생성된다.
 - [ ] npx anlyx scan 실행 시 .anlyx/report-data.json이 생성된다.
-- [ ] npx anlyx dev 실행 시 localhost:4777에서 UI가 열린다.
+- [ ] npx anlyx dev 실행 시 localhost:4777에서 Anlyx runtime이 열린다.
+- [ ] Inject Mode에서 실제 프론트엔드는 frontend.baseUrl에서 그대로 열린다.
+- [ ] 개발 중인 실제 앱에서 `anlyx/next`의 `AnlyxDevOverlay`를 사용할 수 있다.
+- [ ] standalone debug viewer는 localhost:4777/_anlyx/viewer에서 열린다.
 
 Spring Adapter
 - [ ] GET /api/public/benefits/{id}를 수집한다.

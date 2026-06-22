@@ -85,6 +85,54 @@ describe("Anlyx config schema", () => {
   it("default server port is applied", () => {
     expect(normalizeConfig(springNextConfig).server.port).toBe(4777);
     expect(normalizeConfig(openApiManualConfig).server.openBrowser).toBe(true);
+    expect(normalizeConfig(openApiManualConfig).server.mode).toBe("inject");
+  });
+
+  it("explicit inject server mode passes", () => {
+    const normalized = normalizeConfig({
+      ...springNextConfig,
+      server: {
+        port: 4888,
+        openBrowser: false,
+        mode: "inject"
+      }
+    });
+
+    expect(normalized.server).toEqual({
+      port: 4888,
+      openBrowser: false,
+      mode: "inject"
+    });
+  });
+
+  it("normalizes optional dev command", () => {
+    const normalized = normalizeConfig({
+      ...springNextConfig,
+      dev: {
+        command: "npm run dev"
+      }
+    });
+
+    expect(normalized.dev).toEqual({
+      command: "npm run dev"
+    });
+  });
+
+  it("explicit viewer server mode passes", () => {
+    const normalized = normalizeConfig({
+      ...springNextConfig,
+      server: {
+        port: 4888,
+        openBrowser: false,
+        mode: "viewer"
+      }
+    });
+
+    expect(normalized.server).toEqual({
+      port: 4888,
+      openBrowser: false,
+      mode: "viewer"
+    });
   });
 
   it("default viewport is applied", () => {

@@ -71,6 +71,32 @@ describe("built CLI entrypoint", () => {
     });
   });
 
+  it("exports the Next.js development overlay helper", async () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    const helperPath = join(repositoryRoot, "packages/cli/dist/next.js");
+    const helper = (await import(helperPath)) as {
+      AnlyxDevOverlay: () => unknown;
+      getAnlyxDevOverlayScriptSrc: () => string;
+    };
+
+    try {
+      process.env.NODE_ENV = "development";
+      expect(helper.getAnlyxDevOverlayScriptSrc()).toBe("http://localhost:4777/_anlyx/overlay.js");
+      expect(helper.AnlyxDevOverlay()).toMatchObject({
+        type: "script",
+        props: {
+          src: "http://localhost:4777/_anlyx/overlay.js",
+          defer: true
+        }
+      });
+
+      process.env.NODE_ENV = "production";
+      expect(helper.AnlyxDevOverlay()).toBeNull();
+    } finally {
+      process.env.NODE_ENV = originalNodeEnv;
+    }
+  });
+
   it("can run scan --skip-capture in a fixture-like project", async () => {
     await withTempDir(async (dir) => {
       const copiedFixtureRoot = join(dir, "spring-next-sample");

@@ -79,7 +79,14 @@ export const frontendConfigSchema = z.discriminatedUnion("type", [
 export const serverConfigSchema = z
   .object({
     port: z.number().optional(),
-    openBrowser: z.boolean().optional()
+    openBrowser: z.boolean().optional(),
+    mode: z.enum(["inject", "overlay", "viewer"]).optional()
+  })
+  .strict();
+
+export const devConfigSchema = z
+  .object({
+    command: z.string().optional()
   })
   .strict();
 
@@ -88,7 +95,8 @@ export const anlyxConfigSchema = z
     projectName: z.string(),
     backend: backendConfigSchema,
     frontend: frontendConfigSchema,
-    server: serverConfigSchema.optional()
+    server: serverConfigSchema.optional(),
+    dev: devConfigSchema.optional()
   })
   .strict();
 
@@ -101,6 +109,7 @@ export type NextFrontendConfig = z.infer<typeof nextFrontendConfigSchema>;
 export type ManualFrontendConfig = z.infer<typeof manualFrontendConfigSchema>;
 export type FrontendConfig = z.infer<typeof frontendConfigSchema>;
 export type ServerConfig = z.infer<typeof serverConfigSchema>;
+export type DevConfig = z.infer<typeof devConfigSchema>;
 export type AnlyxConfig = z.infer<typeof anlyxConfigSchema>;
 
 export type NormalizedCaptureConfig = {
@@ -113,6 +122,11 @@ export type NormalizedCaptureConfig = {
 export type NormalizedServerConfig = {
   port: number;
   openBrowser: boolean;
+  mode: "inject" | "overlay" | "viewer";
+};
+
+export type NormalizedDevConfig = {
+  command?: string;
 };
 
 export type NormalizedSpringBackendConfig = SpringBackendConfig & {
@@ -145,6 +159,7 @@ export type NormalizedAnlyxConfig = {
   backend: NormalizedBackendConfig;
   frontend: NormalizedFrontendConfig;
   server: NormalizedServerConfig;
+  dev: NormalizedDevConfig;
 };
 
 export function defineConfig<const TConfig extends AnlyxConfig>(config: TConfig): TConfig {
@@ -170,8 +185,10 @@ export function normalizeConfig(value: unknown): NormalizedAnlyxConfig {
     frontend: normalizeFrontendConfig(config.frontend),
     server: {
       port: config.server?.port ?? 4777,
-      openBrowser: config.server?.openBrowser ?? true
-    }
+      openBrowser: config.server?.openBrowser ?? true,
+      mode: config.server?.mode ?? "inject"
+    },
+    dev: normalizeDevConfig(config.dev)
   };
 }
 
@@ -208,6 +225,16 @@ function normalizeCaptureConfig(capture: CaptureConfig | undefined): NormalizedC
 
   if (capture?.timeoutMs !== undefined) {
     normalized.timeoutMs = capture.timeoutMs;
+  }
+
+  return normalized;
+}
+
+function normalizeDevConfig(dev: DevConfig | undefined): NormalizedDevConfig {
+  const normalized: NormalizedDevConfig = {};
+
+  if (dev?.command !== undefined) {
+    normalized.command = dev.command;
   }
 
   return normalized;

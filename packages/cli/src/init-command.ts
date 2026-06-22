@@ -53,7 +53,12 @@ export function createDefaultConfigTemplate(): string {
 
   server: {
     port: 4777,
-    openBrowser: true
+    openBrowser: true,
+    mode: "inject"
+  },
+
+  dev: {
+    command: "npm run dev"
   }
 };
 `;
