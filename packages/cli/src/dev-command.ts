@@ -626,6 +626,10 @@ export function getOverlayClientScript(): string {
   let body = null;
   let overlayUiReady = false;
   let overlayUiLoading = false;
+  let overlayRootGuardInstalled = false;
+  let overlayRootRestoreScheduled = false;
+  let overlayInfrastructureInstalled = false;
+  const endpointRegexCache = new Map();
   const currentScript = document.currentScript;
   const runtimeBaseUrl = currentScript && currentScript.src ? new URL(currentScript.src).origin : window.location.origin;
   const ANLYX_PENDING_ACTION_KEY = "__anlyx_pending_action__";
@@ -649,12 +653,26 @@ export function getOverlayClientScript(): string {
   }
 
   function mountOverlayUi() {
-    if (document.getElementById("anlyx-overlay-root")) {
+    const existingRoot = document.getElementById("anlyx-overlay-root");
+    if (existingRoot) {
+      drawer = existingRoot.querySelector(".anlyx-drawer");
+      body = existingRoot.querySelector(".anlyx-body");
+      if (drawer && body) {
+        installOverlayRootGuard();
+        render();
+        return;
+      }
+      existingRoot.remove();
+    }
+
+    if (!document.body) {
       return;
     }
 
-    const style = document.createElement("style");
-    style.textContent = ${"`"}
+    if (!document.querySelector("style[data-anlyx-overlay-base]")) {
+      const style = document.createElement("style");
+      style.setAttribute("data-anlyx-overlay-base", "true");
+      style.textContent = ${"`"}
     #anlyx-overlay-root { position: fixed; inset: 0; pointer-events: none; z-index: 2147483647; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #0f172a; }
     .anlyx-fab { pointer-events: auto; position: absolute; right: 18px; bottom: 18px; height: 42px; min-width: 92px; border: 1px solid rgba(255,255,255,.24); border-radius: 999px; background: #2563eb; color: white; font-weight: 850; font-size: 13px; box-shadow: 0 18px 50px rgba(37, 99, 235, 0.28); cursor: pointer; }
     .anlyx-drawer { pointer-events: auto; position: absolute; top: 12px; right: 12px; bottom: 12px; width: min(980px, calc(100vw - 24px)); border: 1px solid rgba(15, 23, 42, .12); border-radius: 18px; background: rgba(248, 250, 252, .98); box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22); overflow: hidden; display: none; }
@@ -671,8 +689,8 @@ export function getOverlayClientScript(): string {
       .anlyx-drawer { top: 8px; right: 8px; bottom: 8px; width: calc(100vw - 16px); border-radius: 14px; }
     }
   ${"`"};
-    document.head.appendChild(style);
-    loadOverlayUiAssets();
+      document.head.appendChild(style);
+    }
 
     const root = document.createElement("div");
     root.id = "anlyx-overlay-root";
@@ -705,12 +723,36 @@ export function getOverlayClientScript(): string {
       render();
     });
 
-    restorePendingAction();
-    installUserActionTracker(root);
-    installFetchInterceptor();
-    installXhrInterceptor();
-    loadReport();
+    installOverlayRootGuard();
+
+    if (!overlayInfrastructureInstalled) {
+      overlayInfrastructureInstalled = true;
+      restorePendingAction();
+      installUserActionTracker(root);
+      installFetchInterceptor();
+      installXhrInterceptor();
+      loadReport();
+    }
+
     render();
+  }
+
+  function installOverlayRootGuard() {
+    if (overlayRootGuardInstalled || !document.body || !window.MutationObserver) {
+      return;
+    }
+    overlayRootGuardInstalled = true;
+    const observer = new MutationObserver(() => {
+      if (!document.body || document.getElementById("anlyx-overlay-root") || overlayRootRestoreScheduled) {
+        return;
+      }
+      overlayRootRestoreScheduled = true;
+      window.setTimeout(() => {
+        overlayRootRestoreScheduled = false;
+        mountOverlayUi();
+      }, 50);
+    });
+    observer.observe(document.body, { childList: true });
   }
 
   function loadOverlayUiAssets() {
@@ -768,10 +810,10 @@ export function getOverlayClientScript(): string {
       const startedAt = performance.now();
       try {
         const response = await originalFetch.apply(this, arguments);
-        recordApiEvent({ method, url, status: response.status, durationMs: performance.now() - startedAt, startedAt });
+        scheduleApiEventRecord({ method, url, status: response.status, durationMs: performance.now() - startedAt, startedAt });
         return response;
       } catch (error) {
-        recordApiEvent({ method, url, status: "failed", durationMs: performance.now() - startedAt, startedAt });
+        scheduleApiEventRecord({ method, url, status: "failed", durationMs: performance.now() - startedAt, startedAt });
         throw error;
       }
     };
@@ -911,7 +953,7 @@ export function getOverlayClientScript(): string {
       if (request) {
         request.startedAt = performance.now();
         this.addEventListener("loadend", () => {
-          recordApiEvent({
+          scheduleApiEventRecord({
             method: request.method,
             url: request.url,
             status: this.status || "unknown",
@@ -922,6 +964,10 @@ export function getOverlayClientScript(): string {
       }
       return originalSend.apply(this, arguments);
     };
+  }
+
+  function scheduleApiEventRecord(event) {
+    window.setTimeout(() => recordApiEvent(event), 0);
   }
 
   function recordApiEvent(event) {
@@ -1038,10 +1084,17 @@ export function getOverlayClientScript(): string {
   }
 
   function endpointPathToRegex(path) {
+    const key = String(path || "");
+    const cached = endpointRegexCache.get(key);
+    if (cached) {
+      return cached;
+    }
     const escaped = String(path || "")
       .replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")
       .replace(/\\\{[^/]+\\\}/g, "[^/]+");
-    return new RegExp("^" + escaped + "$");
+    const regex = new RegExp("^" + escaped + "$");
+    endpointRegexCache.set(key, regex);
+    return regex;
   }
 
   function render() {
@@ -1050,6 +1103,10 @@ export function getOverlayClientScript(): string {
     }
 
     drawer.dataset.open = state.open ? "true" : "false";
+    if (!state.open) {
+      return;
+    }
+
     const selected = state.events.find((event) => event.id === state.selectedEventId) || state.events[0] || null;
     renderReactDrawer(selected);
 

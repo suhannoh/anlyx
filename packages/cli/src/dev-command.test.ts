@@ -407,6 +407,39 @@ describe("dev command", () => {
     expect(script).toContain("events: state.events");
   });
 
+  it("keeps the injected overlay lightweight and resilient across app shell changes", () => {
+    const script = getOverlayClientScript();
+
+    expect(script).toContain("installOverlayRootGuard");
+    expect(script).toContain("new MutationObserver");
+    expect(script).toContain("observer.observe(document.body, { childList: true })");
+    expect(script).toContain("overlayRootRestoreScheduled");
+    expect(script).toContain("overlayInfrastructureInstalled");
+    expect(script).toContain('style[data-anlyx-overlay-base]');
+  });
+
+  it("defers expensive overlay work away from the application request path", () => {
+    const script = getOverlayClientScript();
+
+    expect(script).toContain("scheduleApiEventRecord");
+    expect(script).toContain("window.setTimeout(() => recordApiEvent(event), 0)");
+    expect(script).toContain("const endpointRegexCache = new Map()");
+    expect(script).toContain("endpointRegexCache.get(key)");
+    expect(script).toContain("endpointRegexCache.set(key, regex)");
+  });
+
+  it("loads the React drawer bundle only after the drawer opens", () => {
+    const script = getOverlayClientScript();
+    const mountBlock = script.slice(script.indexOf("function mountOverlayUi()"), script.indexOf("function installOverlayRootGuard()"));
+    const renderBlock = script.slice(script.indexOf("function render()"), script.indexOf("function renderReactDrawer"));
+
+    expect(mountBlock).not.toContain("loadOverlayUiAssets()");
+    expect(renderBlock).toContain("if (!state.open)");
+    expect(renderBlock).toContain("return;");
+    expect(script).toContain("function renderReactDrawer(selected)");
+    expect(script).toContain("loadOverlayUiAssets()");
+  });
+
   it("keeps capture and matching logic in the injected proxy script", () => {
     const script = getOverlayClientScript();
 
