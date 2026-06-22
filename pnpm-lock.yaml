@@ -91,6 +91,13 @@ importers:
       vite:
         specifier: ^8.0.16
         version: 8.0.16(@types/node@24.13.2)(jiti@2.7.0)
+    devDependencies:
+      "@types/react":
+        specifier: ^18.3.27
+        version: 18.3.31
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
 
   packages/core:
     dependencies:

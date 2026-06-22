@@ -46,5 +46,17 @@
     "@anlyx/ui": "workspace:*",
     "jiti": "^2.7.0",
     "vite": "^8.0.16"
+  },
+  "peerDependencies": {
+    "react": ">=18.3.0 <20"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.27",
+    "react": "^18.3.1"
   }
 }
