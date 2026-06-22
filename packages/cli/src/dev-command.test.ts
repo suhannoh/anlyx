@@ -399,6 +399,18 @@ describe("dev command", () => {
     expect(script).toContain("Date.now() - action.capturedAt");
   });
 
+  it("renders overlay events with a visual action to request summary", () => {
+    const script = getOverlayClientScript();
+
+    expect(script).toContain("anlyx-flow-summary");
+    expect(script).toContain("anlyx-summary-step");
+    expect(script).toContain("anlyx-step-icon");
+    expect(script).toContain("anlyx-metric-grid");
+    expect(script).toContain("anlyx-node-chain");
+    expect(script).toContain("renderFlowSummary");
+    expect(script).toContain("renderRequestMetrics");
+  });
+
   it("--no-open disables browser opening", async () => {
     await withTempDir(async (dir) => {
       await writeReportData(dir, scanResult);

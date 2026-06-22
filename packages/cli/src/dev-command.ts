@@ -642,6 +642,19 @@ export function getOverlayClientScript(): string {
     .anlyx-request-path { min-width: 0; overflow-wrap: anywhere; font-size: 13px; font-weight: 850; line-height: 1.35; color: #101828; }
     .anlyx-action-line { display: block; margin: 5px 0 0; color: #667085; font-size: 11px; line-height: 1.35; font-weight: 750; overflow-wrap: anywhere; }
     .anlyx-request-meta { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px 13px; }
+    .anlyx-flow-summary { display: grid; gap: 8px; padding: 12px 14px 14px; border-top: 1px solid #eef2f7; background: #fbfdff; }
+    .anlyx-summary-step { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 9px; align-items: start; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; padding: 9px; }
+    .anlyx-step-icon { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 10px; background: #eef4ff; color: #2563eb; font-size: 14px; font-weight: 900; }
+    .anlyx-summary-step[data-tone="good"] .anlyx-step-icon { background: #dcfae6; color: #087443; }
+    .anlyx-summary-step[data-tone="warn"] .anlyx-step-icon { background: #fff7ed; color: #c2410c; }
+    .anlyx-summary-step[data-tone="danger"] .anlyx-step-icon { background: #fff1f2; color: #b42318; }
+    .anlyx-step-kicker { margin: 0 0 2px; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: #667085; font-weight: 900; }
+    .anlyx-step-title { margin: 0; font-size: 12px; line-height: 1.35; color: #101828; font-weight: 850; overflow-wrap: anywhere; }
+    .anlyx-step-subtitle { margin: 3px 0 0; font-size: 11px; line-height: 1.35; color: #667085; font-weight: 700; overflow-wrap: anywhere; }
+    .anlyx-metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 12px; }
+    .anlyx-metric { border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; padding: 9px; min-width: 0; }
+    .anlyx-metric-label { margin: 0 0 4px; color: #667085; font-size: 10px; line-height: 1.2; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
+    .anlyx-metric-value { margin: 0; color: #101828; font-size: 12px; line-height: 1.35; font-weight: 850; overflow-wrap: anywhere; }
     .anlyx-mini-pill { border: 1px solid #d7e0ee; background: #fff; color: #475467; border-radius: 999px; padding: 4px 8px; font-size: 11px; font-weight: 800; white-space: nowrap; }
     .anlyx-mini-pill.good { border-color: #bbf7d0; color: #087443; background: #ecfdf3; }
     .anlyx-mini-pill.warn { border-color: #fed7aa; color: #c2410c; background: #fff7ed; }
@@ -659,7 +672,10 @@ export function getOverlayClientScript(): string {
     .anlyx-kv span:first-child { color: #667085; font-weight: 750; }
     .anlyx-kv span:last-child { min-width: 0; overflow-wrap: anywhere; font-weight: 750; color: #182230; }
     .anlyx-path-list { display: grid; gap: 10px; padding: 12px; }
+    .anlyx-node-chain { display: grid; gap: 0; padding: 12px; }
     .anlyx-node { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; border: 1px solid #d8e4f5; border-radius: 12px; padding: 10px; background: linear-gradient(180deg, #fff, #f8fbff); }
+    .anlyx-node-chain .anlyx-node { margin-bottom: 8px; }
+    .anlyx-node-chain .anlyx-node:not(:last-child)::after { content: ""; position: absolute; left: 23px; bottom: -9px; width: 2px; height: 9px; background: #bfdbfe; }
     .anlyx-node.support { border-color: #fdba74; background: #fffaf5; }
     .anlyx-node-index { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 999px; background: #2563eb; color: #fff; font-size: 11px; font-weight: 900; }
     .anlyx-node.support .anlyx-node-index { background: #f97316; }
@@ -1067,35 +1083,65 @@ export function getOverlayClientScript(): string {
 
     if (!endpoint) {
       return '<section class="anlyx-request-hero"><div class="anlyx-request-top"><div><h3>What just happened</h3><div class="anlyx-request-line">' +
-        '<span class="anlyx-method">' + escapeHtml(event.method) + '</span><span class="anlyx-request-path">' + escapeHtml(event.path) + '</span></div>' + renderActionSummary(event) + '</div>' +
+        '<span class="anlyx-method">' + escapeHtml(event.method) + '</span><span class="anlyx-request-path">' + escapeHtml(event.path) + '</span></div></div>' +
         '<span class="anlyx-mini-pill warn">unmatched</span></div><div class="anlyx-request-meta">' +
         renderStatusPill(event.status) +
         '<span class="anlyx-mini-pill">' + escapeHtml(event.durationMs) + 'ms</span>' +
         renderRepeatPill(event) +
-        '</div></section><section class="anlyx-section"><h3 class="anlyx-section-title">Unmatched request</h3><div class="anlyx-summary">' +
-        renderKv("Request", event.method + " " + event.path) +
-        renderKv("Status", getStatusLabel(event.status)) +
-        renderKv("Latency", event.durationMs + "ms") +
-        renderActionDetails(event) +
+        '</div>' + renderFlowSummary(event, null) + '</section><section class="anlyx-section"><h3 class="anlyx-section-title">Request facts</h3>' +
+        renderRequestMetrics(event, null) +
+        '<div class="anlyx-summary">' +
         renderStatusExplanation(event.status, false) +
         '<div class="anlyx-empty">No scanned endpoint matched this request. If this should be known, run <strong>anlyx scan</strong> again or check the configured backend paths.</div>' +
       '</div></section>';
     }
 
     return '<section class="anlyx-request-hero"><div class="anlyx-request-top"><div><h3>What just happened</h3><div class="anlyx-request-line">' +
-      '<span class="anlyx-method">' + escapeHtml(event.method) + '</span><span class="anlyx-request-path">' + escapeHtml(event.path) + '</span></div>' + renderActionSummary(event) + '</div>' +
+      '<span class="anlyx-method">' + escapeHtml(event.method) + '</span><span class="anlyx-request-path">' + escapeHtml(event.path) + '</span></div></div>' +
       '<span class="anlyx-mini-pill good">matched</span></div><div class="anlyx-request-meta">' +
       '<span class="anlyx-mini-pill">endpoint ' + escapeHtml(endpoint.method + " " + endpoint.path) + '</span>' +
       renderStatusPill(event.status) +
       '<span class="anlyx-mini-pill">' + escapeHtml(event.durationMs) + 'ms</span>' +
       renderRepeatPill(event) +
       '<span class="anlyx-mini-pill good">confidence ' + escapeHtml(endpoint.confidence || "unknown") + '</span>' +
-    '</div></section>' +
+    '</div>' + renderFlowSummary(event, endpoint) + '</section>' +
+    '<section class="anlyx-section"><h3 class="anlyx-section-title">Request facts</h3>' + renderRequestMetrics(event, endpoint) + '</section>' +
     renderStatusExplanation(event.status, true) +
-    renderActionDetails(event) +
     renderMainPath(flow) +
     renderSupportCalls(flow) +
     renderLinkedPages(event.matchedPages);
+  }
+
+  function renderFlowSummary(event, endpoint) {
+    const statusTone = getStatusClass(event.status) || (endpoint ? "good" : "warn");
+    return '<div class="anlyx-flow-summary">' +
+      renderSummaryStep("Action", "↗", event.triggeredBy ? formatAction(event.triggeredBy) : "No user action captured", event.triggeredBy ? event.triggeredBy.selector : "Request may have fired on page load", event.triggeredBy ? "" : "warn") +
+      renderSummaryStep("Request", "→", event.method + " " + event.path, endpoint ? "Matched scanned endpoint" : "No scanned endpoint matched", endpoint ? "good" : "warn") +
+      renderSummaryStep("Result", "✓", getStatusLabel(event.status), event.durationMs + "ms" + (event.count && event.count > 1 ? " · seen ×" + event.count : ""), statusTone) +
+    '</div>';
+  }
+
+  function renderSummaryStep(kicker, icon, title, subtitle, tone) {
+    return '<div class="anlyx-summary-step" data-tone="' + escapeHtml(tone || "") + '">' +
+      '<span class="anlyx-step-icon">' + escapeHtml(icon) + '</span>' +
+      '<div><p class="anlyx-step-kicker">' + escapeHtml(kicker) + '</p><p class="anlyx-step-title">' + escapeHtml(title) + '</p>' +
+      (subtitle ? '<p class="anlyx-step-subtitle">' + escapeHtml(subtitle) + '</p>' : '') +
+      '</div></div>';
+  }
+
+  function renderRequestMetrics(event, endpoint) {
+    return '<div class="anlyx-metric-grid">' +
+      renderMetric("Method", event.method) +
+      renderMetric("Status", getStatusLabel(event.status)) +
+      renderMetric("Latency", event.durationMs + "ms") +
+      renderMetric("Endpoint", endpoint ? endpoint.path : "unmatched") +
+      renderMetric("Action", event.triggeredBy ? formatAction(event.triggeredBy) : "none captured") +
+      renderMetric("Element", event.triggeredBy ? event.triggeredBy.selector || "unknown" : "unknown") +
+    '</div>';
+  }
+
+  function renderMetric(label, value) {
+    return '<div class="anlyx-metric"><p class="anlyx-metric-label">' + escapeHtml(label) + '</p><p class="anlyx-metric-value">' + escapeHtml(value) + '</p></div>';
   }
 
   function renderTimelineAction(event) {
@@ -1189,7 +1235,7 @@ export function getOverlayClientScript(): string {
       return '<section class="anlyx-section"><h3 class="anlyx-section-title">Main flow</h3><div class="anlyx-empty">No main path was inferred for this endpoint.</div></section>';
     }
     const nodeById = new Map((flow.nodes || []).map((node) => [node.id, node]));
-    return '<section class="anlyx-section"><h3 class="anlyx-section-title">Main flow</h3><div class="anlyx-path-list">' +
+    return '<section class="anlyx-section"><h3 class="anlyx-section-title">Main flow</h3><div class="anlyx-node-chain">' +
       flow.mainPath.map((nodeId, index) => renderNode(nodeById.get(nodeId), false, index + 1)).join("") +
     '</div></section>';
   }
@@ -1203,7 +1249,7 @@ export function getOverlayClientScript(): string {
     if (support.length === 0) {
       return "";
     }
-    return '<details class="anlyx-disclosure" open><summary><span>Support calls</span><span class="anlyx-disclosure-count">' + support.length + '</span></summary><div class="anlyx-path-list">' +
+    return '<details class="anlyx-disclosure" open><summary><span>Support calls</span><span class="anlyx-disclosure-count">' + support.length + '</span></summary><div class="anlyx-node-chain">' +
       support.slice(0, 8).map((node, index) => renderNode(node, true, index + 1)).join("") +
     '</div></details>';
   }
