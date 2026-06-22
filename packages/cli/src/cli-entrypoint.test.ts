@@ -12,6 +12,7 @@ const execFileAsync = promisify(execFile);
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const cliDistEntry = join(repositoryRoot, "packages/cli/dist/index.js");
 const fixtureRoot = join(repositoryRoot, "fixtures/spring-next-sample");
+const genericFixtureRoot = join(repositoryRoot, "fixtures/generic-spring-next");
 
 async function withTempDir<T>(callback: (dir: string) => Promise<T>): Promise<T> {
   const dir = await mkdtemp(join(tmpdir(), "anlyx-built-cli-"));
@@ -116,6 +117,39 @@ describe("built CLI entrypoint", () => {
       expect(stderr).not.toContain("unsettled top-level await");
     });
   });
+
+  it("can scan a generic Spring Boot and Next.js project without Zup-specific data", async () => {
+    await withTempDir(async (dir) => {
+      const copiedFixtureRoot = join(dir, "generic-spring-next");
+      await cp(genericFixtureRoot, copiedFixtureRoot, { recursive: true });
+      await writeFile(join(dir, "anlyx.config.ts"), createGenericFixtureConfig(), "utf8");
+
+      const { stderr } = await runBuiltCli(["scan", "--skip-capture"], dir);
+      const reportData = scanResultSchema.parse(
+        JSON.parse(await readFile(join(dir, ".anlyx/report-data.json"), "utf8")) as unknown
+      );
+      const endpoint = reportData.endpoints.find((item) => item.path === "/api/items/{id}");
+      const flow = reportData.flows.find((item) => item.endpointId === endpoint?.id);
+
+      expect(endpoint).toMatchObject({
+        method: "GET",
+        controller: "ItemController",
+        handler: "getItem",
+        responseSchema: "ItemDetailResponse"
+      });
+      expect(reportData.pages.map((page) => page.route)).toContain("/items/[id]");
+      expect(flow?.mainPath).toEqual([
+        "endpoint:GET:/api/items/{id}",
+        "controller:ItemController",
+        "service:ItemService",
+        "repository:ItemRepository",
+        "database:items"
+      ]);
+      expect(JSON.stringify(reportData)).not.toContain("Benefit");
+      expect(JSON.stringify(reportData)).not.toContain("Zup");
+      expect(stderr).not.toContain("unsettled top-level await");
+    });
+  });
 });
 
 function createFixtureConfig(): string {
@@ -137,6 +171,35 @@ function createFixtureConfig(): string {
       "/benefit/[brandSlug]/[benefitSlugWithId]": {
         brandSlug: "starbucks",
         benefitSlugWithId: "birthday-coupon-123"
+      }
+    }
+  },
+  server: {
+    port: 4777,
+    openBrowser: false
+  }
+};
+`;
+}
+
+function createGenericFixtureConfig(): string {
+  return `export default {
+  projectName: "Generic Spring Next Fixture",
+  backend: {
+    type: "spring",
+    sourceDir: "./generic-spring-next/backend",
+    maxMainDepth: 4,
+    maxSubDepth: 1,
+    includeUtilities: false
+  },
+  frontend: {
+    type: "next",
+    sourceDir: "./generic-spring-next/frontend",
+    baseUrl: "http://localhost:3000",
+    router: "app",
+    sampleParams: {
+      "/items/[id]": {
+        id: "42"
       }
     }
   },
