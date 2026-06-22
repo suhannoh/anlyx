@@ -389,6 +389,16 @@ describe("dev command", () => {
     expect(script).toContain("User action");
   });
 
+  it("keeps a short-lived user action across client navigation", () => {
+    const script = getOverlayClientScript();
+
+    expect(script).toContain("ANLYX_PENDING_ACTION_KEY");
+    expect(script).toContain("restorePendingAction");
+    expect(script).toContain("persistPendingAction");
+    expect(script).toContain('document.addEventListener("pointerdown"');
+    expect(script).toContain("Date.now() - action.capturedAt");
+  });
+
   it("--no-open disables browser opening", async () => {
     await withTempDir(async (dir) => {
       await writeReportData(dir, scanResult);

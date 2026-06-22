@@ -57,6 +57,7 @@ I just clicked this in the real app. What API fired, and where does that request
 Flow Drawer MUST include:
 
 - The most recent user action that triggered the request when it can be observed, such as a clicked button, link, tab, form submit, or keyboard activation
+- Short-lived user action context preserved across client navigation or full page reload so a clicked link/card can still explain the first API calls on the destination page
 - Last matched API event with method, path, status, and latency when available
 - Status meaning for common local-development states, especially `401`/`403` login or permission gates and `5xx` server failures
 - Matched endpoint label

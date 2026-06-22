@@ -597,6 +597,7 @@ export function getOverlayClientScript(): string {
   let body = null;
   const currentScript = document.currentScript;
   const runtimeBaseUrl = currentScript && currentScript.src ? new URL(currentScript.src).origin : window.location.origin;
+  const ANLYX_PENDING_ACTION_KEY = "__anlyx_pending_action__";
 
   scheduleOverlayMount();
 
@@ -709,6 +710,7 @@ export function getOverlayClientScript(): string {
       render();
     });
 
+    restorePendingAction();
     installUserActionTracker(root);
     installFetchInterceptor();
     installXhrInterceptor();
@@ -748,6 +750,7 @@ export function getOverlayClientScript(): string {
   }
 
   function installUserActionTracker(root) {
+    document.addEventListener("pointerdown", (event) => captureUserAction(event, root), true);
     document.addEventListener("click", (event) => captureUserAction(event, root), true);
     document.addEventListener("submit", (event) => captureUserAction(event, root), true);
     document.addEventListener("keydown", (event) => {
@@ -771,7 +774,45 @@ export function getOverlayClientScript(): string {
       at: performance.now(),
       capturedAt: Date.now()
     };
+    rememberAction(action);
+    persistPendingAction(action);
+  }
+
+  function rememberAction(action) {
     state.actions = [action].concat(state.actions).slice(0, 20);
+  }
+
+  function persistPendingAction(action) {
+    try {
+      window.sessionStorage.setItem(ANLYX_PENDING_ACTION_KEY, JSON.stringify(action));
+    } catch {
+      // Ignore storage failures in strict browser privacy modes.
+    }
+  }
+
+  function restorePendingAction() {
+    try {
+      const raw = window.sessionStorage.getItem(ANLYX_PENDING_ACTION_KEY);
+      if (!raw) {
+        return;
+      }
+      const action = JSON.parse(raw);
+      if (isFreshAction(action)) {
+        rememberAction(Object.assign({}, action, { at: performance.now() }));
+        return;
+      }
+      window.sessionStorage.removeItem(ANLYX_PENDING_ACTION_KEY);
+    } catch {
+      try {
+        window.sessionStorage.removeItem(ANLYX_PENDING_ACTION_KEY);
+      } catch {
+        // Ignore storage cleanup failures.
+      }
+    }
+  }
+
+  function isFreshAction(action) {
+    return action && action.capturedAt && Date.now() - action.capturedAt <= 8000;
   }
 
   function getActionTarget(target) {
@@ -919,7 +960,10 @@ export function getOverlayClientScript(): string {
     const requestStartedAt = Number(startedAt || performance.now());
     return state.actions.find((action) => {
       const age = requestStartedAt - action.at;
-      return age >= -50 && age <= 3000;
+      if (age >= -50 && age <= 3000) {
+        return true;
+      }
+      return Date.now() - action.capturedAt <= 8000;
     }) || null;
   }
 
