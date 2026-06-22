@@ -21,12 +21,13 @@ export function RecentApiEventsTable({
               <th>Path</th>
               <th>Status</th>
               <th>Match</th>
+              <th>Source</th>
               <th>Duration</th>
             </tr>
           </thead>
           <tbody>
             {events.slice(0, 6).map((event) => (
-              <tr key={event.id}>
+              <tr key={event.id} data-event-id={event.id} tabIndex={0} title="Inspect this API event">
                 <td>
                   <Badge tone="blue">{event.method}</Badge>
                 </td>
@@ -39,6 +40,11 @@ export function RecentApiEventsTable({
                 <td>
                   <Badge tone={event.matchedEndpoint ? "green" : "amber"}>
                     {event.matchedEndpoint ? "matched" : "unmatched"}
+                  </Badge>
+                </td>
+                <td>
+                  <Badge tone={event.triggeredBy ? "blue" : "gray"}>
+                    {event.triggeredBy ? "action" : event.source === "health" ? "health" : "background"}
                   </Badge>
                 </td>
                 <td>{event.durationMs}ms</td>

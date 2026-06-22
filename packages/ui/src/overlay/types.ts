@@ -15,6 +15,7 @@ export type OverlayApiEvent = {
   durationMs: number;
   count?: number;
   lastSeenAt?: number;
+  source?: "action" | "background" | "health";
   triggeredBy?: OverlayAction | null;
   matchedEndpoint?: Endpoint | null;
   matchedFlow?: EndpointFlow | null;

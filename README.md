@@ -146,6 +146,8 @@ npx anlyx dev
 
 The intended path is that `anlyx dev` is the only command users need during local development. It should detect or start the real frontend, keep the app at `frontend.baseUrl`, start the Anlyx runtime at [http://localhost:4777](http://localhost:4777), and open the real app URL.
 
+In Inject Mode, use the real app URL such as `http://localhost:3000`. The `4777` server stays in the background as the local Anlyx runtime for overlay assets, report data, and the standalone debug viewer.
+
 In a Next.js App Router app, add the development-only helper to your root layout:
 
 ```tsx
@@ -172,6 +174,8 @@ For special setups, the raw fallback script is:
 ```
 
 The app still runs on its own origin, so auth, theme, cookies, localStorage, and hydration behave like the normal development environment.
+
+The injected drawer is action-first: requests caused by your latest click, submit, or key action become the main flow. Page-load effects, health checks, and polling requests are recorded quietly in Recent API events and can be selected when needed.
 
 - Click the real app normally.
 - When a browser `fetch` or `XMLHttpRequest` API call fires, Anlyx matches it to scanned endpoints.

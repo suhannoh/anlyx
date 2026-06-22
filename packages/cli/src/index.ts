@@ -25,13 +25,14 @@ export type {
 } from "./scan-command.js";
 
 import { runInitCommand } from "./init-command.js";
-import { runDevCommand, type DevCommandDependencies } from "./dev-command.js";
+import { closeActiveLocalUiServers, runDevCommand, type DevCommandDependencies } from "./dev-command.js";
 import { runScanCommand, type ScanCommandDependencies } from "./scan-command.js";
 
 export type CliOptions = {
   cwd?: string;
   write?: (message: string) => void;
   dependencies?: ScanCommandDependencies & DevCommandDependencies;
+  keepAlive?: boolean;
 };
 
 export function getHelpText(): string {
@@ -181,10 +182,16 @@ export async function runCli(args: string[] = process.argv.slice(2), options: Cl
         }
         write(`Open your app at ${result.frontendUrl}`);
         write(`Standalone debug viewer: ${result.url}/_anlyx/viewer`);
+        if (options.keepAlive) {
+          await waitUntilInterrupted();
+        }
         return 0;
       }
 
       write(`Started Anlyx UI at ${result.url}`);
+      if (options.keepAlive) {
+        await waitUntilInterrupted();
+      }
       return 0;
     } catch (error) {
       write(`Dev server failed: ${error instanceof Error ? error.message : "unknown error"}`);
@@ -284,7 +291,7 @@ function parseDevArgs(args: string[]): {
 }
 
 if (isCliEntrypoint()) {
-  void runCli(process.argv.slice(2))
+  void runCli(process.argv.slice(2), { keepAlive: true })
     .then((exitCode) => {
       process.exitCode = exitCode;
     })
@@ -292,6 +299,24 @@ if (isCliEntrypoint()) {
       console.error(error instanceof Error ? error.message : String(error));
       process.exitCode = 1;
     });
+}
+
+function waitUntilInterrupted(): Promise<void> {
+  return new Promise((resolve) => {
+    let resolved = false;
+    const cleanup = async () => {
+      if (resolved) {
+        return;
+      }
+      resolved = true;
+      process.off("SIGINT", cleanup);
+      process.off("SIGTERM", cleanup);
+      await closeActiveLocalUiServers();
+      resolve();
+    };
+    process.once("SIGINT", cleanup);
+    process.once("SIGTERM", cleanup);
+  });
 }
 
 function isCliEntrypoint(): boolean {

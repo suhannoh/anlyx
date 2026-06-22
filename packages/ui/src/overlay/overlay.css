@@ -430,6 +430,19 @@
   font-weight: 700;
 }
 
+.anlyx-ov-table tbody tr[data-event-id] {
+  cursor: pointer;
+}
+
+.anlyx-ov-table tbody tr[data-event-id]:hover {
+  background: rgba(37, 99, 235, 0.035);
+}
+
+.anlyx-ov-table tbody tr[data-event-id]:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.34);
+  outline-offset: -2px;
+}
+
 .anlyx-events-table-path {
   max-width: 340px;
   overflow: hidden;

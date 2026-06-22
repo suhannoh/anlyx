@@ -108,10 +108,11 @@ type HarnessElement = {
   name: string;
   innerHTML: string;
   appendChild(child: HarnessElement): HarnessElement;
-  addEventListener(): void;
+  addEventListener(type?: string, listener?: (event: Record<string, unknown>) => void): void;
   contains(target: unknown): boolean;
   closest(): null;
   getAttribute(name: string): string | null;
+  getBoundingClientRect(): { left: number; top: number; width: number; height: number };
   querySelector(selector: string): HarnessElement | null;
   querySelectorAll(): HarnessElement[];
   remove(): void;
@@ -122,6 +123,8 @@ function createOverlayHarness() {
   const timers: TimerCallback[] = [];
   const order: string[] = [];
   const elementsById = new Map<string, HarnessElement>();
+  const documentListeners = new Map<string, Array<(event: Record<string, unknown>) => void>>();
+  const windowListeners = new Map<string, Array<(event: Record<string, unknown>) => void>>();
 
   const createElement = (tagName: string): HarnessElement => {
     const attributes = new Map<string, string>();
@@ -155,8 +158,30 @@ function createOverlayHarness() {
       getAttribute(name) {
         return attributes.get(name) ?? null;
       },
+      getBoundingClientRect() {
+        return {
+          left: Number.parseInt(String(element.style.left ?? "0"), 10) || 0,
+          top: Number.parseInt(String(element.style.top ?? "0"), 10) || 0,
+          width: Number.parseInt(String(element.style.width ?? "600"), 10) || 600,
+          height: Number.parseInt(String(element.style.height ?? "760"), 10) || 760
+        };
+      },
       querySelector(selector) {
-        if (selector === ".anlyx-fab" || selector === ".anlyx-drawer" || selector === ".anlyx-body" || selector === ".anlyx-close") {
+        const knownSelectors = new Set([
+          ".anlyx-fab",
+          ".anlyx-drawer",
+          ".anlyx-body",
+          ".anlyx-close",
+          ".anlyx-opacity-control",
+          ".anlyx-language-control",
+          ".anlyx-drag-handle",
+          ".anlyx-resize-handle",
+          ".anlyx-title",
+          ".anlyx-subtitle",
+          ".anlyx-opacity-label",
+          ".anlyx-language-label"
+        ]);
+        if (knownSelectors.has(selector)) {
           const child = createElement("div");
           child.className = selector.slice(1);
           return child;
@@ -190,14 +215,18 @@ function createOverlayHarness() {
     currentScript: { src: "http://localhost:4777/_anlyx/overlay.js" },
     head: createElement("head"),
     readyState: "complete",
-    addEventListener() {
-      return undefined;
+    addEventListener(type: string, listener: (event: Record<string, unknown>) => void) {
+      documentListeners.set(type, [...(documentListeners.get(type) ?? []), listener]);
     },
     createElement,
     getElementById(id: string) {
       return elementsById.get(id) ?? null;
     },
-    querySelector() {
+    querySelector(selector: string) {
+      if (selector.startsWith("#anlyx-overlay-root ")) {
+        const root = elementsById.get("anlyx-overlay-root");
+        return root?.querySelector(selector.replace("#anlyx-overlay-root ", "")) ?? null;
+      }
       return null;
     }
   };
@@ -227,6 +256,8 @@ function createOverlayHarness() {
   const window = {
     document,
     location: { href: "http://localhost:3000/", origin: "http://localhost:3000" },
+    innerHeight: 900,
+    innerWidth: 1440,
     MutationObserver: FakeMutationObserver,
     XMLHttpRequest: FakeXmlHttpRequest,
     __ANLYX_RENDER_FLOW_DRAWER__() {
@@ -257,6 +288,23 @@ function createOverlayHarness() {
       setItem() {
         return undefined;
       }
+    },
+    localStorage: {
+      getItem() {
+        return null;
+      },
+      setItem() {
+        return undefined;
+      }
+    },
+    addEventListener(type: string, listener: (event: Record<string, unknown>) => void) {
+      windowListeners.set(type, [...(windowListeners.get(type) ?? []), listener]);
+    },
+    removeEventListener(type: string, listener: (event: Record<string, unknown>) => void) {
+      windowListeners.set(
+        type,
+        (windowListeners.get(type) ?? []).filter((candidate) => candidate !== listener)
+      );
     },
     setTimeout(callback: TimerCallback) {
       timers.push(callback);
@@ -301,9 +349,15 @@ function createOverlayHarness() {
     }
   };
 
+  const dispatchDocumentEvent = (type: string, event: Record<string, unknown>) => {
+    for (const listener of documentListeners.get(type) ?? []) {
+      listener(event);
+    }
+  };
+
   runInNewContext(getOverlayClientScript(), context);
 
-  return { flushNextTimer, flushTimers, order, timers, waitForMicrotasks, window };
+  return { dispatchDocumentEvent, flushNextTimer, flushTimers, order, timers, waitForMicrotasks, window };
 }
 
 describe("dev command", () => {
@@ -599,6 +653,17 @@ describe("dev command", () => {
     expect(script).toContain("Action");
   });
 
+  it("keeps background API events quiet until the user selects them", () => {
+    const script = getOverlayClientScript();
+
+    expect(script).toContain("shouldAutoFocusEvent");
+    expect(script).toContain("classifyApiEventSource");
+    expect(script).toContain("isHealthOrPollingPath");
+    expect(script).toContain('source: triggeredBy ? "action" : classifyApiEventSource(normalized.pathname)');
+    expect(script).toContain("if (shouldAutoFocusEvent(item))");
+    expect(script).toContain("selectedEventId: null");
+  });
+
   it("keeps a short-lived user action across client navigation", () => {
     const script = getOverlayClientScript();
 
@@ -617,6 +682,20 @@ describe("dev command", () => {
     expect(script).toContain("window.__ANLYX_RENDER_FLOW_DRAWER__(body");
     expect(script).toContain("selectedEvent: selected");
     expect(script).toContain("events: state.events");
+  });
+
+  it("exposes persistent drawer customization controls", () => {
+    const script = getOverlayClientScript();
+
+    expect(script).toContain("ANLYX_DRAWER_SETTINGS_KEY");
+    expect(script).toContain("anlyx-drag-handle");
+    expect(script).toContain("anlyx-opacity-control");
+    expect(script).toContain("anlyx-language-control");
+    expect(script).toContain("anlyx-resize-handle");
+    expect(script).toContain("installDrawerDrag");
+    expect(script).toContain("installDrawerResize");
+    expect(script).toContain("applyDrawerSettings");
+    expect(script).toContain("persistDrawerSettings");
   });
 
   it("keeps the injected overlay lightweight and resilient across app shell changes", () => {
@@ -649,9 +728,41 @@ describe("dev command", () => {
     expect(harness.timers).toHaveLength(0);
   });
 
-  it("returns application fetch responses before overlay matching and rendering", async () => {
+  it("records background fetch responses without opening the drawer", async () => {
     const harness = createOverlayHarness();
     await harness.flushNextTimer();
+
+    const response = await harness.window.fetch("/api/public/benefits/123");
+    harness.order.push("app-response-returned");
+
+    expect(response.status).toBe(200);
+    expect(harness.order).not.toContain("drawer-render");
+    expect(harness.timers).toHaveLength(1);
+
+    await harness.flushTimers();
+
+    expect(harness.order).not.toContain("drawer-render");
+  });
+
+  it("returns clicked application fetch responses before overlay matching and rendering", async () => {
+    const harness = createOverlayHarness();
+    await harness.flushNextTimer();
+    const target = {
+      id: "claim-benefit",
+      tagName: "BUTTON",
+      className: "cta",
+      name: "",
+      textContent: "Claim benefit",
+      value: "",
+      closest() {
+        return target;
+      },
+      getAttribute(name: string) {
+        return name === "data-testid" ? "claim-benefit" : null;
+      }
+    };
+
+    harness.dispatchDocumentEvent("pointerdown", { type: "pointerdown", target });
 
     const response = await harness.window.fetch("/api/public/benefits/123");
     harness.order.push("app-response-returned");

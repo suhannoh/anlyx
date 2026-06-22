@@ -21,8 +21,8 @@ export function FlowDrawer({ selectedEvent, events, loadError }: FlowDrawerProps
         <Card>
           <h3 className="anlyx-ov-section-title">Waiting</h3>
           <div className="anlyx-ov-empty">
-            Use the app normally. When a browser API request fires, Anlyx will match it to the
-            scanned flow.
+            Use the app normally. Anlyx opens the main flow for requests caused by your direct
+            action. Background requests stay in Recent API events until you select them.
           </div>
         </Card>
         <RecentApiEventsTable events={events} />

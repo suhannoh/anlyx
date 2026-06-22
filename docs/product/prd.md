@@ -1127,6 +1127,17 @@ http://localhost:4777
 
 기본 모드인 Inject Mode에서는 `http://localhost:4777`이 실제 앱을 대신 보여주지 않는다. 실제 앱은 기존 개발 서버인 `frontend.baseUrl`에서 그대로 열고, Anlyx는 로컬 전용 스크립트와 report data API를 제공한다.
 
+Inject Mode의 기본 사용 화면은 실제 앱 URL이다. 예를 들어 Zup 데모는 `http://localhost:3000`에서 그대로 사용하고, `http://localhost:4777`은 overlay script, report data, standalone debug viewer를 제공하는 백그라운드 런타임으로 취급한다.
+
+Overlay가 보여주는 핵심 대상은 “모든 네트워크 로그”가 아니라 사용자가 방금 클릭, 제출, 키 입력 등으로 발생시킨 실제 요청 흐름이다. 클릭과 가까운 시점에 발생한 API 요청은 메인 Flow Drawer로 자동 승격한다. `useEffect`, health check, polling, page-load성 요청은 기록하되 Drawer를 자동으로 열거나 현재 선택 흐름을 빼앗지 않는다. 사용자가 필요할 때 Recent API events에서 직접 선택해 확인한다.
+
+Flow Drawer는 실제 앱 위에 얹히므로 사용자가 앱을 계속 확인할 수 있어야 한다. 최소한 다음 dev-only 조작을 지원한다.
+
+- 투명도 조절
+- Drawer 크기 조절
+- Drawer 위치 드래그 이동
+- 한국어/영어 shell label 전환
+
 Next.js App Router에서는 다음 dev-only helper를 root layout에 추가하는 것을 기본 경로로 한다.
 
 ```tsx

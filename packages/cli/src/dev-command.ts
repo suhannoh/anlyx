@@ -67,6 +67,8 @@ export type FrontendDevServerProcess = {
 
 type RequiredDevCommandDependencies = Required<DevCommandDependencies>;
 
+const activeLocalUiServers = new Set<LocalUiServer>();
+
 export async function runDevCommand(options: DevCommandOptions = {}): Promise<DevCommandResult> {
   const cwd = resolve(options.cwd ?? process.cwd());
   const dependencies = withDefaultDependencies(options.dependencies);
@@ -96,6 +98,7 @@ export async function runDevCommand(options: DevCommandOptions = {}): Promise<De
     frontendBaseUrl: config.frontend.baseUrl,
     mode: config.server.mode
   });
+  activeLocalUiServers.add(server);
   const shouldOpenBrowser = options.open ?? config.server.openBrowser;
 
   const browserUrl = config.server.mode === "inject" ? config.frontend.baseUrl : server.url;
@@ -114,6 +117,16 @@ export async function runDevCommand(options: DevCommandOptions = {}): Promise<De
     ...(config.server.mode === "inject" ? { frontendUrl: config.frontend.baseUrl } : {}),
     ...(config.server.mode === "inject" ? { scriptTag: getOverlayScriptTag(server.url) } : {})
   };
+}
+
+export async function closeActiveLocalUiServers(): Promise<void> {
+  const servers = Array.from(activeLocalUiServers);
+  activeLocalUiServers.clear();
+  await Promise.all(
+    servers.map(async (server) => {
+      await server.close?.();
+    })
+  );
 }
 
 async function ensureReportData(options: {
@@ -633,6 +646,15 @@ export function getOverlayClientScript(): string {
   const currentScript = document.currentScript;
   const runtimeBaseUrl = currentScript && currentScript.src ? new URL(currentScript.src).origin : window.location.origin;
   const ANLYX_PENDING_ACTION_KEY = "__anlyx_pending_action__";
+  const ANLYX_DRAWER_SETTINGS_KEY = "__anlyx_drawer_settings__";
+  const drawerSettings = Object.assign({
+    width: 600,
+    height: 760,
+    x: null,
+    y: 12,
+    opacity: 0.98,
+    language: "en"
+  }, restoreDrawerSettings());
 
   scheduleOverlayMount();
 
@@ -675,18 +697,28 @@ export function getOverlayClientScript(): string {
       style.textContent = ${"`"}
     #anlyx-overlay-root { position: fixed; inset: 0; pointer-events: none; z-index: 2147483647; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #0f172a; }
     .anlyx-fab { pointer-events: auto; position: absolute; right: 18px; bottom: 18px; height: 42px; min-width: 92px; border: 1px solid rgba(255,255,255,.24); border-radius: 999px; background: #2563eb; color: white; font-weight: 850; font-size: 13px; box-shadow: 0 18px 50px rgba(37, 99, 235, 0.28); cursor: pointer; }
-    .anlyx-drawer { pointer-events: auto; position: absolute; top: 12px; right: 12px; bottom: 12px; width: min(980px, calc(100vw - 24px)); border: 1px solid rgba(15, 23, 42, .12); border-radius: 18px; background: rgba(248, 250, 252, .98); box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22); overflow: hidden; display: none; }
+    .anlyx-drawer { pointer-events: auto; position: absolute; top: 12px; left: auto; right: auto; width: 600px; height: min(760px, calc(100vh - 24px)); min-width: 420px; min-height: 420px; max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); border: 1px solid rgba(15, 23, 42, .12); border-radius: 18px; background: rgba(248, 250, 252, .98); box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22); overflow: hidden; display: none; }
     .anlyx-drawer[data-open="true"] { display: grid; grid-template-rows: auto minmax(0, 1fr); }
-    .anlyx-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid rgba(15, 23, 42, .08); background: rgba(255,255,255,.88); }
+    .anlyx-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 14px; border-bottom: 1px solid rgba(15, 23, 42, .08); background: rgba(255,255,255,.88); }
+    .anlyx-drag-handle { min-width: 0; cursor: grab; user-select: none; }
+    .anlyx-drag-handle:active { cursor: grabbing; }
     .anlyx-title { margin: 0; font-size: 15px; line-height: 1.2; font-weight: 900; letter-spacing: 0; }
     .anlyx-subtitle { margin: 3px 0 0; font-size: 11px; color: #64748b; font-weight: 650; }
+    .anlyx-shell-controls { display: flex; align-items: center; gap: 7px; }
+    .anlyx-shell-field { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 8px; border: 1px solid #e2e8f0; border-radius: 10px; background: rgba(255,255,255,.9); color: #475569; font-size: 10px; font-weight: 800; white-space: nowrap; }
+    .anlyx-opacity-control { width: 70px; accent-color: #2563eb; }
+    .anlyx-language-control { width: 58px; border: 0; outline: 0; background: transparent; color: #0f172a; font-size: 10px; font-weight: 900; }
     .anlyx-close { border: 1px solid #e2e8f0; background: #fff; border-radius: 10px; width: 32px; height: 32px; cursor: pointer; font-size: 17px; line-height: 1; color: #0f172a; box-shadow: 0 1px 2px rgba(15, 23, 42, .06); }
     .anlyx-body { overflow: auto; padding: 12px; background: #f8fafc; }
+    .anlyx-resize-handle { position: absolute; left: 0; bottom: 0; width: 22px; height: 22px; cursor: nesw-resize; opacity: .62; }
+    .anlyx-resize-handle::before { content: ""; position: absolute; left: 6px; bottom: 6px; width: 10px; height: 10px; border-left: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8; border-radius: 0 0 0 3px; }
     .anlyx-section { border: 1px solid rgba(15, 23, 42, .08); border-radius: 14px; background: #fff; margin-bottom: 10px; overflow: hidden; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
     .anlyx-section-title { margin: 0; padding: 10px 12px; font-size: 10px; text-transform: uppercase; color: #64748b; letter-spacing: .08em; border-bottom: 1px solid #eef2f7; font-weight: 900; }
     .anlyx-empty { padding: 18px 12px; color: #667085; font-size: 13px; line-height: 1.5; }
     @media (max-width: 700px) {
-      .anlyx-drawer { top: 8px; right: 8px; bottom: 8px; width: calc(100vw - 16px); border-radius: 14px; }
+      .anlyx-drawer { min-width: 0; width: calc(100vw - 16px); height: calc(100vh - 16px); border-radius: 14px; }
+      .anlyx-head { grid-template-columns: 1fr; }
+      .anlyx-shell-controls { justify-content: space-between; }
     }
   ${"`"};
       document.head.appendChild(style);
@@ -698,13 +730,27 @@ export function getOverlayClientScript(): string {
     <button class="anlyx-fab" type="button" aria-label="Open Anlyx">Anlyx</button>
     <aside class="anlyx-drawer" aria-label="Anlyx flow drawer">
       <div class="anlyx-head">
-        <div>
+        <div class="anlyx-drag-handle" data-anlyx-label="Move Anlyx drawer">
           <h2 class="anlyx-title">Anlyx Flow Drawer</h2>
           <p class="anlyx-subtitle">Click the real app and inspect the API flow.</p>
         </div>
-        <button class="anlyx-close" type="button" aria-label="Close Anlyx">×</button>
+        <div class="anlyx-shell-controls">
+          <label class="anlyx-shell-field">
+            <span class="anlyx-opacity-label">Opacity</span>
+            <input class="anlyx-opacity-control" type="range" min="70" max="100" step="5" aria-label="Anlyx opacity" />
+          </label>
+          <label class="anlyx-shell-field">
+            <span class="anlyx-language-label">Lang</span>
+            <select class="anlyx-language-control" aria-label="Anlyx language">
+              <option value="en">EN</option>
+              <option value="ko">KO</option>
+            </select>
+          </label>
+          <button class="anlyx-close" type="button" aria-label="Close Anlyx">×</button>
+        </div>
       </div>
       <div class="anlyx-body"></div>
+      <div class="anlyx-resize-handle" role="separator" aria-label="Resize Anlyx drawer"></div>
     </aside>
   ${"`"};
     document.body.appendChild(root);
@@ -713,6 +759,10 @@ export function getOverlayClientScript(): string {
     drawer = root.querySelector(".anlyx-drawer");
     body = root.querySelector(".anlyx-body");
     const closeButton = root.querySelector(".anlyx-close");
+    const opacityControl = root.querySelector(".anlyx-opacity-control");
+    const languageControl = root.querySelector(".anlyx-language-control");
+    const dragHandle = root.querySelector(".anlyx-drag-handle");
+    const resizeHandle = root.querySelector(".anlyx-resize-handle");
 
     button.addEventListener("click", () => {
       state.open = !state.open;
@@ -722,6 +772,23 @@ export function getOverlayClientScript(): string {
       state.open = false;
       render();
     });
+    if (opacityControl) {
+      opacityControl.addEventListener("input", () => {
+        drawerSettings.opacity = Number(opacityControl.value || 98) / 100;
+        applyDrawerSettings();
+        persistDrawerSettings();
+      });
+    }
+    if (languageControl) {
+      languageControl.addEventListener("change", () => {
+        drawerSettings.language = languageControl.value === "ko" ? "ko" : "en";
+        applyDrawerSettings();
+        persistDrawerSettings();
+      });
+    }
+    installDrawerDrag(dragHandle);
+    installDrawerResize(resizeHandle);
+    applyDrawerSettings();
 
     installOverlayRootGuard();
 
@@ -735,6 +802,140 @@ export function getOverlayClientScript(): string {
     }
 
     render();
+  }
+
+  function applyDrawerSettings() {
+    if (!drawer) {
+      return;
+    }
+    const viewportWidth = window.innerWidth || 1280;
+    const viewportHeight = window.innerHeight || 800;
+    const width = clamp(Number(drawerSettings.width) || 600, Math.min(420, viewportWidth - 16), viewportWidth - 16);
+    const height = clamp(Number(drawerSettings.height) || 760, Math.min(420, viewportHeight - 16), viewportHeight - 16);
+    const defaultX = viewportWidth - width - 12;
+    const x = clamp(drawerSettings.x === null ? defaultX : Number(drawerSettings.x), 8, viewportWidth - width - 8);
+    const y = clamp(Number(drawerSettings.y) || 12, 8, viewportHeight - height - 8);
+    drawerSettings.width = Math.round(width);
+    drawerSettings.height = Math.round(height);
+    drawerSettings.x = Math.round(x);
+    drawerSettings.y = Math.round(y);
+    drawerSettings.opacity = clamp(Number(drawerSettings.opacity) || 0.98, 0.7, 1);
+    drawer.style.width = drawerSettings.width + "px";
+    drawer.style.height = drawerSettings.height + "px";
+    drawer.style.left = drawerSettings.x + "px";
+    drawer.style.top = drawerSettings.y + "px";
+    drawer.style.opacity = String(drawerSettings.opacity);
+
+    const opacityControl = document.querySelector("#anlyx-overlay-root .anlyx-opacity-control");
+    const languageControl = document.querySelector("#anlyx-overlay-root .anlyx-language-control");
+    if (opacityControl) {
+      opacityControl.value = String(Math.round(drawerSettings.opacity * 100));
+    }
+    if (languageControl) {
+      languageControl.value = drawerSettings.language === "ko" ? "ko" : "en";
+    }
+    applyDrawerLanguage();
+  }
+
+  function applyDrawerLanguage() {
+    const isKo = drawerSettings.language === "ko";
+    const title = document.querySelector("#anlyx-overlay-root .anlyx-title");
+    const subtitle = document.querySelector("#anlyx-overlay-root .anlyx-subtitle");
+    const opacityLabel = document.querySelector("#anlyx-overlay-root .anlyx-opacity-label");
+    const languageLabel = document.querySelector("#anlyx-overlay-root .anlyx-language-label");
+    if (title) {
+      title.textContent = isKo ? "Anlyx 플로우 드로어" : "Anlyx Flow Drawer";
+    }
+    if (subtitle) {
+      subtitle.textContent = isKo ? "앱을 그대로 사용하며 API 흐름을 확인하세요." : "Click the real app and inspect the API flow.";
+    }
+    if (opacityLabel) {
+      opacityLabel.textContent = isKo ? "투명도" : "Opacity";
+    }
+    if (languageLabel) {
+      languageLabel.textContent = isKo ? "언어" : "Lang";
+    }
+  }
+
+  function installDrawerDrag(handle) {
+    if (!handle || !drawer) {
+      return;
+    }
+    handle.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) {
+        return;
+      }
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const initialX = Number(drawerSettings.x) || drawer.getBoundingClientRect().left;
+      const initialY = Number(drawerSettings.y) || drawer.getBoundingClientRect().top;
+      const onMove = (moveEvent) => {
+        drawerSettings.x = initialX + moveEvent.clientX - startX;
+        drawerSettings.y = initialY + moveEvent.clientY - startY;
+        applyDrawerSettings();
+      };
+      const onUp = () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        persistDrawerSettings();
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp, { once: true });
+    });
+  }
+
+  function installDrawerResize(handle) {
+    if (!handle || !drawer) {
+      return;
+    }
+    handle.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) {
+        return;
+      }
+      event.preventDefault();
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const initialX = Number(drawerSettings.x) || drawer.getBoundingClientRect().left;
+      const initialWidth = Number(drawerSettings.width) || drawer.getBoundingClientRect().width;
+      const initialHeight = Number(drawerSettings.height) || drawer.getBoundingClientRect().height;
+      const onMove = (moveEvent) => {
+        const width = initialWidth - (moveEvent.clientX - startX);
+        drawerSettings.width = width;
+        drawerSettings.height = initialHeight + moveEvent.clientY - startY;
+        drawerSettings.x = initialX + initialWidth - width;
+        applyDrawerSettings();
+      };
+      const onUp = () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        persistDrawerSettings();
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp, { once: true });
+    });
+  }
+
+  function restoreDrawerSettings() {
+    try {
+      const raw = window.localStorage && window.localStorage.getItem(ANLYX_DRAWER_SETTINGS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function persistDrawerSettings() {
+    try {
+      if (window.localStorage) {
+        window.localStorage.setItem(ANLYX_DRAWER_SETTINGS_KEY, JSON.stringify(drawerSettings));
+      }
+    } catch {
+      // Ignore storage failures in strict browser privacy modes.
+    }
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
   }
 
   function installOverlayRootGuard() {
@@ -983,6 +1184,7 @@ export function getOverlayClientScript(): string {
     }
 
     const matched = matchEndpoint(event.method, normalized.pathname);
+    const triggeredBy = findActionForRequest(event.startedAt);
     const item = {
       id: String(Date.now()) + "-" + Math.random().toString(36).slice(2),
       method: event.method,
@@ -991,7 +1193,8 @@ export function getOverlayClientScript(): string {
       durationMs: Math.round(event.durationMs),
       count: 1,
       lastSeenAt: Date.now(),
-      triggeredBy: findActionForRequest(event.startedAt),
+      triggeredBy,
+      source: triggeredBy ? "action" : classifyApiEventSource(normalized.pathname),
       matchedEndpoint: matched.endpoint,
       matchedFlow: matched.flow,
       matchedPages: matched.pages
@@ -1006,21 +1209,53 @@ export function getOverlayClientScript(): string {
         count: (existing.count || 1) + 1,
         lastSeenAt: item.lastSeenAt,
         triggeredBy: item.triggeredBy || existing.triggeredBy,
+        source: item.triggeredBy ? "action" : item.source,
         matchedEndpoint: item.matchedEndpoint,
         matchedFlow: item.matchedFlow,
         matchedPages: item.matchedPages
       });
       state.events = [updated].concat(state.events.filter((_, index) => index !== existingIndex)).slice(0, 12);
-      state.selectedEventId = updated.id;
-      state.open = true;
+      if (shouldAutoFocusEvent(updated)) {
+        state.selectedEventId = updated.id;
+        state.open = true;
+      }
       render();
       return;
     }
 
     state.events = [item].concat(state.events).slice(0, 12);
-    state.selectedEventId = item.id;
-    state.open = true;
+    if (shouldAutoFocusEvent(item)) {
+      state.selectedEventId = item.id;
+      state.open = true;
+    }
     render();
+  }
+
+  function shouldAutoFocusEvent(item) {
+    return Boolean(item && item.triggeredBy);
+  }
+
+  function classifyApiEventSource(pathname) {
+    if (isHealthOrPollingPath(pathname)) {
+      return "health";
+    }
+    return "background";
+  }
+
+  function isHealthOrPollingPath(pathname) {
+    const segments = String(pathname || "").toLowerCase().split("/").filter(Boolean);
+    return segments.some((segment) => {
+      return segment === "health" ||
+        segment === "healthz" ||
+        segment === "ready" ||
+        segment === "readyz" ||
+        segment === "live" ||
+        segment === "livez" ||
+        segment === "ping" ||
+        segment === "metrics" ||
+        segment === "poll" ||
+        segment === "polling";
+    });
   }
 
   function findExistingEventIndex(item) {
@@ -1118,13 +1353,21 @@ export function getOverlayClientScript(): string {
       return;
     }
 
-    const selected = state.events.find((event) => event.id === state.selectedEventId) || state.events[0] || null;
+    const selected = state.events.find((event) => event.id === state.selectedEventId) || null;
     renderReactDrawer(selected);
 
     body.querySelectorAll("[data-event-id]").forEach((element) => {
-      element.addEventListener("click", () => {
+      const selectEvent = () => {
         state.selectedEventId = element.getAttribute("data-event-id");
+        state.open = true;
         render();
+      };
+      element.addEventListener("click", selectEvent);
+      element.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          selectEvent();
+        }
       });
     });
   }

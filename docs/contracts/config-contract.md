@@ -153,6 +153,7 @@ Rules:
 - `openBrowser` SHOULD default to `true` for `dev`.
 - `mode` SHOULD default to `"inject"`.
 - `mode = "inject"` MUST keep `frontend.baseUrl` as the real app URL and serve only Anlyx runtime assets and data from the Anlyx server.
+- `mode = "inject"` MUST treat the Anlyx server root as a runtime/status surface, not as the primary application URL.
 - `mode = "inject"` MUST make `/_anlyx/overlay.js` usable from the real app origin, including report data access through CORS-safe Anlyx runtime endpoints.
 - `mode = "overlay"` MAY proxy `frontend.baseUrl` through the Anlyx server and inject the local overlay script into HTML responses as a fallback/debug mode.
 - `mode = "viewer"` MUST serve the standalone local viewer directly at the server root.
@@ -169,6 +170,8 @@ Rules:
 - Analysis or scan failures MUST be reported clearly and MUST NOT be hidden behind a blank overlay.
 - Next.js users SHOULD use `AnlyxDevOverlay` from `anlyx/next` to render the local overlay script during development.
 - `AnlyxDevOverlay` MUST render nothing when `NODE_ENV = "production"`.
+- Browser-observed API events caused by recent user actions SHOULD become the selected main flow automatically.
+- Background events such as page-load effects, health checks, and polling SHOULD be recorded but MUST NOT automatically open the overlay or replace the selected main flow.
 
 ## Spring Boot + Next.js Example
 
