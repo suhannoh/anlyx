@@ -170,6 +170,8 @@ function createOverlayHarness(options: { report?: ScanResult; path?: string } = 
       querySelector(selector) {
         const knownSelectors = new Set([
           ".anlyx-fab",
+          ".anlyx-fab__mark",
+          ".anlyx-fab__label",
           ".anlyx-drawer",
           ".anlyx-body",
           ".anlyx-close",
@@ -709,14 +711,31 @@ describe("dev command", () => {
     const script = getOverlayClientScript();
 
     expect(script).toContain("ANLYX_DRAWER_SETTINGS_KEY");
+    expect(script).toContain("ANLYX_LAUNCHER_SETTINGS_KEY");
     expect(script).toContain("anlyx-drag-handle");
     expect(script).toContain("anlyx-opacity-control");
     expect(script).toContain("anlyx-language-control");
     expect(script).toContain("anlyx-resize-handle");
+    expect(script).toContain("anlyx-fab__mark");
+    expect(script).toContain("anlyx-fab__label");
     expect(script).toContain("installDrawerDrag");
     expect(script).toContain("installDrawerResize");
+    expect(script).toContain("installLauncherDrag");
+    expect(script).toContain("applyLauncherSettings");
+    expect(script).toContain("persistLauncherSettings");
     expect(script).toContain("applyDrawerSettings");
     expect(script).toContain("persistDrawerSettings");
+  });
+
+  it("keeps the launcher compact until hover, focus, or a captured flow", () => {
+    const script = getOverlayClientScript();
+
+    expect(script).toContain("width: 38px");
+    expect(script).toContain("max-width: 38px");
+    expect(script).toContain(".anlyx-fab:hover");
+    expect(script).toContain('launcher.dataset.expanded');
+    expect(script).toContain("brieflyExpandLauncher");
+    expect(script).toContain("Date.now() + 2600");
   });
 
   it("keeps the injected overlay lightweight and resilient across app shell changes", () => {

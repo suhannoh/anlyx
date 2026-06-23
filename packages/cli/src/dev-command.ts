@@ -637,6 +637,7 @@ export function getOverlayClientScript(): string {
 
   let drawer = null;
   let body = null;
+  let launcher = null;
   let overlayUiReady = false;
   let overlayUiLoading = false;
   let overlayRootGuardInstalled = false;
@@ -647,6 +648,7 @@ export function getOverlayClientScript(): string {
   const runtimeBaseUrl = currentScript && currentScript.src ? new URL(currentScript.src).origin : window.location.origin;
   const ANLYX_PENDING_ACTION_KEY = "__anlyx_pending_action__";
   const ANLYX_DRAWER_SETTINGS_KEY = "__anlyx_drawer_settings__";
+  const ANLYX_LAUNCHER_SETTINGS_KEY = "__anlyx_launcher_settings__";
   const drawerSettings = Object.assign({
     width: 600,
     height: 760,
@@ -655,6 +657,11 @@ export function getOverlayClientScript(): string {
     opacity: 0.98,
     language: "en"
   }, restoreDrawerSettings());
+  const launcherSettings = Object.assign({
+    x: null,
+    y: null,
+    expandedUntil: 0
+  }, restoreLauncherSettings());
 
   scheduleOverlayMount();
 
@@ -677,10 +684,12 @@ export function getOverlayClientScript(): string {
   function mountOverlayUi() {
     const existingRoot = document.getElementById("anlyx-overlay-root");
     if (existingRoot) {
+      launcher = existingRoot.querySelector(".anlyx-fab");
       drawer = existingRoot.querySelector(".anlyx-drawer");
       body = existingRoot.querySelector(".anlyx-body");
       if (drawer && body) {
         installOverlayRootGuard();
+        applyLauncherSettings();
         render();
         return;
       }
@@ -696,7 +705,13 @@ export function getOverlayClientScript(): string {
       style.setAttribute("data-anlyx-overlay-base", "true");
       style.textContent = ${"`"}
     #anlyx-overlay-root { position: fixed; inset: 0; pointer-events: none; z-index: 2147483647; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #0f172a; }
-    .anlyx-fab { pointer-events: auto; position: absolute; right: 18px; bottom: 18px; height: 42px; min-width: 92px; border: 1px solid rgba(255,255,255,.24); border-radius: 999px; background: #2563eb; color: white; font-weight: 850; font-size: 13px; box-shadow: 0 18px 50px rgba(37, 99, 235, 0.28); cursor: pointer; }
+    .anlyx-fab { pointer-events: auto; position: absolute; left: auto; top: auto; right: 18px; bottom: 18px; display: inline-flex; align-items: center; justify-content: flex-start; gap: 8px; width: 38px; height: 38px; min-width: 38px; max-width: 38px; padding: 0; overflow: hidden; border: 1px solid rgba(37, 99, 235, .20); border-radius: 999px; background: rgba(37, 99, 235, .72); color: white; font-weight: 850; font-size: 12px; box-shadow: 0 14px 36px rgba(37, 99, 235, 0.20); cursor: grab; opacity: .72; backdrop-filter: blur(10px); transition: width 160ms ease, max-width 160ms ease, opacity 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
+    .anlyx-fab:hover, .anlyx-fab:focus-visible, .anlyx-fab[data-expanded="true"] { width: 94px; max-width: 94px; opacity: .96; background: rgba(37, 99, 235, .96); box-shadow: 0 18px 46px rgba(37, 99, 235, 0.26); transform: translate(-56px, -1px); }
+    .anlyx-fab:active { cursor: grabbing; transform: translateY(0); }
+    .anlyx-fab__mark { width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 38px; }
+    .anlyx-fab__mark svg { width: 22px; height: 22px; display: block; filter: drop-shadow(0 1px 1px rgba(15, 23, 42, .16)); }
+    .anlyx-fab__label { padding-right: 13px; white-space: nowrap; line-height: 1; letter-spacing: 0; opacity: 0; transform: translateX(-4px); transition: opacity 140ms ease, transform 140ms ease; }
+    .anlyx-fab:hover .anlyx-fab__label, .anlyx-fab:focus-visible .anlyx-fab__label, .anlyx-fab[data-expanded="true"] .anlyx-fab__label { opacity: 1; transform: translateX(0); }
     .anlyx-drawer { pointer-events: auto; position: absolute; top: 12px; left: auto; right: auto; width: 600px; height: min(760px, calc(100vh - 24px)); min-width: 420px; min-height: 420px; max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); border: 1px solid rgba(15, 23, 42, .12); border-radius: 18px; background: rgba(248, 250, 252, .98); box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22); overflow: hidden; display: none; }
     .anlyx-drawer[data-open="true"] { display: grid; grid-template-rows: auto minmax(0, 1fr); }
     .anlyx-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 14px; border-bottom: 1px solid rgba(15, 23, 42, .08); background: rgba(255,255,255,.88); }
@@ -727,7 +742,18 @@ export function getOverlayClientScript(): string {
     const root = document.createElement("div");
     root.id = "anlyx-overlay-root";
     root.innerHTML = ${"`"}
-    <button class="anlyx-fab" type="button" aria-label="Open Anlyx">Anlyx</button>
+    <button class="anlyx-fab" type="button" aria-label="Open Anlyx" title="Open Anlyx">
+      <span class="anlyx-fab__mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" role="img" focusable="false">
+          <circle cx="8" cy="7" r="4.3" fill="none" stroke="currentColor" stroke-width="2.7" />
+          <path d="M12.4 7h5.2c2.2 0 4 1.8 4 4v3.7" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" />
+          <path d="M20.2 17.3h-5.6c-2.2 0-4 1.8-4 4v3.1h9.1" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round" />
+          <rect x="20.2" y="21.2" width="6.4" height="6.4" rx="1.8" fill="none" stroke="currentColor" stroke-width="2.7" />
+          <rect x="15" y="13.1" width="5.2" height="5.2" rx="1" fill="#f59e0b" transform="rotate(45 17.6 15.7)" />
+        </svg>
+      </span>
+      <span class="anlyx-fab__label">Anlyx</span>
+    </button>
     <aside class="anlyx-drawer" aria-label="Anlyx flow drawer">
       <div class="anlyx-head">
         <div class="anlyx-drag-handle" data-anlyx-label="Move Anlyx drawer">
@@ -756,6 +782,7 @@ export function getOverlayClientScript(): string {
     document.body.appendChild(root);
 
     const button = root.querySelector(".anlyx-fab");
+    launcher = button;
     drawer = root.querySelector(".anlyx-drawer");
     body = root.querySelector(".anlyx-body");
     const closeButton = root.querySelector(".anlyx-close");
@@ -764,7 +791,12 @@ export function getOverlayClientScript(): string {
     const dragHandle = root.querySelector(".anlyx-drag-handle");
     const resizeHandle = root.querySelector(".anlyx-resize-handle");
 
+    installLauncherDrag(button);
     button.addEventListener("click", () => {
+      if (button.__anlyxSuppressClick) {
+        button.__anlyxSuppressClick = false;
+        return;
+      }
       state.open = !state.open;
       render();
     });
@@ -789,6 +821,7 @@ export function getOverlayClientScript(): string {
     installDrawerDrag(dragHandle);
     installDrawerResize(resizeHandle);
     applyDrawerSettings();
+    applyLauncherSettings();
 
     installOverlayRootGuard();
 
@@ -835,6 +868,27 @@ export function getOverlayClientScript(): string {
       languageControl.value = drawerSettings.language === "ko" ? "ko" : "en";
     }
     applyDrawerLanguage();
+  }
+
+  function applyLauncherSettings() {
+    if (!launcher) {
+      return;
+    }
+    const viewportWidth = window.innerWidth || 1280;
+    const viewportHeight = window.innerHeight || 800;
+    const width = 38;
+    const height = 38;
+    const defaultX = viewportWidth - width - 18;
+    const defaultY = viewportHeight - height - 18;
+    const x = clamp(launcherSettings.x === null ? defaultX : Number(launcherSettings.x), 8, viewportWidth - width - 8);
+    const y = clamp(launcherSettings.y === null ? defaultY : Number(launcherSettings.y), 8, viewportHeight - height - 8);
+    launcherSettings.x = Math.round(x);
+    launcherSettings.y = Math.round(y);
+    launcher.style.left = launcherSettings.x + "px";
+    launcher.style.top = launcherSettings.y + "px";
+    launcher.style.right = "auto";
+    launcher.style.bottom = "auto";
+    launcher.dataset.expanded = Date.now() < Number(launcherSettings.expandedUntil || 0) ? "true" : "false";
   }
 
   function applyDrawerLanguage() {
@@ -915,9 +969,57 @@ export function getOverlayClientScript(): string {
     });
   }
 
+  function installLauncherDrag(button) {
+    if (!button) {
+      return;
+    }
+    button.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) {
+        return;
+      }
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const initialX = launcherSettings.x === null ? button.getBoundingClientRect().left : Number(launcherSettings.x);
+      const initialY = launcherSettings.y === null ? button.getBoundingClientRect().top : Number(launcherSettings.y);
+      let dragged = false;
+      const onMove = (moveEvent) => {
+        const deltaX = moveEvent.clientX - startX;
+        const deltaY = moveEvent.clientY - startY;
+        if (Math.abs(deltaX) + Math.abs(deltaY) > 4) {
+          dragged = true;
+        }
+        if (!dragged) {
+          return;
+        }
+        launcherSettings.x = initialX + deltaX;
+        launcherSettings.y = initialY + deltaY;
+        applyLauncherSettings();
+      };
+      const onUp = () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        if (dragged) {
+          button.__anlyxSuppressClick = true;
+          persistLauncherSettings();
+        }
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp, { once: true });
+    });
+  }
+
   function restoreDrawerSettings() {
     try {
       const raw = window.localStorage && window.localStorage.getItem(ANLYX_DRAWER_SETTINGS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function restoreLauncherSettings() {
+    try {
+      const raw = window.localStorage && window.localStorage.getItem(ANLYX_LAUNCHER_SETTINGS_KEY);
       return raw ? JSON.parse(raw) : {};
     } catch {
       return {};
@@ -928,6 +1030,19 @@ export function getOverlayClientScript(): string {
     try {
       if (window.localStorage) {
         window.localStorage.setItem(ANLYX_DRAWER_SETTINGS_KEY, JSON.stringify(drawerSettings));
+      }
+    } catch {
+      // Ignore storage failures in strict browser privacy modes.
+    }
+  }
+
+  function persistLauncherSettings() {
+    try {
+      if (window.localStorage) {
+        window.localStorage.setItem(ANLYX_LAUNCHER_SETTINGS_KEY, JSON.stringify({
+          x: launcherSettings.x,
+          y: launcherSettings.y
+        }));
       }
     } catch {
       // Ignore storage failures in strict browser privacy modes.
@@ -1217,6 +1332,7 @@ export function getOverlayClientScript(): string {
       });
       state.events = [updated].concat(state.events.filter((_, index) => index !== existingIndex)).slice(0, 12);
       if (shouldAutoFocusEvent(updated)) {
+        brieflyExpandLauncher();
         state.selectedEventId = updated.id;
         state.open = true;
       }
@@ -1226,6 +1342,7 @@ export function getOverlayClientScript(): string {
 
     state.events = [item].concat(state.events).slice(0, 12);
     if (shouldAutoFocusEvent(item)) {
+      brieflyExpandLauncher();
       state.selectedEventId = item.id;
       state.open = true;
     }
@@ -1234,6 +1351,12 @@ export function getOverlayClientScript(): string {
 
   function shouldAutoFocusEvent(item) {
     return Boolean(item && item.triggeredBy);
+  }
+
+  function brieflyExpandLauncher() {
+    launcherSettings.expandedUntil = Date.now() + 2600;
+    applyLauncherSettings();
+    window.setTimeout(applyLauncherSettings, 2700);
   }
 
   function classifyApiEventSource(pathname) {
