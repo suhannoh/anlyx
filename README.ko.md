@@ -3,32 +3,32 @@
 </p>
 
 <p align="center">
-  <strong>실제 프론트엔드 액션이 백엔드 어디까지 갔는지 보여주는 플로우 맵.</strong>
+  <strong>브라우저에서 관찰한 요청을 스캔된 백엔드 경로와 연결하는 플로우 맵.</strong>
 </p>
 
 <p align="center">
   <a href="./README.md">English README</a>
 </p>
 
-Anlyx는 방금 누른 버튼, 제출한 폼, 키보드 액션에서 발생한 API가 백엔드에서 어디까지 갔는지 보여주는 개발자 도구입니다.
+Anlyx는 방금 누른 버튼, 제출한 폼, 키보드 액션에서 어떤 API가 발생했는지 보여주고, 그 브라우저 관찰 요청을 스캔된 백엔드 경로와 연결하는 개발자 도구입니다.
 
 ```txt
-화면 액션 -> API -> Controller -> Service -> Repository -> Database -> Response
+화면 액션 -> 브라우저 API -> 스캔된 Controller -> Service -> Repository -> Database -> Result
 ```
 
-실제 로컬 프론트엔드 앱 위에 오버레이를 띄우고, 마지막 사용자 액션으로 발생한 API를 스캔된 백엔드 코드, 캡처 상태, confidence, 분석 근거와 연결합니다.
+실제 로컬 프론트엔드 앱 위에 오버레이를 띄우고, 마지막 사용자 액션으로 발생한 API를 스캔된 백엔드 코드, 캡처 상태, confidence, 분석 근거와 연결합니다. 브라우저 요청은 실제 관찰값이고, Controller, Service, Repository, Database node는 향후 runtime bridge가 보고하기 전까지 스캔/추론 결과로 구분합니다.
 
 <p align="center">
   <img src="./docs/assets/readme/anlyx-demo.gif" alt="사용자 액션이 백엔드 흐름 다이어그램으로 매핑되는 Anlyx 데모" />
 </p>
 
-위 애니메이션은 실제 `@anlyx/ui` Flow Drawer를 렌더링합니다. 첫 성공 플로우는 Spring Boot + Next.js fixture의 스캔 결과를 읽어오기 때문에 Controller, Service, Repository, Database, Result가 함께 보입니다. auth에서 막히는 데모 액션은 실제 요청이 downstream에 도달하지 않는 상황이므로 해당 코드 경로를 muted 상태로 표시합니다.
+위 애니메이션은 실제 `@anlyx/ui` Flow Drawer를 렌더링합니다. 첫 성공 플로우는 Spring Boot + Next.js fixture의 스캔 결과를 읽어오기 때문에 Controller, Service, Repository, Database, Result가 스캔된 경로로 함께 보입니다. auth에서 막히는 데모 액션은 브라우저 결과만으로 downstream 실행을 증명할 수 없으므로 해당 코드 경로를 muted 상태로 표시합니다.
 
 ## 왜 다른가?
 
 - 실제 앱은 자기 localhost 포트에서 그대로 실행됩니다. Anlyx가 프론트엔드를 proxy-only mock viewer로 대체하지 않습니다.
 - 마지막 click, submit, key action이 main flow가 됩니다. page-load auth check, health check, polling은 기록하되 사용자가 선택하기 전까지 조용히 분리합니다.
-- 브라우저에서 발생한 API를 스캔된 백엔드 코드와 매칭해 diagram으로 보여줍니다. 단순 network log table이 아닙니다.
+- 브라우저에서 발생한 API를 스캔된 백엔드 코드와 매칭해 confidence-aware diagram으로 보여줍니다. 단순 network log table이 아닙니다.
 - 주입되는 launcher는 작고 이동 가능해서, Flow Drawer를 열기 전까지 host app 사용을 방해하지 않습니다.
 
 ## Anlyx가 무엇인가요?
@@ -36,7 +36,7 @@ Anlyx는 방금 누른 버튼, 제출한 폼, 키보드 액션에서 발생한 A
 Anlyx는 보통 라우트, Swagger/OpenAPI, 백엔드 코드, 데이터베이스 모델, 스크린샷을 오가며 확인해야 하는 질문에 답합니다.
 
 - 이 화면은 어떤 API를 호출하는가?
-- 이 API는 어떤 Controller, Service, Repository, DB Table과 연결되는가?
+- 이 API는 어떤 스캔된 Controller, Service, Repository, DB Table과 연결될 가능성이 높은가?
 - 어떤 호출이 핵심 경로이고 어떤 호출이 보조 흐름인가?
 - API 호출 시점의 화면 상태는 어떻게 캡처되었는가?
 - Anlyx가 이 node, edge, confidence를 왜 그렇게 추론했는가?
@@ -74,7 +74,7 @@ npx anlyx dev
 3. 로컬 개발 중 화면 상태와 브라우저에서 보이는 API 호출을 캡처합니다.
 4. 사용자 액션 요청과 auth, health, polling 같은 백그라운드 요청을 분리합니다.
 5. API 호출을 스캔된 백엔드 분석 결과와 매칭합니다.
-6. 매칭된 요청을 React Flow 다이어그램, confidence, evidence가 포함된 Flow Drawer로 보여줍니다.
+6. 매칭된 요청을 React Flow 다이어그램, confidence, evidence가 포함된 Flow Drawer로 보여주되, 실제 브라우저 관찰값과 스캔/추론된 백엔드 node를 구분합니다.
 
 ### 설정 파일 만들기
 

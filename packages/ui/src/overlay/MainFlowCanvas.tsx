@@ -66,7 +66,7 @@ export function MainFlowCanvas({
       <div className="anlyx-flow-rf-head">
         <div>
           <h3>Matched backend flow</h3>
-          <p>Live path first, scanned downstream stays muted.</p>
+          <p>Browser request first, scanned backend path follows.</p>
         </div>
         <div className="anlyx-flow-rf-head__badges">
           <Badge tone="blue">{method}</Badge>
@@ -102,9 +102,9 @@ export function MainFlowCanvas({
         </ReactFlow>
       </div>
       <p className="anlyx-flow-rf-note">
-        Anlyx mapped this browser-visible request to the scanned backend flow. Muted nodes are known
-        code paths; framework server-side fetches, such as Next.js server component data loading,
-        require the scanned path until a server runtime bridge is enabled.
+        Anlyx mapped this browser-observed request to a scanned backend path. Backend nodes are
+        source-derived evidence, not a runtime trace; muted nodes are known code paths that the
+        browser result did not prove were executed.
       </p>
     </section>
   );

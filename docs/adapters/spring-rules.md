@@ -43,7 +43,7 @@ Main Flow SHOULD follow:
 ```txt
 Endpoint
 → Controller handler
-→ Service method
+→ Service method(s)
 → Repository method
 → Entity / Database Table
 ```
@@ -51,11 +51,14 @@ Endpoint
 Rules:
 
 - Controller to Service calls SHOULD be inferred from direct method calls on injected fields or constructor parameters.
+- Service to Service calls SHOULD be followed while looking for the primary persistence path, within the configured main-flow depth limit.
+- Service helper calls that do not lead to Repository/Database SHOULD remain outside Main Flow and MAY appear as supporting calls.
 - Service to Repository calls SHOULD be inferred from direct repository method calls.
 - Repository to Entity SHOULD be inferred from repository generic type or naming.
 - Entity to DB Table MUST prefer `@Table(name = "...")`.
 - If `@Table` is missing, table name MAY be inferred from Entity class name.
-- Repeated or cyclic calls MUST be stopped.
+- Repeated or cyclic class-method calls MUST be stopped.
+- The adapter MUST remain honest about evidence. These backend nodes are scanned or inferred from source code, not proof of runtime execution.
 
 ## Sub Flow Classification
 
@@ -74,7 +77,7 @@ Sub Flow MUST be collapsed by default in UI data. Utility calls SHOULD be exclud
 
 Default limits:
 
-- Main Flow depth: `4`
+- Main Flow depth: `5`
 - Sub Flow depth: `1`
 - Utility depth: `0` unless `includeUtilities = true`
 

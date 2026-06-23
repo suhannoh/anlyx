@@ -3,32 +3,33 @@
 </p>
 
 <p align="center">
-  <strong>Action-first backend flow maps for Spring Boot and Next.js local apps.</strong>
+  <strong>Action-first maps from browser-observed requests to scanned backend paths.</strong>
 </p>
 
 <p align="center">
   <a href="./README.ko.md">한국어 문서</a>
 </p>
 
-Anlyx shows what your latest real frontend action did in the backend:
+Anlyx shows which API your latest real frontend action triggered, then maps that
+browser-observed request to the scanned backend path:
 
 ```txt
-Page action -> API -> Controller -> Service -> Repository -> Database -> Response
+Page action -> Browser API -> Scanned Controller -> Service -> Repository -> Database -> Result
 ```
 
-It overlays your real local frontend app and connects the API triggered by your last click, submit, or key action to scanned backend code, capture state, confidence, and analysis evidence.
+It overlays your real local frontend app and connects the API triggered by your last click, submit, or key action to scanned backend code, capture state, confidence, and analysis evidence. Anlyx is honest about evidence: the browser request is live-observed, while Controller, Service, Repository, and Database nodes are scanned or inferred unless a future runtime bridge reports them.
 
 <p align="center">
   <img src="./docs/assets/readme/anlyx-demo.gif" alt="Anlyx demo showing user actions mapped to backend flow diagrams" />
 </p>
 
-The animation above renders the real `@anlyx/ui` Flow Drawer. Its primary success path is loaded from the scanned Spring Boot + Next.js fixture output, so the first flow shows Controller, Service, Repository, Database, and Result together. Auth-blocked demo actions keep downstream code paths muted because the live request would not actually reach them.
+The animation above renders the real `@anlyx/ui` Flow Drawer. Its primary success path is loaded from the scanned Spring Boot + Next.js fixture output, so the first flow shows Controller, Service, Repository, Database, and Result together as a scanned path. Auth-blocked demo actions keep downstream code paths muted because the live browser result does not prove that those nodes ran.
 
 ## Why It Feels Different
 
 - Use the real app on its own localhost port. Anlyx does not replace your frontend with a proxy-only mock viewer.
 - The latest click, submit, or key action becomes the main flow. Page-load auth checks, health checks, and polling stay quiet until selected.
-- Browser-visible API calls are matched to scanned backend code and rendered as a diagram, not just another network log table.
+- Browser-visible API calls are matched to scanned backend code and rendered as a confidence-aware diagram, not just another network log table.
 - The injected launcher stays small and movable, so the host app remains usable while you inspect the flow.
 
 ## What Is Anlyx?
@@ -36,7 +37,7 @@ The animation above renders the real `@anlyx/ui` Flow Drawer. Its primary succes
 Anlyx answers questions that usually require jumping between routes, Swagger/OpenAPI, backend code, database models, and screenshots:
 
 - Which page calls this API?
-- Which controller, service, repository, and database table are involved?
+- Which scanned controller, service, repository, and database table are likely involved?
 - Which logic is the main request path, and which logic is supporting detail?
 - What page state was captured when the API call happened?
 - Why did Anlyx infer this node, edge, or confidence level?
@@ -74,7 +75,7 @@ Then use your local app normally. Click a button, submit a form, or trigger a ke
 3. Captures page states and browser-visible API calls in local development.
 4. Separates user-action requests from background auth, health, and polling traffic.
 5. Matches API calls to scanned backend analysis results.
-6. Renders the matched request as a Flow Drawer with a React Flow diagram, confidence, and evidence.
+6. Renders the matched request as a Flow Drawer with a React Flow diagram, confidence, and evidence, keeping live browser evidence distinct from scanned or inferred backend nodes.
 
 ### Initialize Config
 
