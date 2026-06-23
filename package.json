@@ -20,6 +20,8 @@
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
+    "demo:build": "corepack pnpm --filter @anlyx/demo build",
+    "demo:dev": "corepack pnpm --filter @anlyx/demo dev",
     "docs:readme-demo": "node scripts/generate-readme-demo.mjs",
     "pack:local": "node scripts/pack-local-install.mjs",
     "test": "vitest run"

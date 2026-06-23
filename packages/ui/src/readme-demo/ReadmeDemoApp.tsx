@@ -10,14 +10,22 @@ import { FlowDrawer } from "../overlay/FlowDrawer.js";
 import type { OverlayApiEvent } from "../overlay/types.js";
 
 type DemoKey = "search" | "detail" | "save" | "admin";
-type FixtureDetailFlow = {
+export type FixtureDetailFlow = {
   endpoint: Endpoint;
   flow: EndpointFlow;
+};
+export type ReadmeDemoAppProps = {
+  eyebrow?: string;
+  fixtureDetail?: FixtureDetailFlow | null;
+  iconSrc?: string;
+  logoSrc?: string;
 };
 
 const demoOrder: DemoKey[] = ["detail", "search", "save", "admin"];
 const fixtureEndpointsUrl = "/fixtures/spring-next-sample/expected/endpoints.json";
 const fixtureFlowsUrl = "/fixtures/spring-next-sample/expected/flows.json";
+const defaultLogoSrc = "/docs/assets/brand/anlyx-logo-transparent.png";
+const defaultIconSrc = "/docs/assets/brand/anlyx-icon-transparent.png";
 
 const flows: Record<DemoKey, EndpointFlow> = {
   search: makeFlow("GET", "/api/public/search", [
@@ -64,9 +72,15 @@ const baseEvents: Record<DemoKey, OverlayApiEvent> = {
   admin: event("admin", "POST", "/api/admin/benefits", 403, 42, "Clicked Try admin action")
 };
 
-export function ReadmeDemoApp(): JSX.Element {
+export function ReadmeDemoApp({
+  eyebrow = "Real UI preview",
+  fixtureDetail: fixtureDetailProp,
+  iconSrc = defaultIconSrc,
+  logoSrc = defaultLogoSrc
+}: ReadmeDemoAppProps = {}): JSX.Element {
   const [selectedKey, setSelectedKey] = useState<DemoKey>("detail");
-  const fixtureDetail = useFixtureDetailFlow();
+  const fetchedFixtureDetail = useFixtureDetailFlow(fixtureDetailProp !== undefined);
+  const fixtureDetail = fixtureDetailProp ?? fetchedFixtureDetail;
   const hydratedEvents = useMemo(
     () =>
       Object.fromEntries(
@@ -98,9 +112,9 @@ export function ReadmeDemoApp(): JSX.Element {
     <main className="anlyx-readme-demo">
       <section className="anlyx-readme-demo__control">
         <div className="anlyx-readme-demo__intro">
-          <img src="/docs/assets/brand/anlyx-logo-transparent.png" alt="Anlyx" />
+          <img src={logoSrc} alt="Anlyx" />
           <div>
-            <p className="anlyx-readme-demo__eyebrow">Real UI preview</p>
+            <p className="anlyx-readme-demo__eyebrow">{eyebrow}</p>
             <h1>Click an action. See the backend path.</h1>
             <p>Rendered by the same Flow Drawer component used by the Anlyx overlay.</p>
           </div>
@@ -152,7 +166,7 @@ export function ReadmeDemoApp(): JSX.Element {
       <section className="anlyx-readme-demo__drawer-shell" aria-label="Anlyx Flow Drawer">
         <header className="anlyx-readme-demo__drawer-head">
           <div className="anlyx-readme-demo__drawer-brand">
-            <img src="/docs/assets/brand/anlyx-icon-transparent.png" alt="" />
+            <img src={iconSrc} alt="" />
             <div>
               <strong>Anlyx Flow Drawer</strong>
               <span>Actual component preview</span>
@@ -174,10 +188,14 @@ export function ReadmeDemoApp(): JSX.Element {
   );
 }
 
-function useFixtureDetailFlow(): FixtureDetailFlow | null {
+function useFixtureDetailFlow(skip: boolean): FixtureDetailFlow | null {
   const [fixtureDetail, setFixtureDetail] = useState<FixtureDetailFlow | null>(null);
 
   useEffect(() => {
+    if (skip) {
+      return undefined;
+    }
+
     const controller = new AbortController();
 
     const loadFixture = async () => {
@@ -212,7 +230,7 @@ function useFixtureDetailFlow(): FixtureDetailFlow | null {
     void loadFixture();
 
     return () => controller.abort();
-  }, []);
+  }, [skip]);
 
   return fixtureDetail;
 }

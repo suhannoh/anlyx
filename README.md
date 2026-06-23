@@ -1,60 +1,59 @@
 <p align="center">
-  <img src="./docs/assets/brand/anlyx-logo-card.png" alt="Anlyx" width="420" />
+  <img src="./docs/assets/brand/anlyx-logo-card.png" alt="Anlyx" width="460" />
+</p>
+
+<h3 align="center">Click the real app. See the backend path.</h3>
+
+<p align="center">
+  Action-first flow maps from browser-observed requests to scanned Spring Boot and Next.js code.
 </p>
 
 <p align="center">
-  <strong>Action-first maps from browser-observed requests to scanned backend paths.</strong>
+  <a href="https://suhannoh.github.io/anlyx/"><strong>Live Demo</strong></a>
+  ·
+  <a href="#quick-start">Quick Start</a>
+  ·
+  <a href="#how-it-works">How It Works</a>
+  ·
+  <a href="./README.ko.md">한국어</a>
 </p>
 
 <p align="center">
-  <a href="./README.ko.md">한국어 문서</a>
+  <a href="https://www.npmjs.com/package/anlyx"><img alt="npm" src="https://img.shields.io/npm/v/anlyx?color=2563eb"></a>
+  <a href="./LICENSE"><img alt="license" src="https://img.shields.io/github/license/suhannoh/anlyx?color=0f172a"></a>
+  <a href="https://github.com/suhannoh/anlyx/actions/workflows/ci.yml"><img alt="ci" src="https://img.shields.io/github/actions/workflow/status/suhannoh/anlyx/ci.yml?branch=main&label=ci"></a>
+  <a href="https://suhannoh.github.io/anlyx/"><img alt="demo" src="https://img.shields.io/badge/demo-GitHub%20Pages-16a34a"></a>
 </p>
 
-Anlyx shows which API your latest real frontend action triggered, then maps that
-browser-observed request to the scanned backend path:
+<p align="center">
+  <img src="./docs/assets/readme/anlyx-demo.gif" alt="Anlyx demo showing a real app action mapped to a backend flow diagram" />
+</p>
+
+## What It Does
+
+Anlyx runs beside your local app and answers the question developers usually chase through browser DevTools, Swagger, backend code, and database models:
 
 ```txt
-Page action -> Browser API -> Scanned Controller -> Service -> Repository -> Database -> Result
+I clicked this button. What API fired, and where does it go?
 ```
 
-It overlays your real local frontend app and connects the API triggered by your last click, submit, or key action to scanned backend code, capture state, confidence, and analysis evidence. Anlyx is honest about evidence: the browser request is live-observed, while Controller, Service, Repository, and Database nodes are scanned or inferred unless a future runtime bridge reports them.
+It keeps the host app running on its normal localhost port, observes the API caused by the latest user action, and maps that request to scanned backend evidence:
 
-<p align="center">
-  <img src="./docs/assets/readme/anlyx-demo.gif" alt="Anlyx demo showing user actions mapped to backend flow diagrams" />
-</p>
+```txt
+User action -> Browser API -> Controller -> Service -> Repository -> Database -> Result
+```
 
-The animation above renders the real `@anlyx/ui` Flow Drawer component, not a hand-drawn README mock. Its primary success path is loaded from the scanned Spring Boot + Next.js fixture output, so the first flow shows Controller, Service, Repository, Database, and Result together as a scanned path. Auth-blocked demo actions keep downstream code paths muted because the live browser result does not prove that those nodes ran.
+The diagram is evidence-aware. Browser requests are live-observed. Controller, Service, Repository, and Database nodes are scanned or inferred from source code unless a future runtime bridge reports them.
 
-## Why It Feels Different
+## Why Developers Use It
 
-- Use the real app on its own localhost port. Anlyx does not replace your frontend with a proxy-only mock viewer.
-- The latest click, submit, or key action becomes the main flow. Page-load auth checks, health checks, and polling stay quiet until selected.
-- Browser-visible API calls are matched to scanned backend code and rendered as a confidence-aware diagram, not just another network log table.
-- The injected launcher stays small and movable, so the host app remains usable while you inspect the flow.
-
-## What Is Anlyx?
-
-Anlyx answers questions that usually require jumping between routes, Swagger/OpenAPI, backend code, database models, and screenshots:
-
-- Which page calls this API?
-- Which scanned controller, service, repository, and database table are likely involved?
-- Which logic is the main request path, and which logic is supporting detail?
-- What page state was captured when the API call happened?
-- Why did Anlyx infer this node, edge, or confidence level?
-
-## Current Support
-
-Deep Support:
-
-- Spring Boot backend endpoint and flow scanning
-- Next.js App Router page discovery and Playwright capture
-
-Basic Support:
-
-- OpenAPI backend endpoint import
-- Manual frontend URLs for OpenAPI-only projects
-
-v0.1 is intentionally limited to Spring Boot + Next.js App Router for Deep Support. FastAPI, Express, NestJS, and React Router are not Deep Support targets in v0.1.
+| Instead of...                                                    | Anlyx gives you...                                             |
+| ---------------------------------------------------------------- | -------------------------------------------------------------- |
+| Digging through DevTools network rows                            | The request caused by your latest click, submit, or key action |
+| Jumping between route files, Swagger, services, and repositories | One visual path from frontend action to backend flow           |
+| Treating health checks and polling as noise                      | Quiet background traffic that stays out of the main flow       |
+| Guessing why a node appeared                                     | Confidence and evidence next to the matched flow               |
+| Explaining a project by hand                                     | A local overlay and viewer that make onboarding visual         |
 
 ## Quick Start
 
@@ -64,38 +63,27 @@ npx anlyx init
 npx anlyx dev
 ```
 
-Then use your local app normally. Click a button, submit a form, or trigger a keyboard-driven action; Anlyx keeps background traffic quiet and turns the user action request into the main backend flow.
+Then use your app normally. Click a real button or submit a real form. Anlyx opens the real frontend URL, keeps its runtime on port `4777` in the background, and shows the matched backend flow in the injected drawer.
 
-`npx anlyx dev` prepares analysis data, starts the Anlyx runtime, opens the real local frontend, and wires the development overlay.
+## Support Matrix
 
-## How Anlyx Works
+| Area                       | v0.1 support                                             |
+| -------------------------- | -------------------------------------------------------- |
+| Backend deep support       | Spring Boot endpoint and flow scanning                   |
+| Frontend deep support      | Next.js App Router page discovery and Playwright capture |
+| Basic backend support      | OpenAPI endpoint import                                  |
+| Basic frontend support     | Manual URLs for OpenAPI-only projects                    |
+| Not deep-supported in v0.1 | FastAPI, Express, NestJS, React Router                   |
 
-1. Scans Spring Boot backend endpoints and code paths.
-2. Discovers Next.js App Router pages.
-3. Captures page states and browser-visible API calls in local development.
-4. Separates user-action requests from background auth, health, and polling traffic.
-5. Matches API calls to scanned backend analysis results.
-6. Renders the matched request as a Flow Drawer with a React Flow diagram, confidence, and evidence, keeping live browser evidence distinct from scanned or inferred backend nodes.
+## Install In A Real App
 
-### README Demo Asset
-
-The README demo is generated from the actual React component preview in `packages/ui/src/readme-demo`.
-
-```bash
-corepack pnpm docs:readme-demo
-```
-
-This writes `docs/assets/readme/anlyx-demo.gif` and `docs/assets/readme/anlyx-demo.png`.
-
-### Initialize Config
+Create a config:
 
 ```bash
 npx anlyx init
 ```
 
-This creates an import-free `anlyx.config.ts`, so projects do not need to import `defineConfig` from `anlyx` just to scan.
-
-### Minimal Config
+Minimal `anlyx.config.ts`:
 
 ```ts
 export default {
@@ -120,66 +108,7 @@ export default {
 };
 ```
 
-Optional type support is still available if the project can resolve `anlyx` from its dev dependencies:
-
-```ts
-import { defineConfig } from "anlyx";
-
-export default defineConfig({
-  projectName: "my-app"
-});
-```
-
-### Monorepo Example
-
-For a Spring Boot backend plus Next.js frontend:
-
-```txt
-my-app/
-  backend/
-    src/main/java/...
-  frontend/
-    src/app/...
-```
-
-Use:
-
-```ts
-export default {
-  projectName: "my-app",
-  backend: {
-    type: "spring",
-    sourceDir: "./backend"
-  },
-  frontend: {
-    type: "next",
-    sourceDir: "./frontend",
-    baseUrl: "http://localhost:3000"
-  }
-};
-```
-
-The Spring adapter resolves `./backend/src/main/java` from `./backend`. The Next adapter resolves `./frontend/app` first, then `./frontend/src/app`.
-
-### First Scan Without Capture
-
-```bash
-npx anlyx scan --skip-capture
-```
-
-This writes `.anlyx/report-data.json` using static adapter output only. Pages remain `pending` until capture runs.
-
-### Open The Local Overlay
-
-```bash
-npx anlyx dev
-```
-
-`anlyx dev` is the main command for local development. It detects or starts the real frontend, keeps the app at `frontend.baseUrl`, starts the Anlyx runtime at [http://localhost:4777](http://localhost:4777), and opens the real app URL.
-
-In Inject Mode, use the real app URL such as `http://localhost:3000`. The `4777` server stays in the background as the local Anlyx runtime for overlay assets, report data, and the standalone debug viewer.
-
-In a Next.js App Router app, add the development-only helper to your root layout:
+For Next.js App Router, add the development-only helper to your root layout:
 
 ```tsx
 import { AnlyxDevOverlay } from "anlyx/next";
@@ -196,55 +125,57 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-`AnlyxDevOverlay` renders nothing in production. It only emits the local overlay script outside production builds.
-
-For special setups, the raw fallback script is:
+`AnlyxDevOverlay` renders nothing in production. For special local setups, the raw fallback script is:
 
 ```html
 <script src="http://localhost:4777/_anlyx/overlay.js" defer></script>
 ```
 
-The app still runs on its own origin, so auth, theme, cookies, localStorage, and hydration behave like the normal development environment.
+## How It Works
 
-The injected drawer is action-first: requests caused by your latest click, submit, or key action become the main flow. Page-load effects, health checks, and polling requests are recorded quietly in Recent API events and can be selected when needed.
+1. Scans Spring Boot endpoints and best-effort Controller -> Service -> Repository paths.
+2. Discovers Next.js App Router pages and dynamic route samples.
+3. Captures local page states and browser-visible API calls.
+4. Separates user-action requests from background auth, health, and polling traffic.
+5. Matches browser requests to scanned endpoint and backend flow data.
+6. Renders a React Flow drawer with the main path, support calls, confidence, and evidence.
 
-- Click the real app normally.
-- When a browser `fetch` or `XMLHttpRequest` API call fires, Anlyx matches it to scanned endpoints.
-- The Anlyx button opens a right-side Flow Drawer with the matched request, main path, support calls, confidence, linked pages, and evidence.
+## UI Surfaces
 
-The standalone debug viewer remains available at [http://localhost:4777/\_anlyx/viewer](http://localhost:4777/_anlyx/viewer):
+| Surface             | Purpose                                                                             |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| Injected overlay    | Primary experience. Use the real app and open Anlyx only when needed.               |
+| Flow Drawer         | Shows the latest action request, matched backend flow, recent events, and evidence. |
+| Standalone viewer   | Fallback/debug UI at `http://localhost:4777/_anlyx/viewer`.                         |
+| README / Pages demo | Generated from the actual `@anlyx/ui` preview component, not a hand-drawn mock.     |
 
-- Flow Story: one request-centric workspace that combines the matched frontend page preview, API endpoint, backend flow graph, inspector evidence, calls, metadata, and Replay Lite controls.
-- Structure: backend API structure from Endpoint to Controller, Service, Repository, and Database.
-- Captures: frontend page storyboard, capture status, API calls, and linked backend endpoints. When `--skip-capture` is used, the page remains `pending` and the viewer keeps a product-style empty storyboard instead of hiding the state.
-- Process: request/response replay from the scanned static flow graph, including inferred request path, branch calls, database arrival, and return path. This is not runtime tracing.
+## Demo Assets
 
-Use `server.mode: "viewer"` when you want the standalone viewer directly at `/`. `server.mode: "overlay"` remains available as a fallback/debug proxy mode, but Inject Mode is the default product path.
+The README image and Live Demo are generated from the same React preview surface:
 
-The v0.1 experience is request-centric: it shows how an endpoint is structured, which frontend pages connect to it, why Anlyx inferred each step, and how the scanned request flow moves through the application.
+```bash
+corepack pnpm docs:readme-demo
+corepack pnpm demo:dev
+corepack pnpm demo:build
+```
 
-The viewer keeps React Flow as its graph engine and adds a focused visual system around it:
+`docs:readme-demo` writes `docs/assets/readme/anlyx-demo.gif` and `docs/assets/readme/anlyx-demo.png`. The GitHub Pages demo lives in `apps/demo` and imports the same Flow Drawer preview.
 
-- `elkjs` for stable left-to-right graph layout with deterministic fallback positions.
-- `motion` for active node pulse, replay step transitions, and restrained flow movement.
-- `react-resizable-panels` for the resizable/collapsible three-panel shell.
-- `lucide-react` for consistent endpoint, service, repository, database, replay, and panel icons.
+## Capture And Dynamic Routes
 
-These libraries improve diagram readability without adding runtime tracing, a Java agent, OpenTelemetry, or a new graph engine.
+Run a static scan first when you want to debug config without opening Playwright:
 
-### Capture Mode
+```bash
+npx anlyx scan --skip-capture
+```
 
-Run the frontend app first, then run scan without `--skip-capture`:
+Run capture after the frontend is available:
 
 ```bash
 npx anlyx scan
 ```
 
-Capture uses the configured `frontend.baseUrl` and writes screenshot/API-call data into `.anlyx/report-data.json`.
-
-### Dynamic Routes And sampleParams
-
-For dynamic Next.js routes, provide sample params so capture can visit a concrete URL:
+For dynamic Next.js routes, provide `sampleParams` so capture can visit concrete URLs:
 
 ```ts
 export default {

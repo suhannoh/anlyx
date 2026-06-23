@@ -1,59 +1,59 @@
 <p align="center">
-  <img src="./docs/assets/brand/anlyx-logo-card.png" alt="Anlyx" width="420" />
+  <img src="./docs/assets/brand/anlyx-logo-card.png" alt="Anlyx" width="460" />
+</p>
+
+<h3 align="center">실제 앱을 클릭하고, 그 요청이 백엔드 어디까지 가는지 봅니다.</h3>
+
+<p align="center">
+  브라우저에서 관찰한 사용자 액션 요청을 Spring Boot와 Next.js 스캔 결과에 연결하는 action-first flow map.
 </p>
 
 <p align="center">
-  <strong>브라우저에서 관찰한 요청을 스캔된 백엔드 경로와 연결하는 플로우 맵.</strong>
+  <a href="https://suhannoh.github.io/anlyx/"><strong>Live Demo</strong></a>
+  ·
+  <a href="#빠른-시작">빠른 시작</a>
+  ·
+  <a href="#동작-방식">동작 방식</a>
+  ·
+  <a href="./README.md">English</a>
 </p>
 
 <p align="center">
-  <a href="./README.md">English README</a>
+  <a href="https://www.npmjs.com/package/anlyx"><img alt="npm" src="https://img.shields.io/npm/v/anlyx?color=2563eb"></a>
+  <a href="./LICENSE"><img alt="license" src="https://img.shields.io/github/license/suhannoh/anlyx?color=0f172a"></a>
+  <a href="https://github.com/suhannoh/anlyx/actions/workflows/ci.yml"><img alt="ci" src="https://img.shields.io/github/actions/workflow/status/suhannoh/anlyx/ci.yml?branch=main&label=ci"></a>
+  <a href="https://suhannoh.github.io/anlyx/"><img alt="demo" src="https://img.shields.io/badge/demo-GitHub%20Pages-16a34a"></a>
 </p>
-
-Anlyx는 방금 누른 버튼, 제출한 폼, 키보드 액션에서 어떤 API가 발생했는지 보여주고, 그 브라우저 관찰 요청을 스캔된 백엔드 경로와 연결하는 개발자 도구입니다.
-
-```txt
-화면 액션 -> 브라우저 API -> 스캔된 Controller -> Service -> Repository -> Database -> Result
-```
-
-실제 로컬 프론트엔드 앱 위에 오버레이를 띄우고, 마지막 사용자 액션으로 발생한 API를 스캔된 백엔드 코드, 캡처 상태, confidence, 분석 근거와 연결합니다. 브라우저 요청은 실제 관찰값이고, Controller, Service, Repository, Database node는 향후 runtime bridge가 보고하기 전까지 스캔/추론 결과로 구분합니다.
 
 <p align="center">
   <img src="./docs/assets/readme/anlyx-demo.gif" alt="사용자 액션이 백엔드 흐름 다이어그램으로 매핑되는 Anlyx 데모" />
 </p>
 
-위 애니메이션은 README용으로 손으로 그린 mock이 아니라 실제 `@anlyx/ui` Flow Drawer 컴포넌트를 렌더링합니다. 첫 성공 플로우는 Spring Boot + Next.js fixture의 스캔 결과를 읽어오기 때문에 Controller, Service, Repository, Database, Result가 스캔된 경로로 함께 보입니다. auth에서 막히는 데모 액션은 브라우저 결과만으로 downstream 실행을 증명할 수 없으므로 해당 코드 경로를 muted 상태로 표시합니다.
+## 무엇을 하나요?
 
-## 왜 다른가?
+Anlyx는 브라우저 DevTools, Swagger, 백엔드 코드, DB 모델을 오가며 확인하던 질문을 바로 보여줍니다.
 
-- 실제 앱은 자기 localhost 포트에서 그대로 실행됩니다. Anlyx가 프론트엔드를 proxy-only mock viewer로 대체하지 않습니다.
-- 마지막 click, submit, key action이 main flow가 됩니다. page-load auth check, health check, polling은 기록하되 사용자가 선택하기 전까지 조용히 분리합니다.
-- 브라우저에서 발생한 API를 스캔된 백엔드 코드와 매칭해 confidence-aware diagram으로 보여줍니다. 단순 network log table이 아닙니다.
-- 주입되는 launcher는 작고 이동 가능해서, Flow Drawer를 열기 전까지 host app 사용을 방해하지 않습니다.
+```txt
+방금 이 버튼을 눌렀는데, 어떤 API가 호출됐고 백엔드 어디까지 갔지?
+```
 
-## Anlyx가 무엇인가요?
+실제 로컬 앱은 자기 포트에서 그대로 실행됩니다. Anlyx는 마지막 사용자 액션에서 발생한 API를 관찰하고, 그 요청을 스캔된 백엔드 경로와 연결합니다.
 
-Anlyx는 보통 라우트, Swagger/OpenAPI, 백엔드 코드, 데이터베이스 모델, 스크린샷을 오가며 확인해야 하는 질문에 답합니다.
+```txt
+User action -> Browser API -> Controller -> Service -> Repository -> Database -> Result
+```
 
-- 이 화면은 어떤 API를 호출하는가?
-- 이 API는 어떤 스캔된 Controller, Service, Repository, DB Table과 연결될 가능성이 높은가?
-- 어떤 호출이 핵심 경로이고 어떤 호출이 보조 흐름인가?
-- API 호출 시점의 화면 상태는 어떻게 캡처되었는가?
-- Anlyx가 이 node, edge, confidence를 왜 그렇게 추론했는가?
+Anlyx는 증거를 구분합니다. 브라우저 요청은 실제 관찰값이고, Controller, Service, Repository, Database node는 향후 runtime bridge가 보고하기 전까지 source scan 또는 추론 결과입니다.
 
-## 현재 지원 범위
+## 왜 쓰나요?
 
-Deep Support:
-
-- Spring Boot backend endpoint 및 flow scanning
-- Next.js App Router page discovery 및 Playwright capture
-
-Basic Support:
-
-- OpenAPI backend endpoint import
-- OpenAPI-only 프로젝트를 위한 manual frontend URLs
-
-v0.1 Deep Support는 Spring Boot + Next.js App Router로 제한합니다. FastAPI, Express, NestJS, React Router는 v0.1 Deep Support 대상이 아닙니다.
+| 기존에는...                                              | Anlyx는...                                                    |
+| -------------------------------------------------------- | ------------------------------------------------------------- |
+| DevTools network row를 뒤져야 했습니다                   | 방금 클릭한 액션의 요청을 메인 플로우로 보여줍니다            |
+| route, Swagger, service, repository를 따로 봐야 했습니다 | 하나의 시각 경로로 프론트 액션부터 백엔드 흐름까지 보여줍니다 |
+| health check, polling, auth check가 섞였습니다           | 백그라운드 트래픽은 조용히 분리합니다                         |
+| 왜 이 node가 나왔는지 알기 어려웠습니다                  | confidence와 evidence를 함께 보여줍니다                       |
+| 프로젝트 설명을 말로 해야 했습니다                       | 로컬 overlay와 viewer로 온보딩을 시각화합니다                 |
 
 ## 빠른 시작
 
@@ -63,38 +63,27 @@ npx anlyx init
 npx anlyx dev
 ```
 
-그다음 실제 로컬 앱을 평소처럼 사용하면 됩니다. 버튼을 누르거나 폼을 제출하거나 키보드 액션을 발생시키면, Anlyx는 백그라운드 트래픽을 조용히 분리하고 사용자 액션으로 발생한 요청을 메인 백엔드 흐름으로 보여줍니다.
+그다음 실제 앱을 평소처럼 사용하면 됩니다. 버튼을 누르거나 폼을 제출하면 Anlyx는 `4777` 포트에서 runtime을 조용히 띄우고, 실제 프론트엔드 앱 위에 Flow Drawer를 주입합니다.
 
-`npx anlyx dev`는 분석 데이터 준비, Anlyx runtime 실행, 실제 로컬 프론트엔드 열기, 개발 overlay 연결을 처리합니다.
+## 지원 범위
 
-## 동작 방식
+| 영역                   | v0.1 지원                                               |
+| ---------------------- | ------------------------------------------------------- |
+| Backend deep support   | Spring Boot endpoint 및 flow scanning                   |
+| Frontend deep support  | Next.js App Router page discovery 및 Playwright capture |
+| Basic backend support  | OpenAPI endpoint import                                 |
+| Basic frontend support | OpenAPI-only 프로젝트용 manual URLs                     |
+| v0.1 Deep Support 제외 | FastAPI, Express, NestJS, React Router                  |
 
-1. Spring Boot 백엔드 엔드포인트와 코드 경로를 스캔합니다.
-2. Next.js App Router 페이지를 찾습니다.
-3. 로컬 개발 중 화면 상태와 브라우저에서 보이는 API 호출을 캡처합니다.
-4. 사용자 액션 요청과 auth, health, polling 같은 백그라운드 요청을 분리합니다.
-5. API 호출을 스캔된 백엔드 분석 결과와 매칭합니다.
-6. 매칭된 요청을 React Flow 다이어그램, confidence, evidence가 포함된 Flow Drawer로 보여주되, 실제 브라우저 관찰값과 스캔/추론된 백엔드 node를 구분합니다.
+## 실제 앱에 붙이기
 
-### README 데모 이미지
-
-README 데모는 `packages/ui/src/readme-demo`에 있는 실제 React 컴포넌트 preview에서 생성합니다.
-
-```bash
-corepack pnpm docs:readme-demo
-```
-
-이 명령은 `docs/assets/readme/anlyx-demo.gif`와 `docs/assets/readme/anlyx-demo.png`를 생성합니다.
-
-### 설정 파일 만들기
+config를 생성합니다.
 
 ```bash
 npx anlyx init
 ```
 
-기본 `anlyx.config.ts`는 import가 없는 plain object입니다. 따라서 scan 대상 프로젝트가 `defineConfig`를 import하려고 `anlyx`를 해석하지 못하는 문제를 피할 수 있습니다.
-
-### 최소 설정 예시
+최소 `anlyx.config.ts` 예시:
 
 ```ts
 export default {
@@ -119,61 +108,6 @@ export default {
 };
 ```
 
-대상 프로젝트에서 `anlyx`를 devDependency로 해석할 수 있다면 선택적으로 type helper를 사용할 수 있습니다.
-
-```ts
-import { defineConfig } from "anlyx";
-
-export default defineConfig({
-  projectName: "my-app"
-});
-```
-
-### Monorepo 예시: Spring Boot backend + Next.js frontend
-
-```txt
-my-app/
-  backend/
-    src/main/java/...
-  frontend/
-    src/app/...
-```
-
-권장 config:
-
-```ts
-export default {
-  projectName: "my-app",
-  backend: {
-    type: "spring",
-    sourceDir: "./backend"
-  },
-  frontend: {
-    type: "next",
-    sourceDir: "./frontend",
-    baseUrl: "http://localhost:3000"
-  }
-};
-```
-
-Spring adapter는 `./backend`에서 `./backend/src/main/java`를 찾습니다. Next adapter는 `./frontend/app`을 먼저 보고, 없으면 `./frontend/src/app`을 찾습니다.
-
-### 캡처 없이 먼저 스캔하기
-
-```bash
-npx anlyx scan --skip-capture
-```
-
-이 명령은 정적 adapter 결과만 사용해 `.anlyx/report-data.json`을 생성합니다. capture를 실행하기 전의 page는 `pending` 상태로 남습니다.
-
-### 로컬 오버레이 열기
-
-```bash
-npx anlyx dev
-```
-
-`anlyx dev`는 로컬 개발 중 사용하는 메인 명령입니다. 실제 프론트엔드를 감지하거나 실행하고, 앱은 `frontend.baseUrl`에 그대로 둔 채, [http://localhost:4777](http://localhost:4777)에 Anlyx runtime을 띄우고 실제 앱 URL을 엽니다.
-
 Next.js App Router 앱에서는 root layout에 개발 전용 helper를 추가합니다.
 
 ```tsx
@@ -191,53 +125,57 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-`AnlyxDevOverlay`는 production에서 아무것도 렌더링하지 않습니다. production build에 overlay script가 들어가지 않게 막고, 개발 중에만 로컬 overlay script를 렌더링합니다.
-
-특수한 환경에서는 아래 raw fallback script를 직접 사용할 수 있습니다.
+`AnlyxDevOverlay`는 production에서 아무것도 렌더링하지 않습니다. 특수한 로컬 환경에서는 raw fallback script를 직접 넣을 수 있습니다.
 
 ```html
 <script src="http://localhost:4777/_anlyx/overlay.js" defer></script>
 ```
 
-앱은 자기 origin에서 그대로 실행되므로 auth, theme, cookie, localStorage, hydration 동작이 평소 개발환경과 달라지지 않습니다.
+## 동작 방식
 
-- 실제 앱을 평소처럼 클릭합니다.
-- 브라우저 `fetch` 또는 `XMLHttpRequest` API 호출이 발생하면 Anlyx가 스캔된 엔드포인트와 매칭합니다.
-- Anlyx 버튼은 matched request, main path, support calls, confidence, linked pages, evidence를 보여주는 우측 Flow Drawer를 엽니다.
+1. Spring Boot endpoint와 best-effort Controller -> Service -> Repository 경로를 스캔합니다.
+2. Next.js App Router page와 dynamic route sample을 찾습니다.
+3. 로컬 페이지 상태와 브라우저에서 보이는 API 호출을 캡처합니다.
+4. 사용자 액션 요청과 auth, health, polling 같은 백그라운드 요청을 분리합니다.
+5. 브라우저 요청을 스캔된 endpoint/backend flow와 매칭합니다.
+6. main path, support calls, confidence, evidence가 포함된 React Flow drawer를 렌더링합니다.
 
-Standalone debug viewer는 [http://localhost:4777/\_anlyx/viewer](http://localhost:4777/_anlyx/viewer)에서 계속 사용할 수 있습니다.
+## UI 표면
 
-- Flow Story: matched frontend page preview, API endpoint, backend flow graph, inspector evidence, calls, metadata, Replay Lite controls를 한 화면에서 보여주는 request-centric workspace.
-- Structure: Endpoint에서 Controller, Service, Repository, Database로 이어지는 backend API structure.
-- Captures: frontend page storyboard, capture status, API calls, linked backend endpoints. `--skip-capture`를 사용하면 page는 `pending`으로 남고, viewer는 이 상태를 숨기지 않고 제품형 empty storyboard로 보여줍니다.
-- Process: scanned static flow graph에서 파생한 request/response replay, inferred request path, branch calls, database arrival, return path. runtime tracing은 아닙니다.
+| Surface             | 역할                                                                        |
+| ------------------- | --------------------------------------------------------------------------- |
+| Injected overlay    | 기본 사용 방식. 실제 앱을 그대로 쓰다가 필요할 때 Anlyx를 엽니다.           |
+| Flow Drawer         | 최신 액션 요청, matched backend flow, recent events, evidence를 보여줍니다. |
+| Standalone viewer   | `http://localhost:4777/_anlyx/viewer`에서 보는 fallback/debug UI입니다.     |
+| README / Pages demo | 손으로 그린 mock이 아니라 실제 `@anlyx/ui` preview 컴포넌트에서 생성합니다. |
 
-Standalone viewer를 `/`에서 바로 보고 싶다면 `server.mode: "viewer"`를 사용합니다. `server.mode: "overlay"`는 fallback/debug proxy mode로 남기지만, 기본 제품 경로는 Inject Mode입니다.
+## 데모 이미지와 Live Demo
 
-v0.1 경험은 request-centric architecture viewer입니다. 하나의 endpoint가 어떻게 구성되어 있고, 어떤 frontend page와 연결되며, Anlyx가 각 단계를 왜 추론했는지와 scan된 request flow가 애플리케이션 안에서 어떻게 이동하는지 보여줍니다.
+README 이미지와 Live Demo는 같은 React preview surface에서 생성합니다.
 
-뷰어는 React Flow를 그래프 엔진으로 유지하고, 그 위에 필요한 시각 시스템만 얹습니다.
+```bash
+corepack pnpm docs:readme-demo
+corepack pnpm demo:dev
+corepack pnpm demo:build
+```
 
-- `elkjs`: left-to-right graph layout과 deterministic fallback 배치.
-- `motion`: active node pulse, replay step transition, 절제된 flow movement.
-- `react-resizable-panels`: resize/collapse 가능한 3-panel shell.
-- `lucide-react`: endpoint, service, repository, database, replay, panel icon 통일.
+`docs:readme-demo`는 `docs/assets/readme/anlyx-demo.gif`와 `docs/assets/readme/anlyx-demo.png`를 생성합니다. GitHub Pages 데모는 `apps/demo`에 있고 같은 Flow Drawer preview를 import합니다.
 
-이 라이브러리들은 diagram readability를 높이기 위한 것이며 runtime tracing, Java agent, OpenTelemetry, 새 graph engine을 추가하지 않습니다.
+## Capture와 Dynamic Routes
 
-### Capture mode
+config만 먼저 확인하고 싶다면 정적 스캔부터 실행합니다.
 
-프론트엔드 앱을 먼저 실행한 뒤 `--skip-capture` 없이 scan합니다.
+```bash
+npx anlyx scan --skip-capture
+```
+
+프론트엔드가 실행 중이면 capture를 포함해 스캔합니다.
 
 ```bash
 npx anlyx scan
 ```
 
-capture는 `frontend.baseUrl`을 기준으로 페이지를 방문하고 screenshot/API-call 데이터를 `.anlyx/report-data.json`에 기록합니다.
-
-### Dynamic routes and sampleParams
-
-Next.js 동적 라우트는 capture가 방문할 실제 URL을 만들 수 있도록 sample params를 제공합니다.
+Next.js 동적 라우트는 capture가 방문할 실제 URL을 만들 수 있도록 `sampleParams`를 제공합니다.
 
 ```ts
 export default {
