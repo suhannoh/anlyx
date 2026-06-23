@@ -95,8 +95,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   align-items: start;
-  padding: 9px 11px 7px;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 10px 12px 8px;
 }
 
 .anlyx-captured-request h3 {
@@ -118,18 +117,51 @@
 .anlyx-captured-request__path strong {
   overflow: hidden;
   color: #101828;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 900;
   line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.anlyx-captured-request__meta {
+.anlyx-captured-request__summary {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 5px;
-  padding: 7px 11px 0;
+  gap: 6px;
+  margin: 0 12px 8px;
+  padding: 7px 9px;
+  border: 1px solid #e5edf8;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.86), rgba(255, 255, 255, 0.94));
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.anlyx-captured-request__summary span {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 3px;
+}
+
+.anlyx-captured-request__summary span:not(:last-child)::after {
+  width: 3px;
+  height: 3px;
+  margin-left: 3px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  content: "";
+}
+
+.anlyx-captured-request__summary b {
+  overflow: hidden;
+  color: #334155;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .anlyx-captured-request__steps {
@@ -292,6 +324,11 @@
   border: 1px solid rgba(203, 213, 225, 0.74);
   border-radius: 12px;
   background: radial-gradient(circle at 50% 30%, rgba(37, 99, 235, 0.05), transparent 34%), #fbfdff;
+  cursor: grab;
+}
+
+.anlyx-flow-rf-canvas:active {
+  cursor: grabbing;
 }
 
 .anlyx-flow-rf-canvas .react-flow__background {

@@ -68,21 +68,17 @@ function CapturedRequest({ event }: { event: OverlayApiEvent }): JSX.Element {
         </div>
         <Badge tone={matched ? "green" : "amber"}>{matched ? "matched" : "unmatched"}</Badge>
       </div>
-      <div className="anlyx-captured-request__meta">
-        {event.matchedEndpoint ? (
-          <Badge tone="gray">
-            endpoint {event.matchedEndpoint.method} {event.matchedEndpoint.path}
-          </Badge>
-        ) : null}
-        <Badge tone={Number(event.status) >= 400 ? "amber" : "green"}>{getStatusLabel(event.status)}</Badge>
-        <Badge tone="gray">{event.durationMs}ms</Badge>
-        {event.count && event.count > 1 ? <Badge tone="gray">seen x{event.count}</Badge> : null}
-        {event.matchedEndpoint?.confidence ? (
-          <Badge tone="green">confidence {event.matchedEndpoint.confidence}</Badge>
-        ) : null}
-        <Badge tone={event.triggeredBy ? "blue" : "gray"}>
-          {event.triggeredBy ? "user action" : event.source === "health" ? "health/background" : "background"}
-        </Badge>
+      <div className="anlyx-captured-request__summary">
+        <span>
+          <b>{event.matchedEndpoint ? "endpoint" : "browser"}</b>{" "}
+          {event.matchedEndpoint ? `${event.matchedEndpoint.method} ${event.matchedEndpoint.path}` : event.path}
+        </span>
+        <span>
+          <b>{getStatusLabel(event.status)}</b>
+        </span>
+        <span>{event.durationMs}ms{event.count && event.count > 1 ? ` · seen x${event.count}` : ""}</span>
+        {event.matchedEndpoint?.confidence ? <span>confidence {event.matchedEndpoint.confidence}</span> : null}
+        <span>{event.triggeredBy ? "user action" : event.source === "health" ? "health/background" : "background"}</span>
       </div>
       <div className="anlyx-captured-request__steps">
         <CapturedStep

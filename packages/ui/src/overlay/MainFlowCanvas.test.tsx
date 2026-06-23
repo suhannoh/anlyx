@@ -114,7 +114,7 @@ describe("MainFlowCanvas", () => {
     expect(within(canvas).getByText("ZupAccountController#me")).toBeTruthy();
     expect(within(canvas).getByText("ZupAccountController")).toBeTruthy();
     expect(within(canvas).getByText("Auth / Session")).toBeTruthy();
-    expect(within(canvas).getByText("SessionAuthFilter")).toBeTruthy();
+    expect(within(canvas).getByText("Auth gate inferred")).toBeTruthy();
     expect(within(canvas).getByText("Service")).toBeTruthy();
     expect(within(canvas).getByText("AccountService#getMe")).toBeTruthy();
     expect(within(canvas).getByText("Result")).toBeTruthy();

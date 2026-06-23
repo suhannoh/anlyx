@@ -78,17 +78,17 @@ export function MainFlowCanvas({
           elementsSelectable={false}
           fitView
           fitViewOptions={{ padding: 0.16 }}
-          maxZoom={1.05}
-          minZoom={0.72}
+          maxZoom={1.35}
+          minZoom={0.58}
           nodes={model.nodes}
           nodesConnectable={false}
           nodesDraggable={false}
           nodeTypes={nodeTypes}
-          panOnDrag={false}
+          panOnDrag
           proOptions={{ hideAttribution: true }}
           zoomOnDoubleClick={false}
-          zoomOnPinch={false}
-          zoomOnScroll={false}
+          zoomOnPinch
+          zoomOnScroll
         >
           <Background
             color="rgba(148, 163, 184, .42)"
@@ -162,11 +162,11 @@ export function buildDrawerFlowModel({
       createFlowNode("auth", authX, AUTH_Y, {
         kind: "auth",
         label: "Auth / Session",
-        value: "SessionAuthFilter",
-        sub: Number(status) === 403 ? "Permission gate" : "Login required",
-        badge: `${status} returned`,
+        value: "Auth gate inferred",
+        sub: Number(status) === 403 ? "Likely permission gate" : "Likely login gate",
+        badge: `inferred ${status}`,
         accent: "violet",
-        fullValue: "SessionAuthenticationFilter",
+        fullValue: "Inferred from the browser 401/403 result, not a runtime server trace.",
         step: controller ? "03" : "02",
         state: "taken"
       })
