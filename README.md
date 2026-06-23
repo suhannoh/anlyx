@@ -23,7 +23,7 @@ It overlays your real local frontend app and connects the API triggered by your 
   <img src="./docs/assets/readme/anlyx-demo.gif" alt="Anlyx demo showing user actions mapped to backend flow diagrams" />
 </p>
 
-The animation above renders the real `@anlyx/ui` Flow Drawer. Its primary success path is loaded from the scanned Spring Boot + Next.js fixture output, so the first flow shows Controller, Service, Repository, Database, and Result together as a scanned path. Auth-blocked demo actions keep downstream code paths muted because the live browser result does not prove that those nodes ran.
+The animation above renders the real `@anlyx/ui` Flow Drawer component, not a hand-drawn README mock. Its primary success path is loaded from the scanned Spring Boot + Next.js fixture output, so the first flow shows Controller, Service, Repository, Database, and Result together as a scanned path. Auth-blocked demo actions keep downstream code paths muted because the live browser result does not prove that those nodes ran.
 
 ## Why It Feels Different
 
@@ -76,6 +76,16 @@ Then use your local app normally. Click a button, submit a form, or trigger a ke
 4. Separates user-action requests from background auth, health, and polling traffic.
 5. Matches API calls to scanned backend analysis results.
 6. Renders the matched request as a Flow Drawer with a React Flow diagram, confidence, and evidence, keeping live browser evidence distinct from scanned or inferred backend nodes.
+
+### README Demo Asset
+
+The README demo is generated from the actual React component preview in `packages/ui/src/readme-demo`.
+
+```bash
+corepack pnpm docs:readme-demo
+```
+
+This writes `docs/assets/readme/anlyx-demo.gif` and `docs/assets/readme/anlyx-demo.png`.
 
 ### Initialize Config
 

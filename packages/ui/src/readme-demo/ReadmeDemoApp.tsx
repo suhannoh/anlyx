@@ -100,21 +100,15 @@ export function ReadmeDemoApp(): JSX.Element {
         <div className="anlyx-readme-demo__intro">
           <img src="/docs/assets/brand/anlyx-logo-transparent.png" alt="Anlyx" />
           <div>
-            <p className="anlyx-readme-demo__eyebrow">Actual component preview</p>
+            <p className="anlyx-readme-demo__eyebrow">Real UI preview</p>
             <h1>Click an action. See the backend path.</h1>
-            <p>
-              Primary flow uses scanned Spring/Next fixture data rendered by the real{" "}
-              <code>@anlyx/ui</code> drawer.
-            </p>
+            <p>Rendered by the same Flow Drawer component used by the Anlyx overlay.</p>
           </div>
         </div>
         <div className="anlyx-readme-demo__actions" aria-label="Demo actions">
           <div className="anlyx-readme-demo__actions-head">
-            <span>Try these actions</span>
-            <small>
-              Success shows Service, Repository, and Database. Auth-blocked calls keep downstream
-              scanned paths muted.
-            </small>
+            <span>Demo buttons</span>
+            <small>Pick one request</small>
           </div>
           <DemoButton
             active={selectedKey === "search"}
