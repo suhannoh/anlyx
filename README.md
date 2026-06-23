@@ -1,14 +1,33 @@
-# Anlyx
+<p align="center">
+  <img src="./docs/design/brand/anlyx-logo.png" alt="Anlyx" width="420" />
+</p>
 
-[한국어 문서](./README.ko.md)
+<p align="center">
+  <strong>Interaction-first flow maps for modern web apps.</strong>
+</p>
 
-Interaction-first flow maps for modern web apps.
+<p align="center">
+  <a href="./README.ko.md">한국어 문서</a>
+</p>
+
+Anlyx shows what your last real frontend action did in the backend.
 
 Anlyx overlays your real local frontend app and shows which backend endpoint, service, repository, database table, capture state, API call, and static analysis evidence belongs to the interaction you just triggered.
 
 > Status: v0.1.2 patch release preparation. Actual npm publish requires separate approval.
 
 Anlyx `0.1.0` is planned to be deprecated because it was published with unresolved `workspace:*` dependencies. Anlyx `0.1.1` is planned to be deprecated because the published CLI entrypoint can exit before running commands. `0.1.2` is the patch release intended for normal `npm install anlyx` usage after the approved pnpm-based publish.
+
+<p align="center">
+  <img src="./docs/assets/readme/anlyx-flow-drawer.png" alt="Anlyx Flow Drawer showing a real app request mapped to a backend flow" />
+</p>
+
+## Why It Feels Different
+
+- Use the real app on its own localhost port. Anlyx does not replace your frontend with a proxy-only mock viewer.
+- The latest click, submit, or key action becomes the main flow. Page-load auth checks, health checks, and polling stay quiet until selected.
+- Browser-visible API calls are matched to scanned backend code and rendered as a diagram, not just another network log table.
+- The injected launcher stays small and movable, so the host app remains usable while you inspect the flow.
 
 ## What Is Anlyx?
 
@@ -294,3 +313,7 @@ corepack pnpm -r build
 ```
 
 Release packaging is checked with local build and pack dry-runs. See [`docs/release/npm-publish-preflight.md`](./docs/release/npm-publish-preflight.md) and [`docs/release/v0.1-release-runbook.md`](./docs/release/v0.1-release-runbook.md).
+
+## Release Notes
+
+The GitHub Release draft for `v0.1.2` is maintained in [`docs/release/v0.1.2-release-notes.md`](./docs/release/v0.1.2-release-notes.md). Use it when creating the tag and release after npm publish verification succeeds.

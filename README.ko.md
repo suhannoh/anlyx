@@ -1,12 +1,31 @@
-# Anlyx
+<p align="center">
+  <img src="./docs/design/brand/anlyx-logo.png" alt="Anlyx" width="420" />
+</p>
 
-[English README](./README.md)
+<p align="center">
+  <strong>실제 프론트엔드 액션이 백엔드 어디까지 갔는지 보여주는 flow map.</strong>
+</p>
+
+<p align="center">
+  <a href="./README.md">English README</a>
+</p>
 
 Anlyx는 실제 로컬 프론트엔드 앱 위에 오버레이를 띄우고, 방금 누른 버튼이나 컴포넌트에서 발생한 API가 어떤 백엔드 엔드포인트, 서비스, Repository, 데이터베이스 테이블, 캡처 상태, 정적 분석 근거와 연결되는지 보여주는 개발자 도구입니다.
 
 > 현재 상태: v0.1.2 patch release 준비 단계입니다. 실제 npm publish는 별도 승인 후 진행합니다.
 
 Anlyx `0.1.0`은 `workspace:*` dependency가 남아 있는 상태로 배포되어 deprecated 처리 예정입니다. Anlyx `0.1.1`은 배포된 CLI entrypoint가 명령 실행 전에 종료될 수 있어 deprecated 처리 예정입니다. 승인된 pnpm 기반 publish 이후에는 `0.1.2`부터 일반 `npm install anlyx`로 설치 가능한 버전으로 안내합니다.
+
+<p align="center">
+  <img src="./docs/assets/readme/anlyx-flow-drawer.png" alt="실제 앱 요청을 백엔드 흐름으로 매칭한 Anlyx Flow Drawer" />
+</p>
+
+## 왜 다른가?
+
+- 실제 앱은 자기 localhost 포트에서 그대로 실행됩니다. Anlyx가 프론트엔드를 proxy-only mock viewer로 대체하지 않습니다.
+- 마지막 click, submit, key action이 main flow가 됩니다. page-load auth check, health check, polling은 기록하되 사용자가 선택하기 전까지 조용히 분리합니다.
+- 브라우저에서 발생한 API를 스캔된 백엔드 코드와 매칭해 diagram으로 보여줍니다. 단순 network log table이 아닙니다.
+- 주입되는 launcher는 작고 이동 가능해서, Flow Drawer를 열기 전까지 host app 사용을 방해하지 않습니다.
 
 ## What is Anlyx?
 
@@ -286,3 +305,7 @@ corepack pnpm -r build
 ```
 
 배포 전 package 검증은 local build와 pack dry-run으로 확인합니다. 자세한 내용은 [`docs/release/npm-publish-preflight.md`](./docs/release/npm-publish-preflight.md)와 [`docs/release/v0.1-release-runbook.md`](./docs/release/v0.1-release-runbook.md)를 참고합니다.
+
+## Release Notes
+
+`v0.1.2` GitHub Release 초안은 [`docs/release/v0.1.2-release-notes.md`](./docs/release/v0.1.2-release-notes.md)에 정리합니다. npm publish 검증이 끝난 뒤 tag와 release를 만들 때 이 문서를 기준으로 사용합니다.
