@@ -11,20 +11,26 @@ export type AnlyxFlowNodeData = {
   badge: string;
   accent: "blue" | "green" | "amber" | "violet" | "gray";
   fullValue?: string;
+  step?: string;
+  state?: "taken" | "blocked" | "scanned";
 };
 
 export function AnlyxFlowNode({ data }: NodeProps): JSX.Element {
   const nodeData = data as AnlyxFlowNodeData;
   const Icon = getIcon(nodeData.kind);
+  const state = nodeData.state ?? "taken";
 
   return (
-    <Card className={`anlyx-flow-rf-node anlyx-flow-rf-node--${nodeData.accent}`}>
+    <Card
+      className={`anlyx-flow-rf-node anlyx-flow-rf-node--${nodeData.accent} anlyx-flow-rf-node--${state}`}
+    >
       <Handle className="anlyx-flow-rf-handle" position={Position.Left} type="target" />
       <div className="anlyx-flow-rf-node__top">
         <span className="anlyx-flow-rf-node__icon" aria-hidden="true">
           <Icon size={14} strokeWidth={2.25} />
         </span>
         <span className="anlyx-flow-rf-node__label">{nodeData.label}</span>
+        {nodeData.step ? <span className="anlyx-flow-rf-node__step">{nodeData.step}</span> : null}
       </div>
       <Tooltip content={nodeData.fullValue ?? nodeData.value}>
         <p className="anlyx-flow-rf-node__value">{nodeData.value}</p>

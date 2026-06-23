@@ -111,7 +111,8 @@ describe("MainFlowCanvas", () => {
     expect(within(canvas).getByText("API")).toBeTruthy();
     expect(within(canvas).getByText("GET /api/account/me")).toBeTruthy();
     expect(within(canvas).getByText("Controller")).toBeTruthy();
-    expect(within(canvas).getAllByText("ZupAccountController#me")).toHaveLength(2);
+    expect(within(canvas).getByText("ZupAccountController#me")).toBeTruthy();
+    expect(within(canvas).getByText("ZupAccountController")).toBeTruthy();
     expect(within(canvas).getByText("Auth / Session")).toBeTruthy();
     expect(within(canvas).getByText("SessionAuthFilter")).toBeTruthy();
     expect(within(canvas).getByText("Service")).toBeTruthy();
@@ -137,6 +138,14 @@ describe("MainFlowCanvas", () => {
       "Result",
       "Service"
     ]);
+    expect(model.nodes.map((node) => node.data.state)).toEqual([
+      "taken",
+      "taken",
+      "taken",
+      "blocked",
+      "scanned"
+    ]);
+    expect(model.nodes.map((node) => node.data.step)).toEqual(["01", "02", "03", "04", undefined]);
     expect(model.edges).toHaveLength(4);
     expect(model.edges.map((edge) => edge.data?.tone)).toEqual(["blue", "violet", "amber", "gray"]);
     expect(model.edges.every((edge) => edge.type === "anlyxFlowEdge")).toBe(true);
@@ -195,6 +204,16 @@ describe("MainFlowCanvas", () => {
       "SavedBenefitRepository#findAllByUserAccountOrderBySavedAtDesc"
     );
     expect(model.nodes.map((node) => node.data.value)).toContain("saved_benefit");
+    expect(
+      model.nodes
+        .filter((node) => ["Service", "Repository", "Database"].includes(node.data.label))
+        .map((node) => node.data.state)
+    ).toEqual(["scanned", "scanned", "scanned"]);
+    expect(
+      model.nodes
+        .filter((node) => ["Service", "Repository", "Database"].includes(node.data.label))
+        .map((node) => node.data.badge)
+    ).toEqual(["scanned", "scanned", "scanned"]);
     expect(model.edges).toHaveLength(6);
     expect(model.edges.map((edge) => edge.data?.tone)).toEqual([
       "blue",

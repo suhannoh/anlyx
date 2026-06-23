@@ -62,8 +62,14 @@ export function MainFlowCanvas({
   return (
     <section className="anlyx-flow-rf-section">
       <div className="anlyx-flow-rf-head">
-        <h3>Matched backend flow</h3>
-        <Badge tone="green">confidence {endpointConfidence ?? "unknown"}</Badge>
+        <div>
+          <h3>Matched backend flow</h3>
+          <p>Live path first, scanned downstream stays muted.</p>
+        </div>
+        <div className="anlyx-flow-rf-head__badges">
+          <Badge tone="blue">{method}</Badge>
+          <Badge tone="green">confidence {endpointConfidence ?? "unknown"}</Badge>
+        </div>
       </div>
       <div className="anlyx-flow-rf-canvas" data-testid="anlyx-react-flow-main">
         <ReactFlow
@@ -93,7 +99,8 @@ export function MainFlowCanvas({
         </ReactFlow>
       </div>
       <p className="anlyx-flow-rf-note">
-        Anlyx mapped this request to your scanned backend flow and live browser result.
+        Anlyx mapped this request to your scanned backend flow and live browser result. Muted
+        nodes are known code paths that were not reached by the live request.
       </p>
     </section>
   );
@@ -126,7 +133,9 @@ export function buildDrawerFlowModel({
       value: `${method} ${path}`,
       badge: "high",
       accent: "blue",
-      fullValue: `${method} ${path}`
+      fullValue: `${method} ${path}`,
+      step: "01",
+      state: "taken"
     })
   );
 
@@ -136,10 +145,12 @@ export function buildDrawerFlowModel({
         kind: "controller",
         label: "Controller",
         value: compactHandlerName(controller.label),
-        sub: compactClassName(controller.label),
+        sub: compactHandlerClassName(controller.label),
         badge: controller.confidence ?? "unknown",
         accent: "blue",
-        fullValue: controller.label
+        fullValue: controller.label,
+        step: "02",
+        state: "taken"
       })
     );
   }
@@ -155,10 +166,19 @@ export function buildDrawerFlowModel({
         sub: Number(status) === 403 ? "Permission gate" : "Login required",
         badge: `${status} returned`,
         accent: "violet",
-        fullValue: "SessionAuthenticationFilter"
+        fullValue: "SessionAuthenticationFilter",
+        step: controller ? "03" : "02",
+        state: "taken"
       })
     );
-    nodes.push(createFlowNode("result", resultX, AUTH_Y, getResultNodeData(status)));
+    nodes.push(
+      createFlowNode(
+        "result",
+        resultX,
+        AUTH_Y,
+        getResultNodeData(status, { step: controller ? "04" : "03" })
+      )
+    );
 
     supportNodes.forEach((node, index) => {
       nodes.push(
@@ -208,7 +228,9 @@ export function buildDrawerFlowModel({
       "result",
       (supportNodes.length + (controller ? 2 : 1)) * NODE_X_GAP,
       MAIN_Y,
-      getResultNodeData(status)
+      getResultNodeData(status, {
+        step: String(supportNodes.length + (controller ? 3 : 2)).padStart(2, "0")
+      })
     )
   );
 
@@ -265,7 +287,10 @@ function createFlowEdge(
   };
 }
 
-function getResultNodeData(status: string | number): AnlyxFlowNodeData {
+function getResultNodeData(
+  status: string | number,
+  options: { step?: string } = {}
+): AnlyxFlowNodeData {
   return {
     kind: "result",
     label: "Result",
@@ -273,7 +298,9 @@ function getResultNodeData(status: string | number): AnlyxFlowNodeData {
     sub: Number(status) >= 400 ? "Request blocked" : "Request completed",
     badge: Number(status) >= 400 ? "blocked" : "observed",
     accent: Number(status) >= 400 ? "amber" : "green",
-    fullValue: getStatusLabel(status)
+    fullValue: getStatusLabel(status),
+    ...(options.step ? { step: options.step } : {}),
+    state: Number(status) >= 400 ? "blocked" : "taken"
   };
 }
 
@@ -294,9 +321,10 @@ function toNodeData(node: FlowNode, blockedByAuth = false): AnlyxFlowNodeData {
     kind,
     label: getNodeLabel(kind),
     value: compactHandlerName(node.label),
-    badge: node.confidence ?? "unknown",
-    accent: getNodeAccent(kind),
+    badge: blockedByAuth ? "scanned" : (node.confidence ?? "unknown"),
+    accent: blockedByAuth ? "gray" : getNodeAccent(kind),
     fullValue: node.label,
+    state: blockedByAuth ? "scanned" : "taken",
     ...(sub ? { sub } : {})
   };
 }
@@ -377,6 +405,17 @@ function compactHandlerName(label: string): string {
   if (label.includes("#")) {
     const [className, methodName] = label.split("#");
     return `${compactClassName(className ?? "")}#${methodName ?? ""}`;
+  }
+  return compactClassName(label);
+}
+
+function compactHandlerClassName(label: string): string {
+  if (!label) {
+    return "Unknown";
+  }
+  if (label.includes("#")) {
+    const [className] = label.split("#");
+    return compactClassName(className ?? "");
   }
   return compactClassName(label);
 }
