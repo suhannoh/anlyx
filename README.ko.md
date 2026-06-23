@@ -22,7 +22,7 @@ Anlyx는 방금 누른 버튼, 제출한 폼, 키보드 액션에서 발생한 A
   <img src="./docs/assets/readme/anlyx-demo.gif" alt="사용자 액션이 백엔드 흐름 다이어그램으로 매핑되는 Anlyx 데모" />
 </p>
 
-위 애니메이션은 실제 `@anlyx/ui` Flow Drawer 컴포넌트에 대표 데모 데이터를 넣어 렌더링한 예시입니다. 성공한 요청은 Service, Repository, Database까지 이어지는 전체 스캔 경로를 보여주고, auth에서 막힌 요청은 실제 서버가 downstream에 도달하지 않았기 때문에 해당 코드 경로를 muted 상태로 표시합니다.
+위 애니메이션은 실제 `@anlyx/ui` Flow Drawer를 렌더링합니다. 첫 성공 플로우는 Spring Boot + Next.js fixture의 스캔 결과를 읽어오기 때문에 Controller, Service, Repository, Database, Result가 함께 보입니다. auth에서 막히는 데모 액션은 실제 요청이 downstream에 도달하지 않는 상황이므로 해당 코드 경로를 muted 상태로 표시합니다.
 
 ## 왜 다른가?
 

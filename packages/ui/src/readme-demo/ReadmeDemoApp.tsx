@@ -2,7 +2,7 @@ import "@xyflow/react/dist/style.css";
 import "../overlay/overlay.css";
 import "./readme-demo.css";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { Endpoint, EndpointFlow, FlowNode, HttpMethod } from "@anlyx/core";
 
@@ -10,8 +10,14 @@ import { FlowDrawer } from "../overlay/FlowDrawer.js";
 import type { OverlayApiEvent } from "../overlay/types.js";
 
 type DemoKey = "search" | "detail" | "save" | "admin";
+type FixtureDetailFlow = {
+  endpoint: Endpoint;
+  flow: EndpointFlow;
+};
 
 const demoOrder: DemoKey[] = ["detail", "search", "save", "admin"];
+const fixtureEndpointsUrl = "/fixtures/spring-next-sample/expected/endpoints.json";
+const fixtureFlowsUrl = "/fixtures/spring-next-sample/expected/flows.json";
 
 const flows: Record<DemoKey, EndpointFlow> = {
   search: makeFlow("GET", "/api/public/search", [
@@ -51,22 +57,24 @@ const endpoints: Record<DemoKey, Endpoint> = {
   admin: endpoint("POST", "/api/admin/benefits", "AdminBenefitController#create")
 };
 
-const events: Record<DemoKey, OverlayApiEvent> = {
+const baseEvents: Record<DemoKey, OverlayApiEvent> = {
   search: event("search", "GET", "/api/public/search", 200, 28, "Clicked Search benefits"),
   detail: event("detail", "GET", "/api/public/benefits/123", 200, 34, "Opened benefit detail"),
   save: event("save", "POST", "/api/account/saved-benefits", 401, 31, "Clicked Save to my box"),
   admin: event("admin", "POST", "/api/admin/benefits", 403, 42, "Clicked Try admin action")
 };
 
-Object.entries(events).forEach(([key, value]) => {
-  const demoKey = key as DemoKey;
-  value.matchedEndpoint = endpoints[demoKey];
-  value.matchedFlow = flows[demoKey];
-});
-
 export function ReadmeDemoApp(): JSX.Element {
   const [selectedKey, setSelectedKey] = useState<DemoKey>("detail");
-  const selectedEvent = events[selectedKey];
+  const fixtureDetail = useFixtureDetailFlow();
+  const hydratedEvents = useMemo(
+    () =>
+      Object.fromEntries(
+        demoOrder.map((key) => [key, hydrateEvent(key, key === "detail" ? fixtureDetail : null)])
+      ) as Record<DemoKey, OverlayApiEvent>,
+    [fixtureDetail]
+  );
+  const selectedEvent = hydratedEvents[selectedKey];
   const eventList = useMemo(
     () => [
       selectedEvent,
@@ -81,9 +89,9 @@ export function ReadmeDemoApp(): JSX.Element {
         matchedEndpoint: endpoint("GET", "/api/account/me", "AccountController#me"),
         matchedFlow: null
       } satisfies OverlayApiEvent,
-      ...demoOrder.filter((key) => key !== selectedKey).map((key) => events[key])
+      ...demoOrder.filter((key) => key !== selectedKey).map((key) => hydratedEvents[key])
     ],
-    [selectedEvent, selectedKey]
+    [hydratedEvents, selectedEvent, selectedKey]
   );
 
   return (
@@ -95,7 +103,8 @@ export function ReadmeDemoApp(): JSX.Element {
             <p className="anlyx-readme-demo__eyebrow">Actual component preview</p>
             <h1>Click an action. See the backend path.</h1>
             <p>
-              Representative data rendered by the real <code>@anlyx/ui</code> Flow Drawer.
+              Primary flow uses scanned Spring/Next fixture data rendered by the real{" "}
+              <code>@anlyx/ui</code> drawer.
             </p>
           </div>
         </div>
@@ -103,8 +112,8 @@ export function ReadmeDemoApp(): JSX.Element {
           <div className="anlyx-readme-demo__actions-head">
             <span>Try these actions</span>
             <small>
-              Successful calls show Service, Repository, and Database. Auth-blocked calls keep
-              downstream scanned paths muted.
+              Success shows Service, Repository, and Database. Auth-blocked calls keep downstream
+              scanned paths muted.
             </small>
           </div>
           <DemoButton
@@ -157,7 +166,7 @@ export function ReadmeDemoApp(): JSX.Element {
           </div>
           <div className="anlyx-readme-demo__drawer-tools">
             <span>Live</span>
-            <span>matched</span>
+            <span>fixture-backed</span>
           </div>
         </header>
         <FlowDrawer
@@ -169,6 +178,79 @@ export function ReadmeDemoApp(): JSX.Element {
       </section>
     </main>
   );
+}
+
+function useFixtureDetailFlow(): FixtureDetailFlow | null {
+  const [fixtureDetail, setFixtureDetail] = useState<FixtureDetailFlow | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadFixture = async () => {
+      try {
+        const [endpointResponse, flowResponse] = await Promise.all([
+          fetch(fixtureEndpointsUrl, { signal: controller.signal }),
+          fetch(fixtureFlowsUrl, { signal: controller.signal })
+        ]);
+        if (!endpointResponse.ok || !flowResponse.ok) {
+          throw new Error("README fixture request failed");
+        }
+
+        const fixtureEndpoints = (await endpointResponse.json()) as Endpoint[];
+        const fixtureFlows = (await flowResponse.json()) as EndpointFlow[];
+        const flow = fixtureFlows.find(
+          (candidate) => candidate.endpointId === "endpoint:get:/api/public/benefits/{id}"
+        );
+        const endpoint = fixtureEndpoints.find(
+          (candidate) => candidate.id === "endpoint:get:/api/public/benefits/{id}"
+        );
+
+        if (flow && endpoint) {
+          setFixtureDetail({ endpoint, flow: toBackendOnlyFlow(flow) });
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          console.warn("[anlyx] Falling back to embedded README demo data.", error);
+        }
+      }
+    };
+
+    void loadFixture();
+
+    return () => controller.abort();
+  }, []);
+
+  return fixtureDetail;
+}
+
+function toBackendOnlyFlow(flow: EndpointFlow): EndpointFlow {
+  const backendNodeIds = new Set(
+    flow.nodes.filter((node) => node.type !== "page").map((node) => node.id)
+  );
+
+  return {
+    ...flow,
+    nodes: flow.nodes.filter((node) => backendNodeIds.has(node.id)),
+    edges: flow.edges.filter(
+      (edge) => backendNodeIds.has(edge.from) && backendNodeIds.has(edge.to)
+    ),
+    mainPath: flow.mainPath.filter((nodeId) => backendNodeIds.has(nodeId)),
+    subFlows: flow.subFlows.map((subFlow) => ({
+      ...subFlow,
+      nodes: subFlow.nodes.filter((node) => node.type !== "page"),
+      edges: subFlow.edges.filter(
+        (edge) => !edge.from.startsWith("page:") && !edge.to.startsWith("page:")
+      )
+    }))
+  };
+}
+
+function hydrateEvent(key: DemoKey, fixtureDetail: FixtureDetailFlow | null): OverlayApiEvent {
+  return {
+    ...baseEvents[key],
+    matchedEndpoint: fixtureDetail?.endpoint ?? endpoints[key],
+    matchedFlow: fixtureDetail?.flow ?? flows[key]
+  };
 }
 
 function DemoButton({

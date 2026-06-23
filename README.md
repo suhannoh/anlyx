@@ -22,7 +22,7 @@ It overlays your real local frontend app and connects the API triggered by your 
   <img src="./docs/assets/readme/anlyx-demo.gif" alt="Anlyx demo showing user actions mapped to backend flow diagrams" />
 </p>
 
-The animation above renders the real `@anlyx/ui` Flow Drawer with representative demo data. Successful requests show the full scanned path through Service, Repository, and Database. Auth-blocked requests keep downstream code paths muted because the live server did not actually reach them.
+The animation above renders the real `@anlyx/ui` Flow Drawer. Its primary success path is loaded from the scanned Spring Boot + Next.js fixture output, so the first flow shows Controller, Service, Repository, Database, and Result together. Auth-blocked demo actions keep downstream code paths muted because the live request would not actually reach them.
 
 ## Why It Feels Different
 
