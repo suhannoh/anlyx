@@ -14,6 +14,7 @@ const port = 5179;
 const demoUrl = `http://127.0.0.1:${port}/docs/assets/readme/anlyx-demo.html`;
 const frameDir = resolve(rootDir, ".tmp/readme-demo-frames");
 const output = resolve(rootDir, "docs/assets/readme/anlyx-demo.gif");
+const posterOutput = resolve(rootDir, "docs/assets/readme/anlyx-demo.png");
 const findViteBin = async () => {
   const pnpmDir = resolve(rootDir, "node_modules/.pnpm");
   const entries = await readdir(pnpmDir);
@@ -85,7 +86,7 @@ const browser = await chromium.launch({
 
 try {
   const page = await browser.newPage({
-    viewport: { width: 1360, height: 1120 },
+    viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 1
   });
 
@@ -93,6 +94,10 @@ try {
   await page.waitForLoadState("networkidle");
   await page.waitForSelector(".react-flow__node");
   await page.waitForTimeout(500);
+  await page.screenshot({
+    path: posterOutput,
+    fullPage: true
+  });
 
   let frame = 0;
   const capture = async (count) => {
@@ -144,3 +149,4 @@ await new Promise((resolvePromise, reject) => {
 });
 
 process.stdout.write(`Wrote ${output}\n`);
+process.stdout.write(`Wrote ${posterOutput}\n`);

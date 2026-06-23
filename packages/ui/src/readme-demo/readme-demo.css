@@ -7,8 +7,8 @@
 }
 
 body {
-  min-width: 1180px;
-  min-height: 1080px;
+  min-width: 1280px;
+  min-height: 900px;
   margin: 0;
   background:
     radial-gradient(circle at 4% 0%, rgba(37, 99, 235, 0.1), transparent 23rem),
@@ -26,26 +26,31 @@ body {
 
 .anlyx-readme-demo {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: minmax(360px, 0.38fr) minmax(780px, 1fr);
+  gap: 18px;
   min-height: 100vh;
   padding: 20px;
 }
 
 .anlyx-readme-demo__control {
   display: grid;
-  grid-template-columns: minmax(340px, 0.58fr) minmax(650px, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
-  align-items: center;
-  gap: 18px;
+  align-content: start;
+  gap: 16px;
+  border: 1px solid rgba(216, 225, 238, 0.8);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.1);
+  padding: 18px;
 }
 
 .anlyx-readme-demo__intro {
   display: grid;
-  grid-template-columns: 142px minmax(0, 1fr);
+  grid-template-columns: 118px minmax(0, 1fr);
   min-width: 0;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
 }
 
 .anlyx-readme-demo__intro img {
@@ -65,7 +70,7 @@ body {
 
 .anlyx-readme-demo h1 {
   margin: 0;
-  font-size: 26px;
+  font-size: 30px;
   line-height: 1.08;
   letter-spacing: 0;
 }
@@ -90,13 +95,13 @@ body {
 
 .anlyx-readme-demo__actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: 1fr;
+  align-content: start;
+  gap: 11px;
 }
 
 .anlyx-readme-demo__actions-head {
   display: flex;
-  grid-column: 1 / -1;
   align-items: baseline;
   justify-content: space-between;
   gap: 20px;
@@ -129,14 +134,14 @@ body {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  border: 1px solid #dbe4f0;
-  border-radius: 16px;
+  gap: 12px;
+  border: 1px solid #cfdced;
+  border-radius: 15px;
   background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
   color: #0f172a;
   cursor: pointer;
-  padding: 12px;
+  padding: 15px 14px;
   text-align: left;
   transition:
     border-color 180ms ease,
@@ -147,8 +152,8 @@ body {
 
 .anlyx-readme-demo__action-index {
   display: grid;
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   place-items: center;
   border: 1px solid #dbeafe;
   border-radius: 999px;
@@ -165,7 +170,7 @@ body {
 .anlyx-readme-demo__action-copy strong {
   display: block;
   overflow: hidden;
-  font-size: 14px;
+  font-size: 15px;
   margin-bottom: 5px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -195,11 +200,12 @@ body {
 .anlyx-readme-demo__action:hover {
   background: #fff;
   border-color: rgba(37, 99, 235, 0.62);
-  box-shadow: 0 20px 44px rgba(37, 99, 235, 0.14);
+  box-shadow: 0 20px 44px rgba(37, 99, 235, 0.16);
   transform: translateY(-1px);
 }
 
 .anlyx-readme-demo__drawer-shell {
+  min-width: 0;
   overflow: hidden;
   border: 1px solid #d8e1ee;
   border-radius: 28px;
@@ -264,7 +270,7 @@ body {
 }
 
 .anlyx-readme-demo__drawer-shell .anlyx-flow-rf-canvas {
-  height: 360px;
+  height: 330px;
 }
 
 .anlyx-readme-demo__drawer-shell .anlyx-flow-rf-edge {
