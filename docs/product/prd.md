@@ -5,6 +5,7 @@
 ## Table of Contents
 
 - [0. 문서 정보](#0-문서-정보)
+- [0.1 제품 중심축](#01-제품-중심축)
 - [1. 프로젝트 개요](#1-프로젝트-개요)
 - [2. 브랜드 정의](#2-브랜드-정의)
 - [3. 문제 정의](#3-문제-정의)
@@ -43,6 +44,18 @@
 - 분류: 오픈소스 개발자 도구 / API Flow Storyboard / Interaction Flow Inspector
 - v0.1 핵심 대상: **Spring Boot + Next.js App Router**
 - 문서 목적: Anlyx의 제품 방향, MVP 범위, 핵심 기능, 디자인 방향, 기술 스택을 정의한다.
+
+## 0.1 제품 중심축
+
+Anlyx의 구현과 UI 판단은 [Product Spine](./product-spine.md)을 기준으로 한다.
+
+핵심 질문:
+
+```txt
+I just clicked this in the real app. What API fired, and where does that request go in the backend?
+```
+
+PRD, Scope Lock, Adapter Contract, Screen Contract가 충돌하거나 구현 중 제품 방향이 흐려질 때는 Product Spine의 live/scanned/inferred evidence 구분과 interaction-first 원칙을 우선한다.
 
 ---
 

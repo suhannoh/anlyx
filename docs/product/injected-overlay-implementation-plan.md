@@ -8,6 +8,8 @@
 
 **Tech Stack:** Node 22, Vite middleware for local Anlyx assets, TypeScript, browser `fetch`/`XMLHttpRequest` interception, existing Anlyx `ScanResult`.
 
+**Product Alignment:** This plan is governed by [Product Spine](./product-spine.md). The overlay is not a network log. The drawer must make the user's recent app interaction understandable by separating live browser requests from scanned backend paths and inferred framework server-side fetches.
+
 ---
 
 ## Files
@@ -92,3 +94,13 @@
 - [x] Update CLI output so users see the real app URL first and runtime/debug URLs only as secondary details.
 - [x] Add tests for frontend process orchestration and scan fallback.
 - [x] Add tests for injection helper output and production exclusion.
+
+## Task 8: Product Spine Alignment
+
+- [x] Add a Product Spine document that defines Anlyx as an interaction-first flow map.
+- [x] Link PRD and Scope Lock to the Product Spine.
+- [x] Clarify that React SPA compatibility uses manual URLs plus browser-observed requests in v0.1.
+- [x] Keep passive session, saved-item preload, page-view, analytics, health, metrics, and polling requests from replacing the selected main flow.
+- [ ] Add a drawer state for "no primary browser API captured; scanned server-side/page flow may explain this interaction" instead of showing passive account checks as the main result.
+- [ ] Use Next adapter scan/capture data to surface server-side page data fetches as scanned/inferred hints, not live requests.
+- [ ] Add acceptance tests that prove React SPA/manual frontend live browser requests still open the main drawer without any Next.js helper.
