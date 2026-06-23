@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint, test, typecheck, and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: corepack pnpm format
+
+      - name: Lint
+        run: corepack pnpm lint
+
+      - name: Typecheck
+        run: corepack pnpm typecheck
+
+      - name: Test
+        run: corepack pnpm test
+
+      - name: Build packages
+        run: corepack pnpm -r build

@@ -307,6 +307,10 @@ corepack pnpm -r build
 
 패키지 검증은 local build와 pack dry-run으로 확인합니다. 자세한 내용은 [`docs/release/npm-publish-preflight.md`](./docs/release/npm-publish-preflight.md)와 [`docs/release/v0.1-release-runbook.md`](./docs/release/v0.1-release-runbook.md)를 참고합니다.
 
+## 기여하기
+
+[`CONTRIBUTING.md`](./CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md), [`SECURITY.md`](./SECURITY.md), [`Roadmap`](./docs/product/roadmap.md)을 참고하세요.
+
 ## Release Notes
 
 [`docs/release/v0.1.3-release-notes.md`](./docs/release/v0.1.3-release-notes.md)와 [GitHub release](https://github.com/suhannoh/anlyx/releases/tag/v0.1.3)를 참고하세요.

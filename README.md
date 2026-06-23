@@ -313,6 +313,10 @@ corepack pnpm -r build
 
 Release packaging is checked with local build and pack dry-runs. See [`docs/release/npm-publish-preflight.md`](./docs/release/npm-publish-preflight.md) and [`docs/release/v0.1-release-runbook.md`](./docs/release/v0.1-release-runbook.md).
 
+## Contributing
+
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md), [`SECURITY.md`](./SECURITY.md), and the [`Roadmap`](./docs/product/roadmap.md).
+
 ## Release Notes
 
 See [`docs/release/v0.1.3-release-notes.md`](./docs/release/v0.1.3-release-notes.md) and the [GitHub release](https://github.com/suhannoh/anlyx/releases/tag/v0.1.3).

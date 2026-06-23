@@ -2,7 +2,7 @@
   "name": "anlyx-workspace",
   "version": "0.1.3",
   "private": true,
-  "description": "Workspace for Anlyx, visual flow maps for modern web apps.",
+  "description": "Workspace for Anlyx, action-first backend flow maps for Spring Boot and Next.js local apps.",
   "license": "MIT",
   "type": "module",
   "repository": {
