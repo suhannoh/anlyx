@@ -3,20 +3,20 @@
 </p>
 
 <p align="center">
-  <strong>Interaction-first flow maps for modern web apps.</strong>
+  <strong>Action-first backend flow maps for Spring Boot and Next.js local apps.</strong>
 </p>
 
 <p align="center">
   <a href="./README.ko.md">한국어 문서</a>
 </p>
 
-Anlyx shows what your last real frontend action did in the backend.
+Anlyx shows what your latest real frontend action did in the backend:
 
-Anlyx overlays your real local frontend app and shows which backend endpoint, service, repository, database table, capture state, API call, and static analysis evidence belongs to the interaction you just triggered.
+```txt
+Page action -> API -> Controller -> Service -> Repository -> Database -> Response
+```
 
-> Status: v0.1.3 patch release preparation. Actual npm publish requires separate approval.
-
-Anlyx `0.1.0` is planned to be deprecated because it was published with unresolved `workspace:*` dependencies. Anlyx `0.1.1` is planned to be deprecated because the published CLI entrypoint can exit before running commands. The `v0.1.2` git tag already exists, so `0.1.3` is the patch release intended for normal `npm install anlyx` usage after the approved pnpm-based publish.
+It overlays your real local frontend app and connects the API triggered by your last click, submit, or key action to scanned backend code, capture state, confidence, and analysis evidence.
 
 <p align="center">
   <img src="./docs/assets/readme/anlyx-demo.gif" alt="Anlyx demo showing user actions mapped to backend flow diagrams" />
@@ -55,25 +55,24 @@ v0.1 is intentionally limited to Spring Boot + Next.js App Router for Deep Suppo
 
 ## Quick Start
 
-### Install
-
-After the approved 0.1.3 publish:
-
 ```bash
-npm install -D anlyx@0.1.3
+npm install -D anlyx
 npx anlyx init
 npx anlyx dev
 ```
 
-The target Anlyx developer experience is this three-command path: install, initialize, then run `npx anlyx dev`. The dev command should become the single entrypoint that prepares analysis data, starts the Anlyx runtime, opens the real local frontend, and wires the overlay in development.
+Then use your local app normally. Click a button, submit a form, or trigger a keyboard-driven action; Anlyx keeps background traffic quiet and turns the user action request into the main backend flow.
 
-Before publish, use the local workspace:
+`npx anlyx dev` prepares analysis data, starts the Anlyx runtime, opens the real local frontend, and wires the development overlay.
 
-```bash
-corepack pnpm install
-corepack pnpm build
-corepack pnpm --filter anlyx exec anlyx --help
-```
+## How Anlyx Works
+
+1. Scans Spring Boot backend endpoints and code paths.
+2. Discovers Next.js App Router pages.
+3. Captures page states and browser-visible API calls in local development.
+4. Separates user-action requests from background auth, health, and polling traffic.
+5. Matches API calls to scanned backend analysis results.
+6. Renders the matched request as a Flow Drawer with a React Flow diagram, confidence, and evidence.
 
 ### Initialize Config
 
@@ -163,7 +162,7 @@ This writes `.anlyx/report-data.json` using static adapter output only. Pages re
 npx anlyx dev
 ```
 
-The intended path is that `anlyx dev` is the only command users need during local development. It should detect or start the real frontend, keep the app at `frontend.baseUrl`, start the Anlyx runtime at [http://localhost:4777](http://localhost:4777), and open the real app URL.
+`anlyx dev` is the main command for local development. It detects or starts the real frontend, keeps the app at `frontend.baseUrl`, starts the Anlyx runtime at [http://localhost:4777](http://localhost:4777), and opens the real app URL.
 
 In Inject Mode, use the real app URL such as `http://localhost:3000`. The `4777` server stays in the background as the local Anlyx runtime for overlay assets, report data, and the standalone debug viewer.
 
@@ -284,9 +283,9 @@ This is expected when using `--skip-capture`, manual frontend URLs, or routes wi
 
 Confirm the frontend server is running at `frontend.baseUrl`, dynamic routes have `sampleParams`, and login-only pages have a valid capture setup. Use `--skip-capture` for a static scan while debugging capture.
 
-### 0.1.0 workspace dependency issue
+### Package status
 
-Do not use `anlyx@0.1.0`. It was published with unresolved `workspace:*` dependencies. Use `0.1.3` or newer after the approved patch publish.
+Use `anlyx@0.1.3` or newer. Older `0.1.0` and `0.1.1` builds are not recommended. Release packages are verified with pnpm pack dry-runs so workspace dependencies are resolved before publishing.
 
 ## Not Included In v0.1
 
@@ -316,4 +315,4 @@ Release packaging is checked with local build and pack dry-runs. See [`docs/rele
 
 ## Release Notes
 
-The GitHub Release draft for `v0.1.3` is maintained in [`docs/release/v0.1.3-release-notes.md`](./docs/release/v0.1.3-release-notes.md). Use it when creating the tag and release after npm publish verification succeeds.
+See [`docs/release/v0.1.3-release-notes.md`](./docs/release/v0.1.3-release-notes.md) and the [GitHub release](https://github.com/suhannoh/anlyx/releases/tag/v0.1.3).
