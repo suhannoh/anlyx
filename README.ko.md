@@ -309,7 +309,7 @@ corepack pnpm -r build
 
 ## 기여하기
 
-[`CONTRIBUTING.md`](./CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md), [`SECURITY.md`](./SECURITY.md), [`Roadmap`](./docs/product/roadmap.md)을 참고하세요.
+[`CONTRIBUTING.md`](./CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md), [`SECURITY.md`](./SECURITY.md), [`Roadmap`](./docs/product/roadmap.md), [`Adapter Development Guide`](./docs/adapters/adapter-development.md)를 참고하세요.
 
 ## Release Notes
 

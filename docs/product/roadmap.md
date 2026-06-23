@@ -19,6 +19,7 @@ It focuses on:
 
 1. CI and contribution hygiene
    - Pull request CI for format, lint, typecheck, tests, and builds
+   - CLI entrypoint smoke test after package builds
    - Issue and PR templates
    - Contributor, code of conduct, and security docs
 
@@ -37,6 +38,16 @@ It focuses on:
    - Broaden Next.js App Router route discovery fixtures
    - Keep unsupported framework behavior explicit as `unknown`, `pending`, or `failed`
 
+5. Adapter extension path
+   - Document the adapter contract as a contributor-facing guide
+   - Keep new framework support fixture-first
+   - Evaluate a future `defineAdapter()` plugin API before adding many first-party adapters
+
+6. README media
+   - Add a shorter 10-15 second top-level demo loop
+   - Add separate screenshots for Flow Story, Structure, Captures, and Process
+   - Keep empty, pending, and failed states visible in docs so first-time users know what to do next
+
 ## v0.2 Candidates
 
 - Static report export
@@ -44,15 +55,19 @@ It focuses on:
 - PNG or SVG export
 - FastAPI Enhanced Support
 - Express Enhanced Support
+- NestJS Enhanced Support
 - React Router Enhanced Support
+- Adapter development guide and plugin API
 - Impact View
 - Advanced Replay
+- Incremental scan for large projects
 - Stronger cache, external API, and event nodes
 - Prisma, TypeORM, or SQLAlchemy DB connection support
 
 ## v0.3 Candidates
 
 - Java Agent runtime tracing
+- Optional OpenTelemetry trace correlation
 - PR Flow Diff
 - GitHub Actions report generation
 - Adapter SDK

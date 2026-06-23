@@ -315,7 +315,7 @@ Release packaging is checked with local build and pack dry-runs. See [`docs/rele
 
 ## Contributing
 
-See [`CONTRIBUTING.md`](./CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md), [`SECURITY.md`](./SECURITY.md), and the [`Roadmap`](./docs/product/roadmap.md).
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md), [`SECURITY.md`](./SECURITY.md), the [`Roadmap`](./docs/product/roadmap.md), and the [`Adapter Development Guide`](./docs/adapters/adapter-development.md).
 
 ## Release Notes
 

@@ -23,6 +23,8 @@ Basic Support includes:
 
 Please check [`docs/product/v0.1-scope-lock.md`](./docs/product/v0.1-scope-lock.md) before adding framework support or changing product behavior.
 
+For new framework work, start with the [`Adapter Development Guide`](./docs/adapters/adapter-development.md). New adapters should be fixture-first and confidence-aware.
+
 ## Development Setup
 
 ```bash
@@ -51,6 +53,7 @@ corepack pnpm -r build
 - `packages/adapter-openapi`: OpenAPI import support
 - `packages/capture`: capture and route matching utilities
 - `docs/contracts`: data, config, and adapter contracts
+- `docs/adapters/adapter-development.md`: guide for future framework adapters
 - `docs/product`: PRD, scope lock, and product direction
 - `fixtures`: sample projects and expected report output
 
