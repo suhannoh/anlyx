@@ -23,12 +23,12 @@ describe("FlowDrawer", () => {
       />
     );
 
-    expect(screen.getByText("No primary API captured")).toBeTruthy();
+    expect(screen.getByText("No action API yet")).toBeTruthy();
     expect(screen.getByText("Clicked Login")).toBeTruthy();
     expect(screen.getByText("button.login")).toBeTruthy();
     expect(
       screen.getByText(
-        "Only background account/auth checks were observed. They stay in Recent API events and do not replace the main flow."
+        "Only background session checks were detected. They are hidden from the main flow."
       )
     ).toBeTruthy();
 

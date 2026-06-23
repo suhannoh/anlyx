@@ -105,13 +105,12 @@ function NoPrimaryRequest({ latestAction }: { latestAction: OverlayAction }): JS
   return (
     <Card className="anlyx-no-primary-card">
       <div>
-        <Badge tone="amber">No primary API captured</Badge>
+        <Badge tone="amber">No action API yet</Badge>
         <h3>{formatAction(latestAction)}</h3>
         <p>{latestAction.selector ?? "No stable selector captured"}</p>
       </div>
       <div className="anlyx-no-primary-card__note">
-        Only background account/auth checks were observed. They stay in Recent API events and do
-        not replace the main flow.
+        Only background session checks were detected. They are hidden from the main flow.
       </div>
     </Card>
   );
