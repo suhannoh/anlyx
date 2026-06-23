@@ -86,6 +86,7 @@ Rules:
 - `ManualFrontendAdapter` MUST read `frontend.urls` and create one `PageStoryboard` per URL.
 - Manual page storyboards MAY be captured by `CaptureAdapter`.
 - OpenAPI-only backend plus manual frontend is the official v0.1 Basic Support path.
+- React SPA projects, including Vite, CRA, and custom React Router apps, MUST use `frontend.type = "manual"` in v0.1. This keeps React compatibility through explicit URLs and browser-observed API events without adding React Router Deep Support.
 - React Router Deep Support MUST NOT be added in v0.1.
 
 ## Capture Config
@@ -170,6 +171,7 @@ Rules:
 - Analysis or scan failures MUST be reported clearly and MUST NOT be hidden behind a blank overlay.
 - Next.js users SHOULD use `AnlyxDevOverlay` from `anlyx/next` to render the local overlay script during development.
 - `AnlyxDevOverlay` MUST render nothing when `NODE_ENV = "production"`.
+- Non-Next React users MAY inject `/_anlyx/overlay.js` with a development-only raw script tag or their app's local HTML/template mechanism. This is a supported local-development path for React SPA compatibility and MUST NOT require Next.js.
 - Browser-observed API events caused by recent user actions SHOULD become the selected main flow automatically.
 - Background events such as page-load effects, health checks, and polling SHOULD be recorded but MUST NOT automatically open the overlay or replace the selected main flow.
 
@@ -258,3 +260,36 @@ export default defineConfig({
 ```
 
 In this example, `ManualFrontendAdapter.scanPages()` MUST convert `/`, `/dashboard`, and `/items` into `PageStoryboard[]` entries. Because manual URLs do not identify source files, their `filePath` fields MUST be omitted unless a future explicit mapping feature is added.
+
+## Spring Boot + React SPA Example
+
+```ts
+import { defineConfig } from "anlyx";
+
+export default defineConfig({
+  projectName: "React SPA",
+
+  backend: {
+    type: "spring",
+    sourceDir: "./backend/src/main/java",
+    baseUrl: "http://localhost:8080"
+  },
+
+  frontend: {
+    type: "manual",
+    baseUrl: "http://localhost:5173",
+    urls: ["/", "/dashboard", "/items/123"]
+  },
+
+  server: {
+    port: 4777,
+    mode: "inject"
+  },
+
+  dev: {
+    command: "npm run dev"
+  }
+});
+```
+
+In this example, Anlyx does not infer React Router source routes. The explicit `urls` provide page/storyboard coverage, while the injected overlay captures browser `fetch` and `XMLHttpRequest` calls caused by real user actions in the running React app.

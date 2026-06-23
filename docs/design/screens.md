@@ -13,7 +13,7 @@ The primary experience is:
 1. The developer runs the real frontend app, usually at `frontend.baseUrl`.
 2. The developer runs `anlyx dev`, usually at `http://localhost:4777`.
 3. `localhost:4777` serves Anlyx runtime assets, report data, and the standalone debug viewer.
-4. The developer adds the `AnlyxDevOverlay` helper from `anlyx/next` to the real frontend app during local development. Raw script injection remains a fallback/debug path.
+4. Next.js App Router users add the `AnlyxDevOverlay` helper from `anlyx/next` to the real frontend app during local development. Non-Next React apps may use a development-only raw script tag or equivalent local HTML/template injection for `/_anlyx/overlay.js`.
 5. When the developer clicks a real app control and it triggers an API request, Anlyx opens a right-side Flow Drawer for the matched endpoint.
 
 The standalone viewer remains available as a fallback/debug surface. It is no longer the default product experience in Inject Mode.
@@ -45,6 +45,7 @@ Inject Mode MUST NOT:
 - Mutate app requests, responses, local storage, cookies, or application state
 - Hide failed, pending, unknown, or unmatched analysis states
 - Claim runtime server tracing; collected events are browser-observed local development events only
+- Require Next.js for the injected browser overlay; React SPA projects must still work through explicit manual URLs and browser-observed API events
 
 ## Flow Drawer
 
@@ -59,6 +60,7 @@ Flow Drawer MUST include:
 - The most recent user action that triggered the request when it can be observed, such as a clicked button, link, tab, form submit, or keyboard activation
 - Short-lived user action context preserved across client navigation or full page reload so a clicked link/card can still explain the first API calls on the destination page
 - Last matched API event with method, path, status, and latency when available
+- Passive implementation traffic, such as session probes, saved-item preloads, page-view tracking, health checks, analytics, metrics, and polling, should remain observable in Recent API events but MUST NOT steal the selected main flow from a user's direct action
 - Status meaning for common local-development states, especially `401`/`403` login or permission gates and `5xx` server failures
 - Matched endpoint label
 - Main Flow path using scanned `EndpointFlow.mainPath`, rendered as an actual React Flow node-edge graph
@@ -86,6 +88,7 @@ Flow Drawer SHOULD use a wide, visual inspection layout inspired by modern Sheet
 - Evidence and metadata collapsed into small sections rather than always-open large panels
 - Evidence inside flow nodes should be collapsed by default so the chain is visible before detailed proof text
 - Unmatched requests and true failures should render actionable diagnostic cards with a short cause and next checks, not only a status sentence
+- Framework server-side fetches, such as Next.js Server Component data loading, MUST be labeled as scanned or inferred until a real server runtime bridge reports them. They MUST NOT be presented as browser-live requests.
 
 ## API Event Timeline
 

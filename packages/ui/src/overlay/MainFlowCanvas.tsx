@@ -103,8 +103,8 @@ export function MainFlowCanvas({
       </div>
       <p className="anlyx-flow-rf-note">
         Anlyx mapped this browser-visible request to the scanned backend flow. Muted nodes are
-        known code paths; server-side Next.js fetches require the scanned path until a server
-        runtime bridge is enabled.
+        known code paths; framework server-side fetches, such as Next.js server component data
+        loading, require the scanned path until a server runtime bridge is enabled.
       </p>
     </section>
   );
