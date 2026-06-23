@@ -2,7 +2,7 @@
 
 ## Project Status
 
-Anlyx is currently in the v0.1 planning and design-docs phase. Product implementation MUST NOT begin until the user explicitly approves implementation work.
+Anlyx has moved from the v0.1 planning/design-docs phase into approved v0.1 implementation. Product implementation is allowed when it stays inside the user-approved PR scope and the locked v0.1 boundaries in `docs/product/v0.1-scope-lock.md`.
 
 ## Required Reading
 
@@ -31,7 +31,7 @@ Before implementation work, every Agent MUST read:
 
 ## Implementation Guardrails
 
-- Do not create product packages, CLI, UI, adapters, scanners, or tests during the documentation phase.
+- Do not add product packages, CLI surfaces, UI surfaces, adapters, scanners, or tests outside the approved v0.1 scope.
 - During implementation phases, keep changes scoped and verify against fixture expected output.
 - Failed captures and unknown analysis MUST be represented in data and UI. Do not hide them.
 - Fixture expected output mismatch means the implementation is not complete.

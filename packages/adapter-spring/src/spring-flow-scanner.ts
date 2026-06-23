@@ -70,8 +70,22 @@ type MainStep = {
   confidence: ConfidenceLevel;
 };
 
-const DEFAULT_MAX_MAIN_DEPTH = 4;
+const DEFAULT_MAX_MAIN_DEPTH = 5;
 const DEFAULT_MAX_SUB_DEPTH = 1;
+
+function hasRoomForRepositoryAndDatabase(
+  currentMainLength: number,
+  maxMainPathLength: number
+): boolean {
+  return currentMainLength + 2 <= maxMainPathLength;
+}
+
+function hasRoomForServiceRepositoryAndDatabase(
+  currentMainLength: number,
+  maxMainPathLength: number
+): boolean {
+  return currentMainLength + 3 <= maxMainPathLength;
+}
 
 export async function scanSpringFlows(
   options: SpringFlowScannerOptions,
@@ -132,15 +146,14 @@ function buildEndpointFlow(
   }
 
   const controllerMethod = findMethod(controller, endpoint.handler);
-  const serviceStep = resolveFirstCallStep({
+  const servicePath = findControllerServicePath({
     ownerClass: controller,
     method: controllerMethod,
     index,
-    expectedKind: "service",
-    unknownKind: "service",
-    nodeType: "service",
-    edgeKind: "main"
+    currentMainLength: mainPath.length,
+    maxMainPathLength: maxMainDepth + 1
   });
+  const { serviceStep, persistencePath } = servicePath;
 
   if (!serviceStep) {
     return { endpointId: endpoint.id, nodes, edges, mainPath, subFlows };
@@ -162,7 +175,8 @@ function buildEndpointFlow(
       serviceMethod,
       serviceStep.node.id,
       index,
-      maxSubDepth
+      maxSubDepth,
+      new Set(persistencePath.map((step) => step.node.id))
     );
 
     if (subFlow.nodes.length > 0) {
@@ -170,23 +184,11 @@ function buildEndpointFlow(
     }
   }
 
-  const repositoryStep = serviceClass
-    ? resolveFirstCallStep({
-        ownerClass: serviceClass,
-        method: serviceMethod,
-        index,
-        expectedKind: "repository",
-        unknownKind: "repository",
-        nodeType: "repository",
-        edgeKind: "main"
-      })
-    : undefined;
-
-  if (!repositoryStep) {
+  if (persistencePath.length === 0) {
     return { endpointId: endpoint.id, nodes, edges, mainPath, subFlows };
   }
 
-  addMainStep(serviceStep.node, repositoryStep, nodes, edges, mainPath);
+  const repositoryStep = addMainSteps(serviceStep.node, persistencePath, nodes, edges, mainPath);
 
   if (mainPath.length > maxMainDepth + 1 || repositoryStep.node.type !== "repository") {
     return { endpointId: endpoint.id, nodes, edges, mainPath, subFlows };
@@ -202,20 +204,19 @@ function buildEndpointFlow(
   return { endpointId: endpoint.id, nodes, edges, mainPath, subFlows };
 }
 
-function resolveFirstCallStep(options: {
+function findControllerServicePath(options: {
   ownerClass: JavaClass;
   method: JavaMethod | undefined;
   index: Map<string, JavaClass>;
-  expectedKind: JavaKind;
-  unknownKind: "service" | "repository";
-  nodeType: FlowNode["type"];
-  edgeKind: FlowEdge["kind"];
-}): MainStep | undefined {
+  currentMainLength: number;
+  maxMainPathLength: number;
+}): { serviceStep?: MainStep; persistencePath: MainStep[] } {
   if (!options.method) {
-    return undefined;
+    return { persistencePath: [] };
   }
 
   const calls = readFieldCalls(options.method.body);
+  let fallbackStep: MainStep | undefined;
 
   for (const call of calls) {
     const field = options.ownerClass.fields.find((candidate) => candidate.name === call.fieldName);
@@ -224,37 +225,193 @@ function resolveFirstCallStep(options: {
       continue;
     }
 
-    const resolution = resolveType(field.type, options.expectedKind, options.index);
+    const serviceStep = resolveCallStep({
+      field,
+      methodName: call.methodName,
+      index: options.index,
+      expectedKind: "service",
+      unknownKind: "service",
+      nodeType: "service",
+      edgeKind: "main"
+    });
 
-    if (resolution.status === "unknown") {
-      if (!isLikelyKind(field.type, options.expectedKind)) {
-        continue;
-      }
-
-      return {
-        node: createUnknownNode(options.unknownKind, resolution.typeName, resolution.confidence),
-        edgeKind: options.edgeKind,
-        confidence: resolution.confidence
-      };
-    }
-
-    if (resolution.javaClass.kind !== options.expectedKind) {
+    if (!serviceStep) {
       continue;
     }
 
+    if (!fallbackStep) {
+      fallbackStep = serviceStep;
+    }
+
+    if (serviceStep.node.type !== "service") {
+      return { serviceStep, persistencePath: [] };
+    }
+
+    if (
+      !hasRoomForServiceRepositoryAndDatabase(options.currentMainLength, options.maxMainPathLength)
+    ) {
+      continue;
+    }
+
+    const serviceClass = getClassFromNode(serviceStep.node, options.index);
+    const serviceMethodName = readClassMethodName(serviceStep.node);
+    const serviceMethod = serviceClass ? findMethod(serviceClass, serviceMethodName) : undefined;
+
+    if (!serviceClass || !serviceMethod) {
+      continue;
+    }
+
+    const persistencePath = findPersistencePath({
+      ownerClass: serviceClass,
+      method: serviceMethod,
+      index: options.index,
+      visited: new Set([visitedKey(serviceClass, serviceMethodName)]),
+      currentMainLength: options.currentMainLength + 1,
+      maxMainPathLength: options.maxMainPathLength
+    });
+
+    if (persistencePath.some(isRepositoryLikeStep)) {
+      return { serviceStep, persistencePath };
+    }
+  }
+
+  return fallbackStep
+    ? { serviceStep: fallbackStep, persistencePath: [] }
+    : { persistencePath: [] };
+}
+
+function findPersistencePath(options: {
+  ownerClass: JavaClass;
+  method: JavaMethod | undefined;
+  index: Map<string, JavaClass>;
+  visited: Set<string>;
+  currentMainLength: number;
+  maxMainPathLength: number;
+}): MainStep[] {
+  if (!options.method || options.currentMainLength >= options.maxMainPathLength) {
+    return [];
+  }
+
+  const calls = readFieldCalls(options.method.body);
+  let fallbackStep: MainStep | undefined;
+
+  for (const call of calls) {
+    const field = options.ownerClass.fields.find((candidate) => candidate.name === call.fieldName);
+
+    if (!field) {
+      continue;
+    }
+
+    const repositoryStep = resolveCallStep({
+      field,
+      methodName: call.methodName,
+      index: options.index,
+      expectedKind: "repository",
+      unknownKind: "repository",
+      nodeType: "repository",
+      edgeKind: "main"
+    });
+
+    if (repositoryStep) {
+      if (!hasRoomForRepositoryAndDatabase(options.currentMainLength, options.maxMainPathLength)) {
+        continue;
+      }
+
+      return [repositoryStep];
+    }
+
+    const serviceStep = resolveCallStep({
+      field,
+      methodName: call.methodName,
+      index: options.index,
+      expectedKind: "service",
+      unknownKind: "service",
+      nodeType: "service",
+      edgeKind: "main"
+    });
+
+    if (!serviceStep) {
+      continue;
+    }
+
+    if (!fallbackStep) {
+      fallbackStep = serviceStep;
+    }
+
+    if (
+      serviceStep.node.type !== "service" ||
+      !hasRoomForServiceRepositoryAndDatabase(options.currentMainLength, options.maxMainPathLength)
+    ) {
+      continue;
+    }
+
+    const serviceClass = getClassFromNode(serviceStep.node, options.index);
+    const serviceMethodName = readClassMethodName(serviceStep.node);
+    const serviceMethod = serviceClass ? findMethod(serviceClass, serviceMethodName) : undefined;
+    const key = serviceClass ? visitedKey(serviceClass, serviceMethodName) : undefined;
+
+    if (!serviceClass || !serviceMethod || !key || options.visited.has(key)) {
+      continue;
+    }
+
+    const nestedPath = findPersistencePath({
+      ownerClass: serviceClass,
+      method: serviceMethod,
+      index: options.index,
+      visited: new Set([...options.visited, key]),
+      currentMainLength: options.currentMainLength + 1,
+      maxMainPathLength: options.maxMainPathLength
+    });
+
+    if (nestedPath.some(isRepositoryLikeStep)) {
+      return [serviceStep, ...nestedPath];
+    }
+  }
+
+  return fallbackStep ? [fallbackStep] : [];
+}
+
+function isRepositoryLikeStep(step: MainStep): boolean {
+  return step.node.type === "repository" || step.node.id.startsWith("unknown:repository:");
+}
+
+function resolveCallStep(options: {
+  field: JavaField;
+  methodName: string;
+  index: Map<string, JavaClass>;
+  expectedKind: JavaKind;
+  unknownKind: "service" | "repository";
+  nodeType: FlowNode["type"];
+  edgeKind: FlowEdge["kind"];
+}): MainStep | undefined {
+  const resolution = resolveType(options.field.type, options.expectedKind, options.index);
+
+  if (resolution.status === "unknown") {
+    if (!isLikelyKind(options.field.type, options.expectedKind)) {
+      return undefined;
+    }
+
     return {
-      node: createClassNode(
-        resolution.javaClass,
-        options.nodeType,
-        call.methodName,
-        resolution.confidence
-      ),
+      node: createUnknownNode(options.unknownKind, resolution.typeName, resolution.confidence),
       edgeKind: options.edgeKind,
       confidence: resolution.confidence
     };
   }
 
-  return undefined;
+  if (resolution.javaClass.kind !== options.expectedKind) {
+    return undefined;
+  }
+
+  return {
+    node: createClassNode(
+      resolution.javaClass,
+      options.nodeType,
+      options.methodName,
+      resolution.confidence
+    ),
+    edgeKind: options.edgeKind,
+    confidence: resolution.confidence
+  };
 }
 
 function isLikelyKind(typeName: string, expectedKind: JavaKind): boolean {
@@ -274,7 +431,8 @@ function buildServiceSubFlow(
   serviceMethod: JavaMethod,
   parentNodeId: string,
   index: Map<string, JavaClass>,
-  maxSubDepth: number
+  maxSubDepth: number,
+  mainPathNodeIds: Set<string> = new Set()
 ): SubFlow {
   const nodes: FlowNode[] = [];
   const edges: FlowEdge[] = [];
@@ -312,6 +470,10 @@ function buildServiceSubFlow(
       resolved.status === "resolved"
         ? createSubFlowNode(resolved.javaClass, call.methodName, resolved.confidence)
         : createUnknownNode("helper", field.type, resolved.confidence);
+
+    if (mainPathNodeIds.has(node.id)) {
+      return;
+    }
 
     addUniqueNode(nodes, node);
     edges.push({
@@ -771,6 +933,29 @@ function addMainStep(
   });
 }
 
+function addMainSteps(
+  fromNode: FlowNode,
+  steps: MainStep[],
+  nodes: FlowNode[],
+  edges: FlowEdge[],
+  mainPath: string[]
+): MainStep {
+  if (steps.length === 0) {
+    throw new Error("Cannot add an empty main path");
+  }
+
+  let currentNode = fromNode;
+  let lastStep = steps[0]!;
+
+  for (const step of steps) {
+    addMainStep(currentNode, step, nodes, edges, mainPath);
+    currentNode = step.node;
+    lastStep = step;
+  }
+
+  return lastStep;
+}
+
 function evidenceLabelForType(type: FlowNode["type"]): string {
   switch (type) {
     case "controller":
@@ -799,6 +984,10 @@ function getClassFromNode(node: FlowNode, index: Map<string, JavaClass>): JavaCl
 
 function readClassMethodName(node: FlowNode): string | undefined {
   return typeof node.metadata?.methodName === "string" ? node.metadata.methodName : undefined;
+}
+
+function visitedKey(javaClass: JavaClass, methodName: string | undefined): string {
+  return `${javaClass.className}#${methodName ?? "<unknown>"}`;
 }
 
 function readAnnotationBlockBefore(content: string, index: number): string {

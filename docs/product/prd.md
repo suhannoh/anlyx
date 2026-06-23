@@ -61,11 +61,11 @@ PRD, Scope Lock, Adapter Contract, Screen Contract가 충돌하거나 구현 중
 
 # 1. 프로젝트 개요
 
-**Anlyx**는 실제 로컬 프론트엔드 앱 위에 얇은 개발자 오버레이를 올리고, 사용자가 앱에서 버튼이나 컴포넌트를 눌러 발생시킨 API 요청이 어떤 백엔드 엔드포인트, 서비스 레이어, Repository, 데이터베이스 흐름으로 이어지는지 즉시 보여주는 개발자 도구다.
+**Anlyx**는 실제 로컬 프론트엔드 앱 위에 얇은 개발자 오버레이를 올리고, 사용자가 앱에서 버튼이나 컴포넌트를 눌러 발생시킨 API 요청을 브라우저에서 관찰한 뒤, 그 요청이 스캔된 백엔드 엔드포인트, 서비스 레이어, Repository, 데이터베이스 흐름과 어떻게 연결되는지 즉시 보여주는 개발자 도구다.
 
 개발자는 Anlyx를 통해 별도의 목록 화면에서 엔드포인트를 고르는 대신, 평소처럼 로컬 앱을 사용한다. Anlyx는 브라우저에서 관찰한 API 요청을 스캔된 정적 분석 결과와 매칭하고, 우측 Flow Drawer에서 해당 요청이 어떤 Controller, Service, Repository, Database Table, Frontend Page와 연결되는지 보여준다.
 
-또한 프론트 화면에서 시작된 요청이 백엔드와 데이터베이스를 거쳐 다시 화면으로 돌아오는 흐름을 애니메이션으로 재생하여, 정적인 문서가 아니라 **“실제 앱에서 바로 열리는 애플리케이션 구조 지도”**처럼 보여주는 것을 목표로 한다.
+또한 프론트 화면에서 시작된 브라우저 요청과 스캔된 백엔드 경로를 애니메이션으로 재생하여, 정적인 문서가 아니라 **“실제 앱에서 바로 열리는 애플리케이션 구조 지도”**처럼 보여주는 것을 목표로 한다. v0.1은 런타임 트레이서가 아니므로 브라우저 관찰값, 정적 스캔 결과, 추론 결과를 명확히 구분한다.
 
 ---
 
@@ -96,13 +96,13 @@ Anlyx — Interaction-first flow maps for modern web apps.
 ## 2.3 한 줄 설명
 
 ```txt
-Anlyx turns real app interactions, APIs, services, and database flows into animated evidence maps.
+Anlyx turns real app interactions and scanned backend paths into animated evidence maps.
 ```
 
 ## 2.4 한국어 설명
 
 ```txt
-Anlyx는 실제 프론트 앱 조작에서 발생한 API를 백엔드 엔드포인트, 서비스 레이어, 데이터베이스 흐름까지 이어 보여주는 개발자 도구다.
+Anlyx는 실제 프론트 앱 조작에서 발생한 API를 브라우저에서 관찰하고, 스캔된 백엔드 엔드포인트, 서비스 레이어, 데이터베이스 흐름과 연결해 보여주는 개발자 도구다.
 ```
 
 ---
@@ -501,7 +501,7 @@ Sub Flow:
 기본값:
 
 ```txt
-Main Flow depth: 4
+Main Flow depth: 5
 Sub Flow depth: 1
 Utility depth: 0 또는 1
 동일 클래스 내부 private method: 기본 접힘
@@ -1828,7 +1828,7 @@ Modern open source developer tool landing page hero image. A beautiful architect
 
 Anlyx는 현대 웹 애플리케이션의 구조를 시각적으로 이해하기 위한 개발자 도구다.
 
-목표는 단순히 엔드포인트를 나열하는 것이 아니라, 프론트 페이지에서 출발한 요청이 백엔드 엔드포인트, 서비스 레이어, Repository, 데이터베이스를 거쳐 다시 화면으로 돌아오는 흐름을 보기 좋은 플로우 맵과 스토리보드로 보여주는 것이다.
+목표는 단순히 엔드포인트를 나열하는 것이 아니라, 프론트 페이지에서 출발한 브라우저 요청을 스캔된 백엔드 엔드포인트, 서비스 레이어, Repository, 데이터베이스 경로와 연결해 보기 좋은 플로우 맵과 스토리보드로 보여주는 것이다.
 
 v0.1은 Spring Boot + Next.js 프로젝트를 가장 완성도 있게 지원하는 데 집중한다.
 다른 백엔드는 OpenAPI 기반 Basic Support만 제공한다.

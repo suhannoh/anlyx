@@ -139,6 +139,185 @@ describe("Spring Boot Flow Scanner", () => {
     ]);
   });
 
+  it("mainPath follows nested service calls before the repository", async () => {
+    await writeBenefitFlow({
+      extraServiceFields: "private final BenefitLookupService benefitLookupService;",
+      serviceBody: `
+        public BenefitDetailResponse getBenefitDetail(Long id) {
+          return benefitLookupService.loadDetail(id);
+        }
+      `
+    });
+    await writeJavaFile(
+      "BenefitLookupService.java",
+      `
+        @Service
+        class BenefitLookupService {
+          private final BenefitRepository benefitRepository;
+
+          public BenefitDetailResponse loadDetail(Long id) {
+            Benefit benefit = benefitRepository.findById(id).orElseThrow();
+            return null;
+          }
+        }
+      `
+    );
+
+    const [flow] = await scanFlows();
+
+    expect(flow?.mainPath).toEqual([
+      "endpoint:GET:/api/public/benefits/{id}",
+      "controller:PublicBenefitController",
+      "service:PublicBenefitService",
+      "service:BenefitLookupService",
+      "repository:BenefitRepository",
+      "database:benefits"
+    ]);
+    expect(flow?.subFlows[0]?.nodes).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "service:BenefitLookupService" })])
+    );
+  });
+
+  it("mainPath skips service helper calls that do not lead to persistence", async () => {
+    await writeBenefitFlow({
+      extraServiceFields: "private final BenefitAuditService benefitAuditService;",
+      serviceBody: `
+        public BenefitDetailResponse getBenefitDetail(Long id) {
+          benefitAuditService.recordView(id);
+          Benefit benefit = benefitRepository.findById(id).orElseThrow();
+          return benefitDisplayMapper.toDetail(benefit);
+        }
+      `
+    });
+    await writeJavaFile(
+      "BenefitAuditService.java",
+      `
+        @Service
+        class BenefitAuditService {
+          public void recordView(Long id) {
+          }
+        }
+      `
+    );
+
+    const [flow] = await scanFlows();
+
+    expect(flow?.mainPath).toEqual([
+      "endpoint:GET:/api/public/benefits/{id}",
+      "controller:PublicBenefitController",
+      "service:PublicBenefitService",
+      "repository:BenefitRepository",
+      "database:benefits"
+    ]);
+    expect(flow?.mainPath).not.toContain("service:BenefitAuditService");
+  });
+
+  it("mainPath skips nested service helper chains that do not lead to persistence", async () => {
+    await writeBenefitFlow({
+      extraServiceFields: "private final BenefitAuditService benefitAuditService;",
+      serviceBody: `
+        public BenefitDetailResponse getBenefitDetail(Long id) {
+          benefitAuditService.recordView(id);
+          Benefit benefit = benefitRepository.findById(id).orElseThrow();
+          return benefitDisplayMapper.toDetail(benefit);
+        }
+      `
+    });
+    await writeJavaFile(
+      "BenefitAuditService.java",
+      `
+        @Service
+        class BenefitAuditService {
+          private final AuditSinkService auditSinkService;
+
+          public void recordView(Long id) {
+            auditSinkService.write(id);
+          }
+        }
+      `
+    );
+    await writeJavaFile(
+      "AuditSinkService.java",
+      `
+        @Service
+        class AuditSinkService {
+          public void write(Long id) {
+          }
+        }
+      `
+    );
+
+    const [flow] = await scanFlows();
+
+    expect(flow?.mainPath).toEqual([
+      "endpoint:GET:/api/public/benefits/{id}",
+      "controller:PublicBenefitController",
+      "service:PublicBenefitService",
+      "repository:BenefitRepository",
+      "database:benefits"
+    ]);
+    expect(flow?.mainPath).not.toContain("service:BenefitAuditService");
+    expect(flow?.mainPath).not.toContain("service:AuditSinkService");
+  });
+
+  it("mainPath skips controller service helpers that do not lead to persistence", async () => {
+    await writeBenefitFlow({
+      extraControllerFields: "private final RequestAuditService requestAuditService;",
+      controllerBody: `
+        @GetMapping("/{id}")
+        public BenefitDetailResponse getDetail(Long id) {
+          requestAuditService.record(id);
+          return publicBenefitService.getBenefitDetail(id);
+        }
+      `
+    });
+    await writeJavaFile(
+      "RequestAuditService.java",
+      `
+        @Service
+        class RequestAuditService {
+          public void record(Long id) {
+          }
+        }
+      `
+    );
+
+    const [flow] = await scanFlows();
+
+    expect(flow?.mainPath).toEqual([
+      "endpoint:GET:/api/public/benefits/{id}",
+      "controller:PublicBenefitController",
+      "service:PublicBenefitService",
+      "repository:BenefitRepository",
+      "database:benefits"
+    ]);
+    expect(flow?.mainPath).not.toContain("service:RequestAuditService");
+  });
+
+  it("mainPath preserves unresolved controller service gaps before later persistence", async () => {
+    await writeBenefitFlow({
+      extraControllerFields: "private final MissingAuditService missingAuditService;",
+      controllerBody: `
+        @GetMapping("/{id}")
+        public BenefitDetailResponse getDetail(Long id) {
+          missingAuditService.record(id);
+          return publicBenefitService.getBenefitDetail(id);
+        }
+      `
+    });
+
+    const [flow] = await scanFlows();
+
+    expect(flow?.mainPath).toEqual([
+      "endpoint:GET:/api/public/benefits/{id}",
+      "controller:PublicBenefitController",
+      "unknown:service:MissingAuditService"
+    ]);
+    expect(flow?.mainPath).not.toContain("service:PublicBenefitService");
+    expect(flow?.mainPath).not.toContain("repository:BenefitRepository");
+    expect(flow?.mainPath).not.toContain("database:benefits");
+  });
+
   it("main edges and db edge are created", async () => {
     await writeBenefitFlow();
 
@@ -329,6 +508,57 @@ describe("Spring Boot Flow Scanner", () => {
     expect(flow?.mainPath.length).toBeLessThanOrEqual(3);
   });
 
+  it("mainPath reserves depth for repository and database together", async () => {
+    await writeBenefitFlow({
+      extraServiceFields: "private final BenefitStepTwoService benefitStepTwoService;",
+      serviceBody: `
+        public BenefitDetailResponse getBenefitDetail(Long id) {
+          return benefitStepTwoService.load(id);
+        }
+      `
+    });
+    await writeJavaFile(
+      "BenefitStepTwoService.java",
+      `
+        @Service
+        class BenefitStepTwoService {
+          private final BenefitStepThreeService benefitStepThreeService;
+
+          public BenefitDetailResponse load(Long id) {
+            return benefitStepThreeService.load(id);
+          }
+        }
+      `
+    );
+    await writeJavaFile(
+      "BenefitStepThreeService.java",
+      `
+        @Service
+        class BenefitStepThreeService {
+          private final BenefitRepository benefitRepository;
+
+          public BenefitDetailResponse load(Long id) {
+            Benefit benefit = benefitRepository.findById(id).orElseThrow();
+            return null;
+          }
+        }
+      `
+    );
+
+    const [flow] = await scanFlows();
+
+    expect(flow?.mainPath.length).toBeLessThanOrEqual(6);
+    expect(flow?.mainPath).toEqual([
+      "endpoint:GET:/api/public/benefits/{id}",
+      "controller:PublicBenefitController",
+      "service:PublicBenefitService"
+    ]);
+    expect(flow?.mainPath).not.toContain("service:BenefitStepTwoService");
+    expect(flow?.mainPath).not.toContain("service:BenefitStepThreeService");
+    expect(flow?.mainPath).not.toContain("repository:BenefitRepository");
+    expect(flow?.mainPath).not.toContain("database:benefits");
+  });
+
   it("createSpringBackendAdapter scanFlows works", async () => {
     await writeBenefitFlow();
     const adapter = createSpringBackendAdapter({ sourceDir });
@@ -392,6 +622,9 @@ describe("Spring Boot Flow Scanner", () => {
       tableAnnotation?: string;
       serviceFieldType?: string;
       serviceClassDeclaration?: string;
+      extraControllerFields?: string;
+      controllerBody?: string;
+      extraServiceFields?: string;
       serviceBody?: string;
     } = {}
   ): Promise<void> {
@@ -407,6 +640,14 @@ describe("Spring Boot Flow Scanner", () => {
           return benefitDisplayMapper.toDetail(benefit);
         }
       `;
+    const controllerBody =
+      options.controllerBody ??
+      `
+        @GetMapping("/{id}")
+        public BenefitDetailResponse getDetail(Long id) {
+          return publicBenefitService.getBenefitDetail(id);
+        }
+      `;
 
     await writeJavaFile(
       "PublicBenefitController.java",
@@ -415,11 +656,9 @@ describe("Spring Boot Flow Scanner", () => {
         @RequestMapping("/api/public/benefits")
         class PublicBenefitController {
           private final ${serviceFieldType} publicBenefitService;
+          ${options.extraControllerFields ?? ""}
 
-          @GetMapping("/{id}")
-          public BenefitDetailResponse getDetail(Long id) {
-            return publicBenefitService.getBenefitDetail(id);
-          }
+          ${controllerBody}
         }
       `
     );
@@ -432,6 +671,7 @@ describe("Spring Boot Flow Scanner", () => {
           private final BenefitDisplayMapper benefitDisplayMapper;
           private final DateRangeUtil dateRangeUtil;
           private final PublicVisibilityPolicy visibilityPolicy;
+          ${options.extraServiceFields ?? ""}
 
           ${serviceBody}
         }
