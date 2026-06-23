@@ -119,9 +119,10 @@ type HarnessElement = {
   setAttribute(name: string, value: string): void;
 };
 
-function createOverlayHarness() {
+function createOverlayHarness(options: { report?: ScanResult; path?: string } = {}) {
   const timers: TimerCallback[] = [];
   const order: string[] = [];
+  let drawerProps: Record<string, unknown> | null = null;
   const elementsById = new Map<string, HarnessElement>();
   const documentListeners = new Map<string, Array<(event: Record<string, unknown>) => void>>();
   const windowListeners = new Map<string, Array<(event: Record<string, unknown>) => void>>();
@@ -255,12 +256,17 @@ function createOverlayHarness() {
 
   const window = {
     document,
-    location: { href: "http://localhost:3000/", origin: "http://localhost:3000" },
+    location: {
+      href: `http://localhost:3000${options.path ?? "/"}`,
+      origin: "http://localhost:3000",
+      pathname: options.path ?? "/"
+    },
     innerHeight: 900,
     innerWidth: 1440,
     MutationObserver: FakeMutationObserver,
     XMLHttpRequest: FakeXmlHttpRequest,
-    __ANLYX_RENDER_FLOW_DRAWER__() {
+    __ANLYX_RENDER_FLOW_DRAWER__(_container: unknown, props: Record<string, unknown>) {
+      drawerProps = props;
       order.push("drawer-render");
     },
     fetch: async (input: string, init?: { method?: string }) => {
@@ -270,7 +276,7 @@ function createOverlayHarness() {
         ok: true,
         status: 200,
         async json() {
-          return scanResult;
+          return options.report ?? scanResult;
         }
       };
     },
@@ -358,7 +364,16 @@ function createOverlayHarness() {
 
   runInNewContext(getOverlayClientScript(), context);
 
-  return { dispatchDocumentEvent, flushNextTimer, flushTimers, order, timers, waitForMicrotasks, window };
+  return {
+    dispatchDocumentEvent,
+    flushNextTimer,
+    flushTimers,
+    getDrawerProps: () => drawerProps,
+    order,
+    timers,
+    waitForMicrotasks,
+    window
+  };
 }
 
 describe("dev command", () => {
@@ -839,6 +854,64 @@ describe("dev command", () => {
     expect(harness.order).not.toContain("drawer-render");
   });
 
+  it("passes scanned page API hints for the current route to the drawer", async () => {
+    const reportWithPageApi: ScanResult = {
+      ...scanResult,
+      pages: [
+        {
+          id: "page:next:benefit-detail",
+          route: "/benefit/[brandSlug]/[benefitSlugWithId]",
+          filePath: "src/app/benefit/[brandSlug]/[benefitSlugWithId]/page.tsx",
+          screenshots: [],
+          apiCalls: [
+            {
+              method: "GET",
+              path: "/api/public/benefits/{id}",
+              endpointId: "endpoint:get:/api/public/benefits/{id}"
+            }
+          ],
+          captureStatus: "pending"
+        }
+      ]
+    };
+    const harness = createOverlayHarness({
+      report: reportWithPageApi,
+      path: "/benefit/starbucks/birthday-coupon-123"
+    });
+    await harness.flushNextTimer();
+    const target = {
+      id: "benefit-link",
+      tagName: "A",
+      className: "benefit",
+      name: "",
+      textContent: "Open benefit",
+      value: "",
+      closest() {
+        return target;
+      },
+      getAttribute(name: string) {
+        return name === "data-testid" ? "benefit-link" : null;
+      }
+    };
+
+    harness.dispatchDocumentEvent("pointerdown", { type: "pointerdown", target });
+    await harness.window.fetch("/api/public/benefits/123");
+    await harness.flushTimers();
+
+    const drawerProps = harness.getDrawerProps();
+    expect(drawerProps?.scannedHints).toEqual([
+      {
+        pageRoute: "/benefit/[brandSlug]/[benefitSlugWithId]",
+        pageFilePath: "src/app/benefit/[brandSlug]/[benefitSlugWithId]/page.tsx",
+        method: "GET",
+        path: "/api/public/benefits/{id}",
+        endpointId: "endpoint:get:/api/public/benefits/{id}",
+        endpointLabel: "GET /api/public/benefits/{id}",
+        evidence: "scanned-page"
+      }
+    ]);
+  });
+
   it("loads the React drawer bundle only after the drawer opens", () => {
     const script = getOverlayClientScript();
     const mountBlock = script.slice(script.indexOf("function mountOverlayUi()"), script.indexOf("function installOverlayRootGuard()"));
@@ -848,9 +921,11 @@ describe("dev command", () => {
     expect(renderBlock).toContain("if (!state.open)");
     expect(renderBlock).toContain("return;");
     expect(script).toContain("function getLatestAction()");
+    expect(script).toContain("function getScannedHints()");
+    expect(script).toContain("routeToRegex(page.route).test(pathname)");
     expect(script).toContain("renderReactDrawer(selected, getLatestAction())");
     expect(script).toContain("function renderReactDrawer(selected, latestAction)");
-    expect(script).toContain("latestAction");
+    expect(script).toContain("scannedHints: getScannedHints()");
     expect(script).toContain("loadOverlayUiAssets()");
   });
 

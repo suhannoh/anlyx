@@ -1,12 +1,18 @@
 import { Badge, Card } from "./ui.js";
 import { MainFlowCanvas } from "./MainFlowCanvas.js";
 import { RecentApiEventsTable } from "./RecentApiEventsTable.js";
-import type { FlowDrawerProps, OverlayAction, OverlayApiEvent } from "./types.js";
+import type {
+  FlowDrawerProps,
+  OverlayAction,
+  OverlayApiEvent,
+  OverlayScannedHint
+} from "./types.js";
 
 export function FlowDrawer({
   selectedEvent,
   events,
   latestAction,
+  scannedHints = [],
   loadError
 }: FlowDrawerProps): JSX.Element {
   if (loadError) {
@@ -24,6 +30,7 @@ export function FlowDrawer({
     return (
       <div className="anlyx-flow-drawer-body">
         {latestAction ? <NoPrimaryRequest latestAction={latestAction} /> : <WaitingForAction />}
+        {scannedHints.length > 0 ? <ScannedHints hints={scannedHints} /> : null}
         <RecentApiEventsTable events={events} selectedEventId={null} />
       </div>
     );
@@ -50,6 +57,35 @@ export function FlowDrawer({
       )}
       <RecentApiEventsTable events={events} selectedEventId={selectedEvent.id} />
     </div>
+  );
+}
+
+function ScannedHints({ hints }: { hints: OverlayScannedHint[] }): JSX.Element {
+  return (
+    <Card className="anlyx-scanned-hints">
+      <div className="anlyx-scanned-hints__head">
+        <div>
+          <h3>Scanned / inferred hints</h3>
+          <p>These are known page links, not browser-live requests.</p>
+        </div>
+        <Badge tone="gray">Not browser-live</Badge>
+      </div>
+      <div className="anlyx-scanned-hints__list">
+        {hints.slice(0, 4).map((hint, index) => (
+          <div className="anlyx-scanned-hint" key={`${hint.pageRoute}:${hint.method}:${hint.path}:${index}`}>
+            <div>
+              <Badge tone={hint.evidence === "capture" ? "green" : "violet"}>
+                {hint.evidence === "capture" ? "captured page link" : "scanned page link"}
+              </Badge>
+              <strong title={hint.endpointLabel ?? `${hint.method} ${hint.path}`}>
+                {hint.endpointLabel ?? `${hint.method} ${hint.path}`}
+              </strong>
+            </div>
+            <p title={hint.pageFilePath ?? hint.pageRoute}>{hint.pageRoute}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 

@@ -1446,6 +1446,45 @@ export function getOverlayClientScript(): string {
     return state.actions.find((action) => isFreshAction(action)) || null;
   }
 
+  function getScannedHints() {
+    const report = state.report || {};
+    const pages = Array.isArray(report.pages) ? report.pages : [];
+    const endpoints = Array.isArray(report.endpoints) ? report.endpoints : [];
+    const pathname = window.location && window.location.pathname ? window.location.pathname : "/";
+    const matchingPages = pages.filter((page) => {
+      return page && page.route && routeToRegex(page.route).test(pathname);
+    });
+
+    return matchingPages.flatMap((page) => {
+      const apiCalls = Array.isArray(page.apiCalls) ? page.apiCalls : [];
+      return apiCalls.map((apiCall) => {
+        const endpoint = apiCall.endpointId
+          ? endpoints.find((candidate) => candidate && candidate.id === apiCall.endpointId)
+          : null;
+        const method = String(apiCall.method || (endpoint && endpoint.method) || "GET").toUpperCase();
+        const path = String(apiCall.path || (endpoint && endpoint.path) || "");
+        return {
+          pageRoute: page.route,
+          pageFilePath: page.filePath,
+          method,
+          path,
+          endpointId: apiCall.endpointId || (endpoint && endpoint.id),
+          endpointLabel: endpoint ? String(endpoint.method || method).toUpperCase() + " " + endpoint.path : method + " " + path,
+          evidence: page.captureStatus === "success" ? "capture" : "scanned-page"
+        };
+      });
+    }).filter((hint) => hint.path).slice(0, 4);
+  }
+
+  function routeToRegex(route) {
+    const escaped = String(route || "/")
+      .replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")
+      .replace(/\\\[\\\.\\\.\\\.[^\]]+\\\]/g, ".+")
+      .replace(/\\\[\\\[\\\.\\\.\\\.[^\]]+\\\]\\\]/g, ".*")
+      .replace(/\\\[[^\]]+\\\]/g, "[^/]+");
+    return new RegExp("^" + escaped + "/?$");
+  }
+
   function renderReactDrawer(selected, latestAction) {
     loadOverlayUiAssets();
 
@@ -1458,6 +1497,7 @@ export function getOverlayClientScript(): string {
       selectedEvent: selected,
       events: state.events,
       latestAction,
+      scannedHints: getScannedHints(),
       loadError: state.loadError,
       runtimeBaseUrl
     });

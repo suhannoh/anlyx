@@ -35,6 +35,36 @@ describe("FlowDrawer", () => {
     expect(screen.getByText("No user-action API requests yet.")).toBeTruthy();
     expect(screen.queryByText("/api/account/me")).toBeNull();
   });
+
+  it("shows scanned page hints separately from live browser requests", () => {
+    render(
+      <FlowDrawer
+        events={backgroundEvents}
+        latestAction={{
+          type: "Clicked",
+          label: "Open detail",
+          selector: "a.benefit-card"
+        }}
+        scannedHints={[
+          {
+            pageRoute: "/benefit/[brandSlug]/[benefitSlugWithId]",
+            pageFilePath: "src/app/benefit/[brandSlug]/[benefitSlugWithId]/page.tsx",
+            method: "GET",
+            path: "/api/public/benefits/{id}",
+            endpointLabel: "GET /api/public/benefits/{id}",
+            evidence: "scanned-page"
+          }
+        ]}
+        selectedEvent={null}
+      />
+    );
+
+    expect(screen.getByText("Scanned / inferred hints")).toBeTruthy();
+    expect(screen.getByText("GET /api/public/benefits/{id}")).toBeTruthy();
+    expect(screen.getByText("/benefit/[brandSlug]/[benefitSlugWithId]")).toBeTruthy();
+    expect(screen.getByText("scanned page link")).toBeTruthy();
+    expect(screen.getByText("Not browser-live")).toBeTruthy();
+  });
 });
 
 const backgroundEvents: OverlayApiEvent[] = [

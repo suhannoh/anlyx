@@ -102,5 +102,5 @@
 - [x] Clarify that React SPA compatibility uses manual URLs plus browser-observed requests in v0.1.
 - [x] Keep passive session, saved-item preload, page-view, analytics, health, metrics, and polling requests from replacing the selected main flow.
 - [x] Add a drawer state for "no primary browser API captured" instead of showing passive account/auth checks as the main result.
-- [ ] Use Next adapter scan/capture data to surface server-side page data fetches as scanned/inferred hints, not live requests.
+- [x] Use scanned/captured page API data to surface current-route page fetch hints as scanned/inferred hints, not live requests.
 - [ ] Add acceptance tests that prove React SPA/manual frontend live browser requests still open the main drawer without any Next.js helper.
