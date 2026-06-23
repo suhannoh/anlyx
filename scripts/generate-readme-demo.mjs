@@ -108,12 +108,7 @@ try {
 
   await capture(8);
 
-  for (const selector of [
-    '[data-demo="detail"]',
-    '[data-demo="search"]',
-    '[data-demo="admin"]',
-    '[data-demo="save"]'
-  ]) {
+  for (const selector of ['[data-demo="search"]', '[data-demo="save"]', '[data-demo="admin"]']) {
     await page.click(selector);
     await page.waitForSelector(".react-flow__node");
     await page.waitForTimeout(260);

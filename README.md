@@ -22,6 +22,8 @@ It overlays your real local frontend app and connects the API triggered by your 
   <img src="./docs/assets/readme/anlyx-demo.gif" alt="Anlyx demo showing user actions mapped to backend flow diagrams" />
 </p>
 
+The animation above renders the real `@anlyx/ui` Flow Drawer with representative demo data. Successful requests show the full scanned path through Service, Repository, and Database. Auth-blocked requests keep downstream code paths muted because the live server did not actually reach them.
+
 ## Why It Feels Different
 
 - Use the real app on its own localhost port. Anlyx does not replace your frontend with a proxy-only mock viewer.

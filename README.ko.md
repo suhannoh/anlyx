@@ -22,6 +22,8 @@ Anlyx는 방금 누른 버튼, 제출한 폼, 키보드 액션에서 발생한 A
   <img src="./docs/assets/readme/anlyx-demo.gif" alt="사용자 액션이 백엔드 흐름 다이어그램으로 매핑되는 Anlyx 데모" />
 </p>
 
+위 애니메이션은 실제 `@anlyx/ui` Flow Drawer 컴포넌트에 대표 데모 데이터를 넣어 렌더링한 예시입니다. 성공한 요청은 Service, Repository, Database까지 이어지는 전체 스캔 경로를 보여주고, auth에서 막힌 요청은 실제 서버가 downstream에 도달하지 않았기 때문에 해당 코드 경로를 muted 상태로 표시합니다.
+
 ## 왜 다른가?
 
 - 실제 앱은 자기 localhost 포트에서 그대로 실행됩니다. Anlyx가 프론트엔드를 proxy-only mock viewer로 대체하지 않습니다.

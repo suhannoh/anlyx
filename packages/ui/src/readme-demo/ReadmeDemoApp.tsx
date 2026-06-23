@@ -11,7 +11,7 @@ import type { OverlayApiEvent } from "../overlay/types.js";
 
 type DemoKey = "search" | "detail" | "save" | "admin";
 
-const demoOrder: DemoKey[] = ["search", "detail", "save", "admin"];
+const demoOrder: DemoKey[] = ["detail", "search", "save", "admin"];
 
 const flows: Record<DemoKey, EndpointFlow> = {
   search: makeFlow("GET", "/api/public/search", [
@@ -65,7 +65,7 @@ Object.entries(events).forEach(([key, value]) => {
 });
 
 export function ReadmeDemoApp(): JSX.Element {
-  const [selectedKey, setSelectedKey] = useState<DemoKey>("save");
+  const [selectedKey, setSelectedKey] = useState<DemoKey>("detail");
   const selectedEvent = events[selectedKey];
   const eventList = useMemo(
     () => [
@@ -89,20 +89,28 @@ export function ReadmeDemoApp(): JSX.Element {
   return (
     <main className="anlyx-readme-demo">
       <section className="anlyx-readme-demo__control">
-        <div className="anlyx-readme-demo__logo-card">
-          <img src="/docs/assets/brand/anlyx-logo-card.png" alt="Anlyx" />
-        </div>
-        <div>
-          <p className="anlyx-readme-demo__eyebrow">Real Anlyx UI demo</p>
-          <h1>Click an action. Watch the drawer remap the backend flow.</h1>
-          <p>
-            This README animation renders the actual Anlyx Flow Drawer component from
-            <code>@anlyx/ui</code>.
-          </p>
+        <div className="anlyx-readme-demo__intro">
+          <img src="/docs/assets/brand/anlyx-logo-transparent.png" alt="Anlyx" />
+          <div>
+            <p className="anlyx-readme-demo__eyebrow">Actual component preview</p>
+            <h1>Click an action. See the backend path.</h1>
+            <p>
+              Representative data rendered by the real <code>@anlyx/ui</code> Flow Drawer.
+            </p>
+          </div>
         </div>
         <div className="anlyx-readme-demo__actions" aria-label="Demo actions">
+          <div className="anlyx-readme-demo__actions-head">
+            <span>Try these actions</span>
+            <small>
+              Successful calls show Service, Repository, and Database. Auth-blocked calls keep
+              downstream scanned paths muted.
+            </small>
+          </div>
           <DemoButton
             active={selectedKey === "search"}
+            index="01"
+            method="GET"
             label="Search benefits"
             meta="GET /api/public/search"
             onClick={() => setSelectedKey("search")}
@@ -110,6 +118,8 @@ export function ReadmeDemoApp(): JSX.Element {
           />
           <DemoButton
             active={selectedKey === "detail"}
+            index="02"
+            method="GET"
             label="Open benefit detail"
             meta="GET /api/public/benefits/{id}"
             onClick={() => setSelectedKey("detail")}
@@ -117,6 +127,8 @@ export function ReadmeDemoApp(): JSX.Element {
           />
           <DemoButton
             active={selectedKey === "save"}
+            index="03"
+            method="POST"
             label="Save to my box"
             meta="POST /api/account/saved-benefits"
             onClick={() => setSelectedKey("save")}
@@ -124,6 +136,8 @@ export function ReadmeDemoApp(): JSX.Element {
           />
           <DemoButton
             active={selectedKey === "admin"}
+            index="04"
+            method="POST"
             label="Try admin action"
             meta="POST /api/admin/benefits"
             onClick={() => setSelectedKey("admin")}
@@ -135,7 +149,7 @@ export function ReadmeDemoApp(): JSX.Element {
       <section className="anlyx-readme-demo__drawer-shell" aria-label="Anlyx Flow Drawer">
         <header className="anlyx-readme-demo__drawer-head">
           <div className="anlyx-readme-demo__drawer-brand">
-            <img src="/docs/assets/brand/anlyx-icon-card.png" alt="" />
+            <img src="/docs/assets/brand/anlyx-icon-transparent.png" alt="" />
             <div>
               <strong>Anlyx Flow Drawer</strong>
               <span>Actual component preview</span>
@@ -159,12 +173,16 @@ export function ReadmeDemoApp(): JSX.Element {
 
 function DemoButton({
   active,
+  index,
+  method,
   label,
   meta,
   onClick,
   demoKey
 }: {
   active: boolean;
+  index: string;
+  method: HttpMethod;
   label: string;
   meta: string;
   onClick: () => void;
@@ -178,8 +196,12 @@ function DemoButton({
       type="button"
       onClick={onClick}
     >
-      <strong>{label}</strong>
-      <span>{meta}</span>
+      <span className="anlyx-readme-demo__action-index">{index}</span>
+      <span className="anlyx-readme-demo__action-copy">
+        <strong>{label}</strong>
+        <span>{meta}</span>
+      </span>
+      <span className="anlyx-readme-demo__method">{method}</span>
     </button>
   );
 }
