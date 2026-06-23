@@ -25,7 +25,7 @@ export function FlowDrawer({ selectedEvent, events, loadError }: FlowDrawerProps
             action. Background requests stay in Recent API events until you select them.
           </div>
         </Card>
-        <RecentApiEventsTable events={events} />
+        <RecentApiEventsTable events={events} selectedEventId={null} />
       </div>
     );
   }
@@ -49,7 +49,7 @@ export function FlowDrawer({ selectedEvent, events, loadError }: FlowDrawerProps
           <p>Anlyx saw this browser request, but no scanned endpoint path matched it.</p>
         </Card>
       )}
-      <RecentApiEventsTable events={events} />
+      <RecentApiEventsTable events={events} selectedEventId={selectedEvent.id} />
     </div>
   );
 }
@@ -80,6 +80,9 @@ function CapturedRequest({ event }: { event: OverlayApiEvent }): JSX.Element {
         {event.matchedEndpoint?.confidence ? (
           <Badge tone="green">confidence {event.matchedEndpoint.confidence}</Badge>
         ) : null}
+        <Badge tone={event.triggeredBy ? "blue" : "gray"}>
+          {event.triggeredBy ? "user action" : event.source === "health" ? "health/background" : "background"}
+        </Badge>
       </div>
       <div className="anlyx-captured-request__steps">
         <CapturedStep

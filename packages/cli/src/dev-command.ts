@@ -1356,19 +1356,34 @@ export function getOverlayClientScript(): string {
     const selected = state.events.find((event) => event.id === state.selectedEventId) || null;
     renderReactDrawer(selected);
 
-    body.querySelectorAll("[data-event-id]").forEach((element) => {
-      const selectEvent = () => {
-        state.selectedEventId = element.getAttribute("data-event-id");
-        state.open = true;
-        render();
-      };
-      element.addEventListener("click", selectEvent);
-      element.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          selectEvent();
-        }
-      });
+    installEventSelectionHandler();
+  }
+
+  function installEventSelectionHandler() {
+    if (!body || body.dataset.eventSelectionBound === "true") {
+      return;
+    }
+    body.dataset.eventSelectionBound = "true";
+    const selectEventFromTarget = (target) => {
+      const row = target && target.closest ? target.closest("[data-event-id]") : null;
+      if (!row) {
+        return false;
+      }
+      state.selectedEventId = row.getAttribute("data-event-id");
+      state.open = true;
+      render();
+      return true;
+    };
+    body.addEventListener("click", (event) => {
+      selectEventFromTarget(event.target);
+    });
+    body.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+      if (selectEventFromTarget(event.target)) {
+        event.preventDefault();
+      }
     });
   }
 

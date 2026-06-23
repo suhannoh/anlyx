@@ -659,6 +659,8 @@ describe("dev command", () => {
     expect(script).toContain("shouldAutoFocusEvent");
     expect(script).toContain("classifyApiEventSource");
     expect(script).toContain("isHealthOrPollingPath");
+    expect(script).toContain("installEventSelectionHandler");
+    expect(script).toContain('target.closest("[data-event-id]")');
     expect(script).toContain('source: triggeredBy ? "action" : classifyApiEventSource(normalized.pathname)');
     expect(script).toContain("if (shouldAutoFocusEvent(item))");
     expect(script).toContain("selectedEventId: null");
