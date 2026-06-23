@@ -1258,10 +1258,28 @@ export function getOverlayClientScript(): string {
     })) {
       return true;
     }
-    if (normalizedMethod === "GET" && isSessionProbePath(segments)) {
+    if (isAutomaticSupportPath(normalizedMethod, segments)) {
       return true;
     }
     return false;
+  }
+
+  function isAutomaticSupportPath(method, segments) {
+    if (method === "GET" && isSessionProbePath(segments)) {
+      return true;
+    }
+    if (segments.includes("csrf") || segments.includes("xsrf")) {
+      return true;
+    }
+    if (!segments.includes("auth")) {
+      return false;
+    }
+    const last = segments[segments.length - 1] || "";
+    return last === "session" ||
+      last === "refresh" ||
+      last === "token" ||
+      last === "csrf" ||
+      last === "status";
   }
 
   function isSessionProbePath(segments) {

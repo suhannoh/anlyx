@@ -206,7 +206,8 @@ Promote to the main flow when:
 
 Keep as secondary/background when:
 
-- Session probes such as `GET /me`, `GET /session`, `GET /profile`
+- Session/account probes such as `GET /api/account/me`, `GET /me`, `GET /session`, `GET /profile`
+- Auth support requests such as `POST /api/auth/refresh`, `GET /api/auth/session`, `GET /api/csrf`
 - Saved/bookmark/favorite preload reads
 - Page-view tracking
 - Analytics/telemetry/metrics
@@ -269,4 +270,3 @@ It should:
 - Show those as scanned/inferred hints, not live requests.
 - Explain why the browser overlay did not capture them.
 - Keep React SPA behavior browser-live and manual-URL based.
-

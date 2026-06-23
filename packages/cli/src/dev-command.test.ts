@@ -810,6 +810,35 @@ describe("dev command", () => {
     expect(harness.order).not.toContain("drawer-render");
   });
 
+  it("keeps automatic account and auth support requests in the background", async () => {
+    const harness = createOverlayHarness();
+    await harness.flushNextTimer();
+    const target = {
+      id: "login-button",
+      tagName: "BUTTON",
+      className: "login",
+      name: "",
+      textContent: "Login",
+      value: "",
+      closest() {
+        return target;
+      },
+      getAttribute(name: string) {
+        return name === "data-testid" ? "login-button" : null;
+      }
+    };
+
+    harness.dispatchDocumentEvent("pointerdown", { type: "pointerdown", target });
+
+    await harness.window.fetch("/api/account/me");
+    await harness.window.fetch("/api/auth/session");
+    await harness.window.fetch("/api/auth/refresh", { method: "POST" });
+    await harness.window.fetch("/api/csrf");
+    await harness.flushTimers();
+
+    expect(harness.order).not.toContain("drawer-render");
+  });
+
   it("loads the React drawer bundle only after the drawer opens", () => {
     const script = getOverlayClientScript();
     const mountBlock = script.slice(script.indexOf("function mountOverlayUi()"), script.indexOf("function installOverlayRootGuard()"));
