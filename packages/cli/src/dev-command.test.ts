@@ -847,7 +847,10 @@ describe("dev command", () => {
     expect(mountBlock).not.toContain("loadOverlayUiAssets()");
     expect(renderBlock).toContain("if (!state.open)");
     expect(renderBlock).toContain("return;");
-    expect(script).toContain("function renderReactDrawer(selected)");
+    expect(script).toContain("function getLatestAction()");
+    expect(script).toContain("renderReactDrawer(selected, getLatestAction())");
+    expect(script).toContain("function renderReactDrawer(selected, latestAction)");
+    expect(script).toContain("latestAction");
     expect(script).toContain("loadOverlayUiAssets()");
   });
 

@@ -90,6 +90,44 @@
   color: #475569;
 }
 
+.anlyx-no-primary-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 251, 235, 0.54), rgba(255, 255, 255, 0.98)),
+    #fff;
+}
+
+.anlyx-no-primary-card h3 {
+  margin: 8px 0 3px;
+  color: #101828;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.anlyx-no-primary-card p {
+  margin: 0;
+  overflow: hidden;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.anlyx-no-primary-card__note {
+  border: 1px dashed #fed7aa;
+  border-radius: 10px;
+  background: rgba(255, 247, 237, 0.62);
+  color: #7c2d12;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.45;
+  padding: 9px 10px;
+}
+
 .anlyx-captured-request__top {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

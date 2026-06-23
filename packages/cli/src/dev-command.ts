@@ -1409,7 +1409,7 @@ export function getOverlayClientScript(): string {
     }
 
     const selected = state.events.find((event) => event.id === state.selectedEventId) || null;
-    renderReactDrawer(selected);
+    renderReactDrawer(selected, getLatestAction());
 
     installEventSelectionHandler();
   }
@@ -1442,7 +1442,11 @@ export function getOverlayClientScript(): string {
     });
   }
 
-  function renderReactDrawer(selected) {
+  function getLatestAction() {
+    return state.actions.find((action) => isFreshAction(action)) || null;
+  }
+
+  function renderReactDrawer(selected, latestAction) {
     loadOverlayUiAssets();
 
     if (!window.__ANLYX_RENDER_FLOW_DRAWER__) {
@@ -1453,6 +1457,7 @@ export function getOverlayClientScript(): string {
     window.__ANLYX_RENDER_FLOW_DRAWER__(body, {
       selectedEvent: selected,
       events: state.events,
+      latestAction,
       loadError: state.loadError,
       runtimeBaseUrl
     });

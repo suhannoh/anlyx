@@ -3,7 +3,12 @@ import { MainFlowCanvas } from "./MainFlowCanvas.js";
 import { RecentApiEventsTable } from "./RecentApiEventsTable.js";
 import type { FlowDrawerProps, OverlayAction, OverlayApiEvent } from "./types.js";
 
-export function FlowDrawer({ selectedEvent, events, loadError }: FlowDrawerProps): JSX.Element {
+export function FlowDrawer({
+  selectedEvent,
+  events,
+  latestAction,
+  loadError
+}: FlowDrawerProps): JSX.Element {
   if (loadError) {
     return (
       <div className="anlyx-flow-drawer-body">
@@ -18,13 +23,7 @@ export function FlowDrawer({ selectedEvent, events, loadError }: FlowDrawerProps
   if (!selectedEvent) {
     return (
       <div className="anlyx-flow-drawer-body">
-        <Card>
-          <h3 className="anlyx-ov-section-title">Waiting</h3>
-          <div className="anlyx-ov-empty">
-            Use the app normally. Anlyx opens the main flow for requests caused by your direct
-            action. Background requests stay in Recent API events until you select them.
-          </div>
-        </Card>
+        {latestAction ? <NoPrimaryRequest latestAction={latestAction} /> : <WaitingForAction />}
         <RecentApiEventsTable events={events} selectedEventId={null} />
       </div>
     );
@@ -51,6 +50,34 @@ export function FlowDrawer({ selectedEvent, events, loadError }: FlowDrawerProps
       )}
       <RecentApiEventsTable events={events} selectedEventId={selectedEvent.id} />
     </div>
+  );
+}
+
+function WaitingForAction(): JSX.Element {
+  return (
+    <Card>
+      <h3 className="anlyx-ov-section-title">Waiting</h3>
+      <div className="anlyx-ov-empty">
+        Use the app normally. Anlyx opens the main flow for requests caused by your direct action.
+        Background requests stay in Recent API events until you select them.
+      </div>
+    </Card>
+  );
+}
+
+function NoPrimaryRequest({ latestAction }: { latestAction: OverlayAction }): JSX.Element {
+  return (
+    <Card className="anlyx-no-primary-card">
+      <div>
+        <Badge tone="amber">No primary API captured</Badge>
+        <h3>{formatAction(latestAction)}</h3>
+        <p>{latestAction.selector ?? "No stable selector captured"}</p>
+      </div>
+      <div className="anlyx-no-primary-card__note">
+        Only background account/auth checks were observed. They stay in Recent API events and do
+        not replace the main flow.
+      </div>
+    </Card>
   );
 }
 

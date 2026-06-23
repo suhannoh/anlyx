@@ -25,6 +25,7 @@ export type OverlayApiEvent = {
 export type FlowDrawerProps = {
   selectedEvent: OverlayApiEvent | null;
   events: OverlayApiEvent[];
+  latestAction?: OverlayAction | null;
   loadError?: string | null;
   runtimeBaseUrl?: string;
 };
