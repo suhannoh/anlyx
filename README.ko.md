@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./docs/design/brand/anlyx-logo.png" alt="Anlyx" width="420" />
+  <img src="./docs/assets/brand/anlyx-logo-card.png" alt="Anlyx" width="420" />
 </p>
 
 <p align="center">
@@ -17,7 +17,7 @@ Anlyx는 실제 로컬 프론트엔드 앱 위에 오버레이를 띄우고, 방
 Anlyx `0.1.0`은 `workspace:*` dependency가 남아 있는 상태로 배포되어 deprecated 처리 예정입니다. Anlyx `0.1.1`은 배포된 CLI entrypoint가 명령 실행 전에 종료될 수 있어 deprecated 처리 예정입니다. 승인된 pnpm 기반 publish 이후에는 `0.1.2`부터 일반 `npm install anlyx`로 설치 가능한 버전으로 안내합니다.
 
 <p align="center">
-  <img src="./docs/assets/readme/anlyx-flow-drawer.png" alt="실제 앱 요청을 백엔드 흐름으로 매칭한 Anlyx Flow Drawer" />
+  <img src="./docs/assets/readme/anlyx-demo.gif" alt="사용자 액션이 백엔드 흐름 다이어그램으로 매핑되는 Anlyx 데모" />
 </p>
 
 ## 왜 다른가?

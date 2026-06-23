@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./docs/design/brand/anlyx-logo.png" alt="Anlyx" width="420" />
+  <img src="./docs/assets/brand/anlyx-logo-card.png" alt="Anlyx" width="420" />
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@ Anlyx overlays your real local frontend app and shows which backend endpoint, se
 Anlyx `0.1.0` is planned to be deprecated because it was published with unresolved `workspace:*` dependencies. Anlyx `0.1.1` is planned to be deprecated because the published CLI entrypoint can exit before running commands. `0.1.2` is the patch release intended for normal `npm install anlyx` usage after the approved pnpm-based publish.
 
 <p align="center">
-  <img src="./docs/assets/readme/anlyx-flow-drawer.png" alt="Anlyx Flow Drawer showing a real app request mapped to a backend flow" />
+  <img src="./docs/assets/readme/anlyx-demo.gif" alt="Anlyx demo showing user actions mapped to backend flow diagrams" />
 </p>
 
 ## Why It Feels Different
