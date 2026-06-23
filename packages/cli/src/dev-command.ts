@@ -1184,7 +1184,8 @@ export function getOverlayClientScript(): string {
     }
 
     const matched = matchEndpoint(event.method, normalized.pathname);
-    const triggeredBy = findActionForRequest(event.startedAt);
+    const passive = isPassiveRequest(event.method, normalized.pathname);
+    const triggeredBy = passive ? null : findActionForRequest(event.startedAt);
     const item = {
       id: String(Date.now()) + "-" + Math.random().toString(36).slice(2),
       method: event.method,
@@ -1242,8 +1243,40 @@ export function getOverlayClientScript(): string {
     return "background";
   }
 
+  function isPassiveRequest(method, pathname) {
+    const normalizedMethod = String(method || "GET").toUpperCase();
+    const segments = getPathSegments(pathname);
+    if (isHealthOrPollingPath(pathname)) {
+      return true;
+    }
+    if (segments.some((segment) => {
+      return segment === "page-views" ||
+        segment === "analytics" ||
+        segment === "telemetry" ||
+        segment === "events" ||
+        segment === "metrics";
+    })) {
+      return true;
+    }
+    if (normalizedMethod === "GET" && isSessionProbePath(segments)) {
+      return true;
+    }
+    return false;
+  }
+
+  function isSessionProbePath(segments) {
+    const last = segments[segments.length - 1] || "";
+    if (last === "me" || last === "session" || last === "profile" || last === "current-user") {
+      return true;
+    }
+    return segments.includes("saved-benefits") ||
+      segments.includes("saved-items") ||
+      segments.includes("bookmarks") ||
+      segments.includes("favorites");
+  }
+
   function isHealthOrPollingPath(pathname) {
-    const segments = String(pathname || "").toLowerCase().split("/").filter(Boolean);
+    const segments = getPathSegments(pathname);
     return segments.some((segment) => {
       return segment === "health" ||
         segment === "healthz" ||
@@ -1256,6 +1289,10 @@ export function getOverlayClientScript(): string {
         segment === "poll" ||
         segment === "polling";
     });
+  }
+
+  function getPathSegments(pathname) {
+    return String(pathname || "").toLowerCase().split("/").filter(Boolean);
   }
 
   function findExistingEventIndex(item) {

@@ -3,13 +3,15 @@ import {
   Background,
   BackgroundVariant,
   MarkerType,
+  Panel,
   ReactFlow,
   type Edge,
   type EdgeTypes,
   type Node,
-  type NodeTypes
+  type NodeTypes,
+  useReactFlow
 } from "@xyflow/react";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 import { AnlyxFlowEdge } from "./AnlyxFlowEdge.js";
 import { AnlyxFlowNode, type AnlyxFlowNodeData } from "./AnlyxFlowNode.js";
@@ -90,6 +92,7 @@ export function MainFlowCanvas({
           zoomOnPinch
           zoomOnScroll
         >
+          <ViewportControls />
           <Background
             color="rgba(148, 163, 184, .42)"
             gap={18}
@@ -99,10 +102,32 @@ export function MainFlowCanvas({
         </ReactFlow>
       </div>
       <p className="anlyx-flow-rf-note">
-        Anlyx mapped this request to your scanned backend flow and live browser result. Muted
-        nodes are known code paths that were not reached by the live request.
+        Anlyx mapped this browser-visible request to the scanned backend flow. Muted nodes are
+        known code paths; server-side Next.js fetches require the scanned path until a server
+        runtime bridge is enabled.
       </p>
     </section>
+  );
+}
+
+function ViewportControls(): JSX.Element {
+  const { fitView, setViewport } = useReactFlow();
+  const fit = useCallback(() => {
+    void fitView({ padding: 0.18, duration: 160 });
+  }, [fitView]);
+  const reset = useCallback(() => {
+    void setViewport({ x: 20, y: 22, zoom: 0.82 }, { duration: 160 });
+  }, [setViewport]);
+
+  return (
+    <Panel className="anlyx-flow-rf-controls" position="top-right">
+      <button type="button" onClick={fit} title="Fit the full flow into view">
+        Fit view
+      </button>
+      <button type="button" onClick={reset} title="Reset to the default canvas position">
+        Reset view
+      </button>
+    </Panel>
   );
 }
 

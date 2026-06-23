@@ -119,6 +119,8 @@ describe("MainFlowCanvas", () => {
     expect(within(canvas).getByText("AccountService#getMe")).toBeTruthy();
     expect(within(canvas).getByText("Result")).toBeTruthy();
     expect(within(canvas).getByText("401 Auth required")).toBeTruthy();
+    expect(within(canvas).getByRole("button", { name: "Fit view" })).toBeTruthy();
+    expect(within(canvas).getByRole("button", { name: "Reset view" })).toBeTruthy();
     expect(canvas.querySelector(".react-flow")).toBeTruthy();
     expect(canvas.querySelectorAll(".react-flow__node")).toHaveLength(5);
   });

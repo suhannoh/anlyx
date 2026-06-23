@@ -339,6 +339,40 @@
   transition: transform 180ms ease;
 }
 
+.anlyx-flow-rf-controls {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.anlyx-flow-rf-controls button {
+  height: 24px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #475467;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 850;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+.anlyx-flow-rf-controls button:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.anlyx-flow-rf-controls button:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.38);
+  outline-offset: 1px;
+}
+
 .anlyx-flow-rf-node {
   position: relative;
   display: grid;

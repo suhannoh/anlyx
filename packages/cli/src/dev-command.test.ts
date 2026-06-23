@@ -263,7 +263,8 @@ function createOverlayHarness() {
     __ANLYX_RENDER_FLOW_DRAWER__() {
       order.push("drawer-render");
     },
-    fetch: async (input: string) => {
+    fetch: async (input: string, init?: { method?: string }) => {
+      void init;
       order.push(`original-fetch:${input}`);
       return {
         ok: true,
@@ -322,7 +323,7 @@ function createOverlayHarness() {
     XMLHttpRequest: FakeXmlHttpRequest,
     console,
     document,
-    fetch(...args: [string]) {
+    fetch(...args: [string, { method?: string }?]) {
       return window.fetch(...args);
     },
     performance: window.performance,
@@ -658,10 +659,13 @@ describe("dev command", () => {
 
     expect(script).toContain("shouldAutoFocusEvent");
     expect(script).toContain("classifyApiEventSource");
+    expect(script).toContain("isPassiveRequest");
+    expect(script).toContain("isSessionProbePath");
     expect(script).toContain("isHealthOrPollingPath");
     expect(script).toContain("installEventSelectionHandler");
     expect(script).toContain('target.closest("[data-event-id]")');
-    expect(script).toContain('source: triggeredBy ? "action" : classifyApiEventSource(normalized.pathname)');
+    expect(script).toContain("const passive = isPassiveRequest(event.method, normalized.pathname)");
+    expect(script).toContain("const triggeredBy = passive ? null : findActionForRequest(event.startedAt)");
     expect(script).toContain("if (shouldAutoFocusEvent(item))");
     expect(script).toContain("selectedEventId: null");
   });
@@ -776,6 +780,34 @@ describe("dev command", () => {
     await harness.flushTimers();
 
     expect(harness.order.indexOf("app-response-returned")).toBeLessThan(harness.order.indexOf("drawer-render"));
+  });
+
+  it("does not promote passive session probes to the action drawer", async () => {
+    const harness = createOverlayHarness();
+    await harness.flushNextTimer();
+    const target = {
+      id: "benefit-link",
+      tagName: "A",
+      className: "benefit",
+      name: "",
+      textContent: "Open benefit",
+      value: "",
+      closest() {
+        return target;
+      },
+      getAttribute(name: string) {
+        return name === "data-testid" ? "benefit-link" : null;
+      }
+    };
+
+    harness.dispatchDocumentEvent("pointerdown", { type: "pointerdown", target });
+
+    await harness.window.fetch("/api/account/me");
+    await harness.window.fetch("/api/account/saved-benefits");
+    await harness.window.fetch("/api/public/page-views", { method: "POST" });
+    await harness.flushTimers();
+
+    expect(harness.order).not.toContain("drawer-render");
   });
 
   it("loads the React drawer bundle only after the drawer opens", () => {
