@@ -912,6 +912,99 @@ describe("dev command", () => {
     ]);
   });
 
+  it("opens the main drawer for manual React SPA fetch actions without the Next helper", async () => {
+    const manualReactReport: ScanResult = {
+      ...scanResult,
+      endpoints: [
+        ...scanResult.endpoints,
+        {
+          id: "endpoint:get:/api/public/benefits",
+          method: "GET",
+          path: "/api/public/benefits",
+          framework: "spring",
+          supportLevel: "deep",
+          confidence: "high"
+        }
+      ],
+      flows: [
+        ...scanResult.flows,
+        {
+          endpointId: "endpoint:get:/api/public/benefits",
+          nodes: [
+            {
+              id: "endpoint:get:/api/public/benefits",
+              type: "endpoint",
+              label: "GET /api/public/benefits",
+              confidence: "high"
+            }
+          ],
+          edges: [],
+          mainPath: ["endpoint:get:/api/public/benefits"],
+          subFlows: []
+        }
+      ],
+      pages: [
+        {
+          id: "page:manual:benefits",
+          route: "/benefits",
+          screenshots: [],
+          apiCalls: [],
+          captureStatus: "pending"
+        }
+      ]
+    };
+    const harness = createOverlayHarness({
+      report: manualReactReport,
+      path: "/benefits"
+    });
+    await harness.flushNextTimer();
+    const target = {
+      id: "load-benefits",
+      tagName: "BUTTON",
+      className: "load-benefits",
+      name: "",
+      textContent: "Load benefits",
+      value: "",
+      closest() {
+        return target;
+      },
+      getAttribute(name: string) {
+        return name === "data-testid" ? "load-benefits" : null;
+      }
+    };
+
+    harness.dispatchDocumentEvent("pointerdown", { type: "pointerdown", target });
+    const response = await harness.window.fetch("/api/public/benefits");
+    harness.order.push("react-spa-response-returned");
+
+    expect(response.status).toBe(200);
+    expect(harness.order).not.toContain("drawer-render");
+
+    await harness.flushTimers();
+
+    const drawerProps = harness.getDrawerProps();
+    expect(harness.order.indexOf("react-spa-response-returned")).toBeLessThan(
+      harness.order.indexOf("drawer-render")
+    );
+    expect(drawerProps?.selectedEvent).toMatchObject({
+      method: "GET",
+      path: "/api/public/benefits",
+      source: "action",
+      matchedEndpoint: {
+        id: "endpoint:get:/api/public/benefits",
+        path: "/api/public/benefits"
+      },
+      matchedFlow: {
+        endpointId: "endpoint:get:/api/public/benefits"
+      },
+      triggeredBy: {
+        type: "Clicked",
+        label: "Load benefits",
+        selector: "button#load-benefits"
+      }
+    });
+  });
+
   it("loads the React drawer bundle only after the drawer opens", () => {
     const script = getOverlayClientScript();
     const mountBlock = script.slice(script.indexOf("function mountOverlayUi()"), script.indexOf("function installOverlayRootGuard()"));

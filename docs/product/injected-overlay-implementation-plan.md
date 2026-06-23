@@ -103,4 +103,4 @@
 - [x] Keep passive session, saved-item preload, page-view, analytics, health, metrics, and polling requests from replacing the selected main flow.
 - [x] Add a drawer state for "no primary browser API captured" instead of showing passive account/auth checks as the main result.
 - [x] Use scanned/captured page API data to surface current-route page fetch hints as scanned/inferred hints, not live requests.
-- [ ] Add acceptance tests that prove React SPA/manual frontend live browser requests still open the main drawer without any Next.js helper.
+- [x] Add acceptance tests that prove React SPA/manual frontend live browser requests still open the main drawer without any Next.js helper.
