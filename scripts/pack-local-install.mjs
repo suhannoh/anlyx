@@ -25,10 +25,14 @@ const packages = await readPackageSet();
 if (!options.dryRun) {
   await mkdir(destination, { recursive: true });
   for (const item of packages) {
-    await execFileAsync("corepack", ["pnpm", "--filter", item.name, "pack", "--pack-destination", destination], {
-      cwd: process.cwd(),
-      timeout: 120_000
-    });
+    await execFileAsync(
+      "corepack",
+      ["pnpm", "--filter", item.name, "pack", "--pack-destination", destination],
+      {
+        cwd: process.cwd(),
+        timeout: 120_000
+      }
+    );
     await assertPackedManifest(join(destination, item.tarball));
   }
 }
@@ -75,7 +79,9 @@ async function assertPackedManifest(tarballPath) {
 
   for (const [name, version] of Object.entries(manifest.dependencies ?? {})) {
     if (name.startsWith("@anlyx/") && version !== manifest.version) {
-      throw new Error(`${basename(tarballPath)} depends on ${name}@${version}, expected ${manifest.version}.`);
+      throw new Error(
+        `${basename(tarballPath)} depends on ${name}@${version}, expected ${manifest.version}.`
+      );
     }
   }
 

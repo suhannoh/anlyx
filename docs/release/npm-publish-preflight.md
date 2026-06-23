@@ -6,7 +6,7 @@ This document records the release packaging dry-run checks required before publi
 
 Do not use this checklist to publish. It is only the preflight for package metadata, build output, tarball contents, workspace dependency conversion, and local CLI execution.
 
-Anlyx `0.1.0` was published with unresolved `workspace:*` dependencies and is planned for deprecation. Anlyx `0.1.1` is planned for deprecation because the published CLI entrypoint can trigger an unsettled top-level await warning and exit before running commands. The `0.1.2` patch release must be published with `corepack pnpm publish`, not `npm publish`, so pnpm converts workspace protocol dependencies before upload.
+Anlyx `0.1.0` was published with unresolved `workspace:*` dependencies and is planned for deprecation. Anlyx `0.1.1` is planned for deprecation because the published CLI entrypoint can trigger an unsettled top-level await warning and exit before running commands. The `0.1.3` patch release must be published with `corepack pnpm publish`, not `npm publish`, so pnpm converts workspace protocol dependencies before upload.
 
 For the manual publish sequence, registry checks, and failure response steps, see
 [`docs/release/v0.1-release-runbook.md`](./v0.1-release-runbook.md).
@@ -107,10 +107,10 @@ Recommended local check:
 
 ```bash
 corepack pnpm --filter anlyx pack --pack-destination /tmp/anlyx-pack
-tar -xOf /tmp/anlyx-pack/anlyx-0.1.2.tgz package/package.json
+tar -xOf /tmp/anlyx-pack/anlyx-0.1.3.tgz package/package.json
 ```
 
-pnpm should convert workspace dependencies to publishable version ranges in packed output. For `0.1.2`, the packed `anlyx` CLI package should contain `@anlyx/*` dependencies as `0.1.2` or a compatible publishable range, never `workspace:*`. If any `workspace:*` range remains, stop the release and use `corepack pnpm publish`/`corepack pnpm pack` behavior that converts workspace ranges or prepare an explicit dependency range fix PR.
+pnpm should convert workspace dependencies to publishable version ranges in packed output. For `0.1.3`, the packed `anlyx` CLI package should contain `@anlyx/*` dependencies as `0.1.3` or a compatible publishable range, never `workspace:*`. If any `workspace:*` range remains, stop the release and use `corepack pnpm publish`/`corepack pnpm pack` behavior that converts workspace ranges or prepare an explicit dependency range fix PR.
 
 ## Local CLI Tarball Check
 
@@ -121,7 +121,7 @@ Example:
 ```bash
 mkdir -p /tmp/anlyx-npx-check
 cd /tmp/anlyx-npx-check
-npm install --ignore-scripts /tmp/anlyx-pack/anlyx-0.1.2.tgz
+npm install --ignore-scripts /tmp/anlyx-pack/anlyx-0.1.3.tgz
 npx anlyx --help
 npx anlyx init --force
 ```

@@ -138,7 +138,7 @@ The visual hierarchy SHOULD match the target references in `docs/design/referenc
 - Blue request accents, purple response accents, orange branch accents, and mint database/result accents
 - Sectioned inspector content for evidence and metadata
 
-The v0.1.2 visual system keeps React Flow as the graph engine for the Standalone Viewer and Flow Drawer, and uses focused UI libraries:
+The v0.1.3 visual system keeps React Flow as the graph engine for the Standalone Viewer and Flow Drawer, and uses focused UI libraries:
 
 - `elkjs` for structure/process graph layout, with deterministic fallback layout when async layout fails or is unavailable.
 - `motion` for active node pulse, replay step transitions, and restrained moving particles.

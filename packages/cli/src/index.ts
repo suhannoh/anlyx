@@ -25,7 +25,11 @@ export type {
 } from "./scan-command.js";
 
 import { runInitCommand } from "./init-command.js";
-import { closeActiveLocalUiServers, runDevCommand, type DevCommandDependencies } from "./dev-command.js";
+import {
+  closeActiveLocalUiServers,
+  runDevCommand,
+  type DevCommandDependencies
+} from "./dev-command.js";
 import { runScanCommand, type ScanCommandDependencies } from "./scan-command.js";
 
 export type CliOptions = {

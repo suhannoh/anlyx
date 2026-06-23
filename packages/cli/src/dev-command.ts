@@ -335,12 +335,20 @@ function createAnlyxDevPlugin(options: LocalUiServerOptions) {
         }
 
         if (request.method === "GET" && requestUrl === "/_anlyx/overlay-ui.js") {
-          await sendRuntimeAsset(response, join(options.viewerRoot, "../overlay/overlay-ui.js"), "application/javascript; charset=utf-8");
+          await sendRuntimeAsset(
+            response,
+            join(options.viewerRoot, "../overlay/overlay-ui.js"),
+            "application/javascript; charset=utf-8"
+          );
           return;
         }
 
         if (request.method === "GET" && requestUrl === "/_anlyx/overlay-ui.css") {
-          await sendRuntimeAsset(response, join(options.viewerRoot, "../overlay/overlay-ui.css"), "text/css; charset=utf-8");
+          await sendRuntimeAsset(
+            response,
+            join(options.viewerRoot, "../overlay/overlay-ui.css"),
+            "text/css; charset=utf-8"
+          );
           return;
         }
 

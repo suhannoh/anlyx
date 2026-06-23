@@ -102,9 +102,9 @@ export function MainFlowCanvas({
         </ReactFlow>
       </div>
       <p className="anlyx-flow-rf-note">
-        Anlyx mapped this browser-visible request to the scanned backend flow. Muted nodes are
-        known code paths; framework server-side fetches, such as Next.js server component data
-        loading, require the scanned path until a server runtime bridge is enabled.
+        Anlyx mapped this browser-visible request to the scanned backend flow. Muted nodes are known
+        code paths; framework server-side fetches, such as Next.js server component data loading,
+        require the scanned path until a server runtime bridge is enabled.
       </p>
     </section>
   );

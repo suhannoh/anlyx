@@ -682,7 +682,9 @@ describe("dev command", () => {
     expect(script).toContain("installEventSelectionHandler");
     expect(script).toContain('target.closest("[data-event-id]")');
     expect(script).toContain("const passive = isPassiveRequest(event.method, normalized.pathname)");
-    expect(script).toContain("const triggeredBy = passive ? null : findActionForRequest(event.startedAt)");
+    expect(script).toContain(
+      "const triggeredBy = passive ? null : findActionForRequest(event.startedAt)"
+    );
     expect(script).toContain("if (shouldAutoFocusEvent(item))");
     expect(script).toContain("selectedEventId: null");
   });
@@ -733,7 +735,7 @@ describe("dev command", () => {
     expect(script).toContain("width: 38px");
     expect(script).toContain("max-width: 38px");
     expect(script).toContain(".anlyx-fab:hover");
-    expect(script).toContain('launcher.dataset.expanded');
+    expect(script).toContain("launcher.dataset.expanded");
     expect(script).toContain("brieflyExpandLauncher");
     expect(script).toContain("Date.now() + 2600");
   });
@@ -746,7 +748,7 @@ describe("dev command", () => {
     expect(script).toContain("observer.observe(document.body, { childList: true })");
     expect(script).toContain("overlayRootRestoreScheduled");
     expect(script).toContain("overlayInfrastructureInstalled");
-    expect(script).toContain('style[data-anlyx-overlay-base]');
+    expect(script).toContain("style[data-anlyx-overlay-base]");
   });
 
   it("defers expensive overlay work away from the application request path", () => {
@@ -813,7 +815,9 @@ describe("dev command", () => {
 
     await harness.flushTimers();
 
-    expect(harness.order.indexOf("app-response-returned")).toBeLessThan(harness.order.indexOf("drawer-render"));
+    expect(harness.order.indexOf("app-response-returned")).toBeLessThan(
+      harness.order.indexOf("drawer-render")
+    );
   });
 
   it("does not promote passive session probes to the action drawer", async () => {
@@ -1026,8 +1030,14 @@ describe("dev command", () => {
 
   it("loads the React drawer bundle only after the drawer opens", () => {
     const script = getOverlayClientScript();
-    const mountBlock = script.slice(script.indexOf("function mountOverlayUi()"), script.indexOf("function installOverlayRootGuard()"));
-    const renderBlock = script.slice(script.indexOf("function render()"), script.indexOf("function renderReactDrawer"));
+    const mountBlock = script.slice(
+      script.indexOf("function mountOverlayUi()"),
+      script.indexOf("function installOverlayRootGuard()")
+    );
+    const renderBlock = script.slice(
+      script.indexOf("function render()"),
+      script.indexOf("function renderReactDrawer")
+    );
 
     expect(mountBlock).not.toContain("loadOverlayUiAssets()");
     expect(renderBlock).toContain("if (!state.open)");

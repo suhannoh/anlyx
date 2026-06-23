@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
+import { setTimeout as delay } from "node:timers/promises";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const requireFromCwd = createRequire(resolve(rootDir, "packages/capture/package.json"));
@@ -39,7 +40,7 @@ const waitForServer = (url, timeoutMs = 10_000) =>
           reject(new Error(`Timed out waiting for ${url}`));
           return;
         }
-        setTimeout(check, 150);
+        void delay(150).then(check);
       });
     };
     check();
@@ -147,4 +148,4 @@ await new Promise((resolvePromise, reject) => {
   });
 });
 
-console.log(`Wrote ${output}`);
+process.stdout.write(`Wrote ${output}\n`);

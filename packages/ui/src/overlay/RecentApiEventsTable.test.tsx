@@ -23,9 +23,9 @@ describe("RecentApiEventsTable", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Background 2" }));
 
-    expect(
-      screen.getByRole("button", { name: "Background 2" }).getAttribute("aria-selected")
-    ).toBe("true");
+    expect(screen.getByRole("button", { name: "Background 2" }).getAttribute("aria-selected")).toBe(
+      "true"
+    );
     expect(within(table).getByText("/api/account/me")).toBeTruthy();
     expect(within(table).getByText("/actuator/health")).toBeTruthy();
   });

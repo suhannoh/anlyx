@@ -12,9 +12,9 @@
 
 Anlyx는 실제 로컬 프론트엔드 앱 위에 오버레이를 띄우고, 방금 누른 버튼이나 컴포넌트에서 발생한 API가 어떤 백엔드 엔드포인트, 서비스, Repository, 데이터베이스 테이블, 캡처 상태, 정적 분석 근거와 연결되는지 보여주는 개발자 도구입니다.
 
-> 현재 상태: v0.1.2 patch release 준비 단계입니다. 실제 npm publish는 별도 승인 후 진행합니다.
+> 현재 상태: v0.1.3 patch release 준비 단계입니다. 실제 npm publish는 별도 승인 후 진행합니다.
 
-Anlyx `0.1.0`은 `workspace:*` dependency가 남아 있는 상태로 배포되어 deprecated 처리 예정입니다. Anlyx `0.1.1`은 배포된 CLI entrypoint가 명령 실행 전에 종료될 수 있어 deprecated 처리 예정입니다. 승인된 pnpm 기반 publish 이후에는 `0.1.2`부터 일반 `npm install anlyx`로 설치 가능한 버전으로 안내합니다.
+Anlyx `0.1.0`은 `workspace:*` dependency가 남아 있는 상태로 배포되어 deprecated 처리 예정입니다. Anlyx `0.1.1`은 배포된 CLI entrypoint가 명령 실행 전에 종료될 수 있어 deprecated 처리 예정입니다. `v0.1.2` git tag는 이미 존재하므로, 승인된 pnpm 기반 publish 이후에는 `0.1.3`부터 일반 `npm install anlyx`로 설치 가능한 버전으로 안내합니다.
 
 <p align="center">
   <img src="./docs/assets/readme/anlyx-demo.gif" alt="사용자 액션이 백엔드 흐름 다이어그램으로 매핑되는 Anlyx 데모" />
@@ -55,10 +55,10 @@ v0.1 Deep Support는 Spring Boot + Next.js App Router로 제한합니다. FastAP
 
 ### Install
 
-승인된 0.1.2 publish 이후:
+승인된 0.1.3 publish 이후:
 
 ```bash
-npm install -D anlyx@0.1.2
+npm install -D anlyx@0.1.3
 npx anlyx init
 npx anlyx dev
 ```
@@ -278,7 +278,7 @@ npx anlyx scan --skip-capture
 
 ### 0.1.0 workspace dependency issue
 
-`anlyx@0.1.0`은 사용하지 마세요. unresolved `workspace:*` dependency가 포함되어 배포되었습니다. 승인된 patch publish 이후 `0.1.2` 이상을 사용합니다.
+`anlyx@0.1.0`은 사용하지 마세요. unresolved `workspace:*` dependency가 포함되어 배포되었습니다. 승인된 patch publish 이후 `0.1.3` 이상을 사용합니다.
 
 ## v0.1 제외 범위
 
@@ -308,4 +308,4 @@ corepack pnpm -r build
 
 ## Release Notes
 
-`v0.1.2` GitHub Release 초안은 [`docs/release/v0.1.2-release-notes.md`](./docs/release/v0.1.2-release-notes.md)에 정리합니다. npm publish 검증이 끝난 뒤 tag와 release를 만들 때 이 문서를 기준으로 사용합니다.
+`v0.1.3` GitHub Release 초안은 [`docs/release/v0.1.3-release-notes.md`](./docs/release/v0.1.3-release-notes.md)에 정리합니다. npm publish 검증이 끝난 뒤 tag와 release를 만들 때 이 문서를 기준으로 사용합니다.

@@ -20,9 +20,7 @@ export function Badge({
   className?: string;
 }): JSX.Element {
   return (
-    <span className={`anlyx-ov-badge anlyx-ov-badge--${tone} ${className}`.trim()}>
-      {children}
-    </span>
+    <span className={`anlyx-ov-badge anlyx-ov-badge--${tone} ${className}`.trim()}>{children}</span>
   );
 }
 

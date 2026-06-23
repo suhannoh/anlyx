@@ -11,9 +11,13 @@ export function RecentApiEventsTable({
   selectedEventId?: string | null;
 }): JSX.Element {
   const [filter, setFilter] = useState<"action" | "background" | "all">("action");
-  const actionEvents = useMemo(() => events.filter((event) => Boolean(event.triggeredBy)), [events]);
+  const actionEvents = useMemo(
+    () => events.filter((event) => Boolean(event.triggeredBy)),
+    [events]
+  );
   const backgroundEvents = useMemo(() => events.filter((event) => !event.triggeredBy), [events]);
-  const visibleEvents = filter === "action" ? actionEvents : filter === "background" ? backgroundEvents : events;
+  const visibleEvents =
+    filter === "action" ? actionEvents : filter === "background" ? backgroundEvents : events;
   const emptyText =
     filter === "action"
       ? "No user-action API requests yet."
@@ -87,7 +91,11 @@ export function RecentApiEventsTable({
                 </td>
                 <td>
                   <Badge tone={event.triggeredBy ? "blue" : "gray"}>
-                    {event.triggeredBy ? "action" : event.source === "health" ? "health" : "background"}
+                    {event.triggeredBy
+                      ? "action"
+                      : event.source === "health"
+                        ? "health"
+                        : "background"}
                   </Badge>
                 </td>
                 <td>{event.durationMs}ms</td>

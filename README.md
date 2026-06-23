@@ -14,9 +14,9 @@ Anlyx shows what your last real frontend action did in the backend.
 
 Anlyx overlays your real local frontend app and shows which backend endpoint, service, repository, database table, capture state, API call, and static analysis evidence belongs to the interaction you just triggered.
 
-> Status: v0.1.2 patch release preparation. Actual npm publish requires separate approval.
+> Status: v0.1.3 patch release preparation. Actual npm publish requires separate approval.
 
-Anlyx `0.1.0` is planned to be deprecated because it was published with unresolved `workspace:*` dependencies. Anlyx `0.1.1` is planned to be deprecated because the published CLI entrypoint can exit before running commands. `0.1.2` is the patch release intended for normal `npm install anlyx` usage after the approved pnpm-based publish.
+Anlyx `0.1.0` is planned to be deprecated because it was published with unresolved `workspace:*` dependencies. Anlyx `0.1.1` is planned to be deprecated because the published CLI entrypoint can exit before running commands. The `v0.1.2` git tag already exists, so `0.1.3` is the patch release intended for normal `npm install anlyx` usage after the approved pnpm-based publish.
 
 <p align="center">
   <img src="./docs/assets/readme/anlyx-demo.gif" alt="Anlyx demo showing user actions mapped to backend flow diagrams" />
@@ -57,10 +57,10 @@ v0.1 is intentionally limited to Spring Boot + Next.js App Router for Deep Suppo
 
 ### Install
 
-After the approved 0.1.2 publish:
+After the approved 0.1.3 publish:
 
 ```bash
-npm install -D anlyx@0.1.2
+npm install -D anlyx@0.1.3
 npx anlyx init
 npx anlyx dev
 ```
@@ -286,7 +286,7 @@ Confirm the frontend server is running at `frontend.baseUrl`, dynamic routes hav
 
 ### 0.1.0 workspace dependency issue
 
-Do not use `anlyx@0.1.0`. It was published with unresolved `workspace:*` dependencies. Use `0.1.2` or newer after the approved patch publish.
+Do not use `anlyx@0.1.0`. It was published with unresolved `workspace:*` dependencies. Use `0.1.3` or newer after the approved patch publish.
 
 ## Not Included In v0.1
 
@@ -316,4 +316,4 @@ Release packaging is checked with local build and pack dry-runs. See [`docs/rele
 
 ## Release Notes
 
-The GitHub Release draft for `v0.1.2` is maintained in [`docs/release/v0.1.2-release-notes.md`](./docs/release/v0.1.2-release-notes.md). Use it when creating the tag and release after npm publish verification succeeds.
+The GitHub Release draft for `v0.1.3` is maintained in [`docs/release/v0.1.3-release-notes.md`](./docs/release/v0.1.3-release-notes.md). Use it when creating the tag and release after npm publish verification succeeds.

@@ -72,7 +72,10 @@ function ScannedHints({ hints }: { hints: OverlayScannedHint[] }): JSX.Element {
       </div>
       <div className="anlyx-scanned-hints__list">
         {hints.slice(0, 4).map((hint, index) => (
-          <div className="anlyx-scanned-hint" key={`${hint.pageRoute}:${hint.method}:${hint.path}:${index}`}>
+          <div
+            className="anlyx-scanned-hint"
+            key={`${hint.pageRoute}:${hint.method}:${hint.path}:${index}`}
+          >
             <div>
               <Badge tone={hint.evidence === "capture" ? "green" : "violet"}>
                 {hint.evidence === "capture" ? "captured page link" : "scanned page link"}
@@ -133,14 +136,26 @@ function CapturedRequest({ event }: { event: OverlayApiEvent }): JSX.Element {
       <div className="anlyx-captured-request__summary">
         <span>
           <b>{event.matchedEndpoint ? "endpoint" : "browser"}</b>{" "}
-          {event.matchedEndpoint ? `${event.matchedEndpoint.method} ${event.matchedEndpoint.path}` : event.path}
+          {event.matchedEndpoint
+            ? `${event.matchedEndpoint.method} ${event.matchedEndpoint.path}`
+            : event.path}
         </span>
         <span>
           <b>{getStatusLabel(event.status)}</b>
         </span>
-        <span>{event.durationMs}ms{event.count && event.count > 1 ? ` · seen x${event.count}` : ""}</span>
-        {event.matchedEndpoint?.confidence ? <span>confidence {event.matchedEndpoint.confidence}</span> : null}
-        <span>{event.triggeredBy ? "user action" : event.source === "health" ? "health/background" : "background"}</span>
+        <span>
+          {event.durationMs}ms{event.count && event.count > 1 ? ` · seen x${event.count}` : ""}
+        </span>
+        {event.matchedEndpoint?.confidence ? (
+          <span>confidence {event.matchedEndpoint.confidence}</span>
+        ) : null}
+        <span>
+          {event.triggeredBy
+            ? "user action"
+            : event.source === "health"
+              ? "health/background"
+              : "background"}
+        </span>
       </div>
       <div className="anlyx-captured-request__steps">
         <CapturedStep

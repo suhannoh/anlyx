@@ -1,6 +1,6 @@
 {
   "name": "@anlyx/core",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Core data contracts, schemas, config, fixture validation, and report aggregation for Anlyx.",
   "license": "MIT",
   "type": "module",
