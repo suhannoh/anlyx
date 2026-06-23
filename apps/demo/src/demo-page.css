@@ -1,0 +1,11 @@
+body {
+  min-width: 1180px;
+}
+
+.anlyx-readme-demo {
+  min-height: 100vh;
+}
+
+.anlyx-readme-demo__drawer-shell {
+  min-height: calc(100vh - 40px);
+}

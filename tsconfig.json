@@ -24,6 +24,9 @@
     },
     {
       "path": "./packages/capture"
+    },
+    {
+      "path": "./apps/demo"
     }
   ]
 }
