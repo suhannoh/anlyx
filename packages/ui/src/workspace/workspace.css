@@ -1537,7 +1537,7 @@
 
 .diagram-canvas-card {
   position: relative;
-  min-height: 700px;
+  min-height: 720px;
   overflow: hidden;
 }
 
@@ -1608,15 +1608,18 @@
 
 .diagram-canvas {
   position: absolute;
-  inset: 0;
+  inset: 72px 0 0;
   background-image: radial-gradient(#d9e0eb 1px, transparent 1px);
   background-size: 18px 18px;
 }
 
 .diagram-canvas__stage {
   position: absolute;
-  inset: 0;
-  transform-origin: top left;
+  top: 0;
+  left: 50%;
+  width: 940px;
+  height: 610px;
+  transform-origin: top center;
   transition: transform 160ms ease;
 }
 
@@ -1625,9 +1628,9 @@
   position: absolute;
   display: grid;
   align-content: start;
-  width: 184px;
-  min-height: 154px;
-  padding: 18px 16px;
+  width: 180px;
+  min-height: 148px;
+  padding: 17px 16px 15px;
   border: 1px solid #b7d0ff;
   border-radius: 12px;
   background: #ffffff;
@@ -1635,23 +1638,23 @@
 }
 
 .diagram-node--api {
-  left: 38px;
-  top: 230px;
+  left: 0;
+  top: 92px;
 }
 
 .diagram-node--controller {
-  left: 254px;
-  top: 230px;
+  left: 248px;
+  top: 92px;
 }
 
 .diagram-node--auth {
-  left: 470px;
-  top: 230px;
+  left: 496px;
+  top: 92px;
 }
 
 .diagram-node--result {
-  left: 686px;
-  top: 230px;
+  left: 744px;
+  top: 92px;
   border-color: #fbbf24;
 }
 
@@ -1753,7 +1756,7 @@
 
 .diagram-arrow {
   position: absolute;
-  width: 66px;
+  width: 86px;
   height: 24px;
   overflow: visible;
 }
@@ -1767,18 +1770,18 @@
 }
 
 .arrow-api-controller {
-  left: 211px;
-  top: 292px;
+  left: 177px;
+  top: 151px;
 }
 
 .arrow-controller-auth {
-  left: 427px;
-  top: 292px;
+  left: 425px;
+  top: 151px;
 }
 
 .arrow-auth-result {
-  left: 643px;
-  top: 292px;
+  left: 673px;
+  top: 151px;
 }
 
 .arrow-auth-result path {
@@ -1787,23 +1790,42 @@
 
 .branch-lines {
   position: absolute;
-  left: 562px;
-  top: 380px;
-  width: 314px;
-  height: 100px;
-  border-left: 2px dashed #94a3b8;
-  border-bottom: 2px dashed #94a3b8;
-  border-right: 2px dashed #94a3b8;
+  left: 319px;
+  top: 300px;
+  width: 554px;
+  height: 82px;
+  border-top: 2px dashed #94a3b8;
 }
 
 .branch-lines.is-proven {
   border-color: rgba(37, 99, 235, 0.72);
 }
 
-.branch-lines::before,
-.branch-lines::after {
+.branch-lines span {
   position: absolute;
-  bottom: -17px;
+  top: -2px;
+  width: 0;
+  height: 82px;
+  content: "";
+  border-left: 2px dashed #94a3b8;
+}
+
+.branch-lines span:nth-child(1) {
+  left: 20px;
+}
+
+.branch-lines span:nth-child(2) {
+  left: 268px;
+}
+
+.branch-lines span:nth-child(3) {
+  right: 20px;
+}
+
+.branch-lines span::after {
+  position: absolute;
+  bottom: -6px;
+  left: -6px;
   width: 0;
   height: 0;
   content: "";
@@ -1812,21 +1834,16 @@
   border-left: 6px solid transparent;
 }
 
-.branch-lines::before {
-  left: -7px;
+.branch-lines.is-proven span {
+  border-left-color: rgba(37, 99, 235, 0.72);
 }
 
-.branch-lines::after {
-  right: -7px;
-}
-
-.branch-lines.is-proven::before,
-.branch-lines.is-proven::after {
+.branch-lines.is-proven span::after {
   border-top-color: rgba(37, 99, 235, 0.72);
 }
 
 .ghost-node {
-  top: 492px;
+  top: 390px;
   min-height: 140px;
   border-style: dashed;
   border-color: #d2dae7;
@@ -1866,22 +1883,22 @@
 }
 
 .ghost-service {
-  left: 276px;
+  left: 248px;
 }
 
 .ghost-repository {
-  left: 492px;
+  left: 496px;
 }
 
 .ghost-database {
-  left: 708px;
+  left: 744px;
 }
 
 .diagram-caption {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 38px;
+  bottom: 12px;
   margin: 0;
   color: #53627a;
   text-align: center;

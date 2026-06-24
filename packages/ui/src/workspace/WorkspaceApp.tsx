@@ -1023,7 +1023,10 @@ function DiagramFlowView({ record }: { record: FlowRecord }): JSX.Element {
         </div>
       </div>
       <div className="diagram-canvas">
-        <div className="diagram-canvas__stage" style={{ transform: `scale(${zoom})` }}>
+        <div
+          className="diagram-canvas__stage"
+          style={{ transform: `translateX(-50%) scale(${zoom})` }}
+        >
           <DiagramNode
             layer={api}
             fallbackLabel={`${record.method} ${record.path}`}
@@ -1057,7 +1060,11 @@ function DiagramFlowView({ record }: { record: FlowRecord }): JSX.Element {
             icon={Shield}
             className="diagram-node--result"
           />
-          <div className={`branch-lines ${downstreamProven ? "is-proven" : ""}`} />
+          <div className={`branch-lines ${downstreamProven ? "is-proven" : ""}`}>
+            <span />
+            <span />
+            <span />
+          </div>
           <GhostNode
             layer={service}
             fallbackLabel={t(locale, "service")}
