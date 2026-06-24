@@ -1,4 +1,15 @@
 import {
+  BaseEdge,
+  Handle,
+  Position,
+  ReactFlow,
+  getSmoothStepPath,
+  type Edge,
+  type EdgeProps,
+  type Node,
+  type NodeProps
+} from "@xyflow/react";
+import {
   Box,
   Check,
   ChevronRight,
@@ -989,16 +1000,13 @@ function SummaryPathRow({ index, layer }: { index: number; layer: FlowLayer }): 
 function DiagramFlowView({ record }: { record: FlowRecord }): JSX.Element {
   const locale = useWorkspaceLocale();
   const [zoom, setZoom] = useState(1);
-  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [highlightPath, setHighlightPath] = useState(true);
   const [showAllSteps, setShowAllSteps] = useState(true);
+  const nodeTypes = useMemo(() => ({ anlyxNode: AnlyxFlowNode }), []);
+  const edgeTypes = useMemo(() => ({ anlyxSmooth: AnlyxSmoothEdge }), []);
   const model = useMemo(
-    () => buildLayeredDiagramModel(record, locale, { showAllSteps }),
+    () => buildReactFlowDiagram(record, locale, { showAllSteps }),
     [record, locale, showAllSteps]
-  );
-  const connectedNodeIds = useMemo(
-    () => connectedDiagramNodeIds(model.edges, hoveredNodeId),
-    [model.edges, hoveredNodeId]
   );
 
   return (
@@ -1064,26 +1072,37 @@ function DiagramFlowView({ record }: { record: FlowRecord }): JSX.Element {
       </div>
       <div className="diagram-canvas diagram-canvas--layered">
         <div
-          className={`layered-diagram ${
+          className={`layered-diagram layered-diagram--react-flow ${
             highlightPath ? "layered-diagram--highlight-path" : ""
-          } ${hoveredNodeId ? "has-hover" : ""}`}
+          }`}
           style={{ transform: `translateX(-50%) scale(${zoom})` }}
         >
           {model.layers.map((layer) => (
-            <LayeredDiagramColumn
-              connectedNodeIds={connectedNodeIds}
-              hoveredNodeId={hoveredNodeId}
+            <LayeredDiagramColumnBackdrop
+              hasSecondaryNodes={model.nodes.some(
+                (node) => node.data.node.layer === layer && !node.data.node.isMainPath
+              )}
               key={layer}
               layer={layer}
-              nodes={model.nodes.filter((node) => node.layer === layer)}
-              onHoverNode={setHoveredNodeId}
             />
           ))}
-          <LayeredDiagramEdges
-            connectedNodeIds={connectedNodeIds}
+          <ReactFlow
+            className="layered-react-flow"
+            edgeTypes={edgeTypes}
             edges={model.edges}
-            hoveredNodeId={hoveredNodeId}
+            fitView={false}
+            maxZoom={1}
+            minZoom={1}
             nodes={model.nodes}
+            nodesConnectable={false}
+            nodesDraggable={false}
+            nodeTypes={nodeTypes}
+            panOnDrag={false}
+            preventScrolling={false}
+            proOptions={{ hideAttribution: true }}
+            zoomOnDoubleClick={false}
+            zoomOnPinch={false}
+            zoomOnScroll={false}
           />
         </div>
       </div>
@@ -1151,10 +1170,10 @@ type LayeredDiagramEdge = {
   kind: DiagramEdgeKind;
 };
 
-type LayeredDiagramModel = {
+type ReactFlowDiagramModel = {
   layers: DiagramLayerId[];
-  nodes: LayeredDiagramNode[];
-  edges: LayeredDiagramEdge[];
+  nodes: AnlyxReactFlowNode[];
+  edges: AnlyxReactFlowEdge[];
 };
 
 const layeredDiagramLayers: DiagramLayerId[] = [
@@ -1166,35 +1185,51 @@ const layeredDiagramLayers: DiagramLayerId[] = [
 ];
 
 const layeredLayout = {
-  columnWidth: 200,
-  columnGap: 14,
+  canvasWidth: 1320,
+  canvasHeight: 610,
+  columnWidth: 220,
+  nodeWidth: 180,
   nodeHeight: 128,
-  nodeGap: 16,
-  startX: 18,
-  startY: 88
+  mainStartY: 120,
+  mainGap: 170,
+  secondaryStartY: 470,
+  secondaryGap: 148,
+  layerX: {
+    browser: 0,
+    api: 260,
+    application: 520,
+    data: 860,
+    response: 1120
+  } satisfies Record<DiagramLayerId, number>
 } as const;
 
-function LayeredDiagramColumn({
-  connectedNodeIds,
-  hoveredNodeId,
-  layer,
-  nodes,
-  onHoverNode
+type AnlyxReactFlowNodeData = {
+  node: LayeredDiagramNode;
+};
+
+type AnlyxReactFlowEdgeData = {
+  kind: DiagramEdgeKind;
+};
+
+type AnlyxReactFlowNode = Node<AnlyxReactFlowNodeData, "anlyxNode">;
+type AnlyxReactFlowEdge = Edge<AnlyxReactFlowEdgeData, "anlyxSmooth">;
+
+function LayeredDiagramColumnBackdrop({
+  hasSecondaryNodes,
+  layer
 }: {
-  connectedNodeIds: Set<string>;
-  hoveredNodeId: string | null;
+  hasSecondaryNodes: boolean;
   layer: DiagramLayerId;
-  nodes: LayeredDiagramNode[];
-  onHoverNode: (nodeId: string | null) => void;
 }): JSX.Element {
   const locale = useWorkspaceLocale();
   const heading = layeredLayerMeta(layer, locale);
-  const mainNodes = nodes.filter((node) => node.isMainPath);
-  const secondaryNodes = nodes.filter((node) => !node.isMainPath);
   const Icon = heading.icon;
 
   return (
-    <section className={`layered-column layered-column--${layer}`}>
+    <section
+      className={`layered-column layered-column--${layer}`}
+      style={{ left: layeredLayout.layerX[layer] }}
+    >
       <header className="layered-column__header">
         <span>
           <Icon size={22} />
@@ -1204,46 +1239,20 @@ function LayeredDiagramColumn({
           <small>{heading.subtitle}</small>
         </div>
       </header>
-      <div className="layered-column__stack">
-        {mainNodes.map((node) => (
-          <LayeredNodeCard
-            connected={connectedNodeIds.has(node.id)}
-            dimmed={Boolean(hoveredNodeId) && !connectedNodeIds.has(node.id)}
-            key={node.id}
-            node={node}
-            onHoverNode={onHoverNode}
-          />
-        ))}
-        {secondaryNodes.length > 0 ? (
-          <>
-            <div className="layered-column__divider">{t(locale, "knownButNotProven")}</div>
-            {secondaryNodes.map((node) => (
-              <LayeredNodeCard
-                connected={connectedNodeIds.has(node.id)}
-                dimmed={Boolean(hoveredNodeId) && !connectedNodeIds.has(node.id)}
-                key={node.id}
-                node={node}
-                onHoverNode={onHoverNode}
-              />
-            ))}
-          </>
-        ) : null}
-      </div>
+      {hasSecondaryNodes ? (
+        <div className="layered-column__divider layered-column__divider--absolute">
+          {t(locale, "knownButNotProven")}
+        </div>
+      ) : null}
     </section>
   );
 }
 
-function LayeredNodeCard({
-  connected,
-  dimmed,
-  node,
-  onHoverNode
-}: {
-  connected: boolean;
-  dimmed: boolean;
-  node: LayeredDiagramNode;
-  onHoverNode: (nodeId: string | null) => void;
-}): JSX.Element {
+function AnlyxFlowNode({ data }: NodeProps<AnlyxReactFlowNode>): JSX.Element {
+  return <LayeredNodeCard node={data.node} />;
+}
+
+function LayeredNodeCard({ node }: { node: LayeredDiagramNode }): JSX.Element {
   const locale = useWorkspaceLocale();
   const Icon = layeredNodeIcon(node);
 
@@ -1251,14 +1260,45 @@ function LayeredNodeCard({
     <article
       className={`layered-node layered-node--${node.layer} layered-node--${node.status} ${
         node.isMainPath ? "is-main-path" : "is-secondary-path"
-      } ${connected ? "is-connected" : ""} ${dimmed ? "is-dimmed" : ""}`}
-      onBlur={() => onHoverNode(null)}
-      onFocus={() => onHoverNode(node.id)}
-      onMouseEnter={() => onHoverNode(node.id)}
-      onMouseLeave={() => onHoverNode(null)}
-      tabIndex={0}
+      }`}
       title={node.detail}
     >
+      <Handle
+        className="anlyx-flow-handle anlyx-flow-handle--left"
+        id="left"
+        position={Position.Left}
+        type="target"
+      />
+      <Handle
+        className="anlyx-flow-handle anlyx-flow-handle--right"
+        id="right"
+        position={Position.Right}
+        type="source"
+      />
+      <Handle
+        className="anlyx-flow-handle anlyx-flow-handle--top"
+        id="top"
+        position={Position.Top}
+        type="target"
+      />
+      <Handle
+        className="anlyx-flow-handle anlyx-flow-handle--top"
+        id="top"
+        position={Position.Top}
+        type="source"
+      />
+      <Handle
+        className="anlyx-flow-handle anlyx-flow-handle--bottom"
+        id="bottom"
+        position={Position.Bottom}
+        type="source"
+      />
+      <Handle
+        className="anlyx-flow-handle anlyx-flow-handle--bottom"
+        id="bottom"
+        position={Position.Bottom}
+        type="target"
+      />
       <span className="layered-node__step">{node.step}</span>
       <span className={`layered-node__icon layered-node__icon--${node.layer}`}>
         <Icon size={20} />
@@ -1280,99 +1320,125 @@ function LayeredNodeCard({
   );
 }
 
-function LayeredDiagramEdges({
-  connectedNodeIds,
-  edges,
-  hoveredNodeId,
-  nodes
-}: {
-  connectedNodeIds: Set<string>;
-  edges: LayeredDiagramEdge[];
-  hoveredNodeId: string | null;
-  nodes: LayeredDiagramNode[];
-}): JSX.Element {
-  const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+function AnlyxSmoothEdge({
+  data,
+  sourcePosition,
+  sourceX,
+  sourceY,
+  targetPosition,
+  targetX,
+  targetY
+}: EdgeProps<AnlyxReactFlowEdge>): JSX.Element {
+  const [path] = getSmoothStepPath({
+    borderRadius: 18,
+    offset: 26,
+    sourcePosition,
+    sourceX,
+    sourceY,
+    targetPosition,
+    targetX,
+    targetY
+  });
+  const kind = data?.kind ?? "executed";
 
   return (
-    <svg className="layered-edges" viewBox="0 0 1060 610" aria-hidden="true">
-      <defs>
-        <filter id="layered-edge-glow" x="-20%" y="-80%" width="140%" height="260%">
-          <feGaussianBlur stdDeviation="3" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-        {(["executed", "source_matched", "inferred", "not_proven", "blocked"] as const).map(
-          (kind) => (
-            <marker
-              id={`layered-edge-arrow-${kind}`}
-              key={kind}
-              markerHeight="10"
-              markerUnits="strokeWidth"
-              markerWidth="10"
-              orient="auto"
-              refX="8"
-              refY="3"
-            >
-              <path
-                className={`layered-edge-arrow layered-edge-arrow--${kind}`}
-                d="M0,0 L0,6 L8,3 z"
-              />
-            </marker>
-          )
-        )}
-      </defs>
-      {edges.map((edge) => {
-        const from = nodeMap.get(edge.from);
-        const to = nodeMap.get(edge.to);
-
-        if (!from || !to) {
-          return null;
-        }
-
-        const active =
-          !hoveredNodeId || connectedNodeIds.has(edge.from) || connectedNodeIds.has(edge.to);
-        const path = layeredEdgePath(from, to);
-
-        return (
-          <g className={active ? "is-active" : ""} key={edge.id}>
-            <path className={`layered-edge-halo layered-edge-halo--${edge.kind}`} d={path} />
-            <path
-              className={`layered-edge layered-edge--${edge.kind}`}
-              d={path}
-              filter={
-                edge.kind === "executed" || edge.kind === "blocked"
-                  ? "url(#layered-edge-glow)"
-                  : undefined
-              }
-              markerEnd={`url(#layered-edge-arrow-${edge.kind})`}
-            />
-          </g>
-        );
-      })}
-    </svg>
+    <>
+      <path className={`anlyx-flow-edge-halo anlyx-flow-edge-halo--${kind}`} d={path} />
+      <BaseEdge className={`anlyx-flow-edge anlyx-flow-edge--${kind}`} path={path} />
+    </>
   );
 }
 
-function buildLayeredDiagramModel(
+function buildReactFlowDiagram(
   record: FlowRecord,
   locale: WorkspaceLocale,
   options: { showAllSteps: boolean }
-): LayeredDiagramModel {
+): ReactFlowDiagramModel {
   const sourceLayers = diagramLayers(record);
   const visibleLayers = options.showAllSteps
     ? sourceLayers
     : sourceLayers.filter((layer) => !isUnprovenLayer(layer));
-  const nodes = assignLayeredNodePositions(
+  const diagramNodes = assignLayeredNodePositions(
     visibleLayers.map((layer, index) => toLayeredDiagramNode(layer, index + 1, record, locale))
   );
+  const diagramEdges = buildLayeredDiagramEdges(diagramNodes);
 
   return {
     layers: layeredDiagramLayers,
-    nodes,
-    edges: buildLayeredDiagramEdges(nodes)
+    nodes: diagramNodes.map((node) => ({
+      id: node.id,
+      type: "anlyxNode",
+      position: { x: node.x, y: node.y },
+      data: { node },
+      draggable: false,
+      selectable: false
+    })),
+    edges: diagramEdges.map((edge) => {
+      const from = diagramNodes.find((node) => node.id === edge.from);
+      const to = diagramNodes.find((node) => node.id === edge.to);
+      const handles = from && to ? reactFlowHandlesForEdge(from, to) : {};
+
+      return {
+        id: edge.id,
+        source: edge.from,
+        target: edge.to,
+        type: "anlyxSmooth",
+        data: { kind: edge.kind },
+        focusable: false,
+        selectable: false,
+        ...handles
+      };
+    })
   };
+}
+
+function reactFlowHandlesForEdge(
+  from: LayeredDiagramNode,
+  to: LayeredDiagramNode
+): Pick<AnlyxReactFlowEdge, "sourceHandle" | "targetHandle"> {
+  if (from.layer === to.layer) {
+    return to.y > from.y
+      ? { sourceHandle: "bottom", targetHandle: "top" }
+      : { sourceHandle: "top", targetHandle: "bottom" };
+  }
+
+  return { sourceHandle: "right", targetHandle: "left" };
+}
+
+function assignLayeredNodePositions(nodes: LayeredDiagramNode[]): LayeredDiagramNode[] {
+  const mainSlotByLayer = new Map<DiagramLayerId, number>();
+  const secondarySlotByLayer = new Map<DiagramLayerId, number>();
+
+  return nodes.map((node) => {
+    const slotMap = node.isMainPath ? mainSlotByLayer : secondarySlotByLayer;
+    const slot = slotMap.get(node.layer) ?? 0;
+    const y = node.isMainPath
+      ? mainNodeY(node, slot)
+      : layeredLayout.secondaryStartY + slot * layeredLayout.secondaryGap;
+
+    slotMap.set(node.layer, slot + 1);
+
+    return {
+      ...node,
+      slot,
+      x:
+        layeredLayout.layerX[node.layer] +
+        (layeredLayout.columnWidth - layeredLayout.nodeWidth) / 2,
+      y
+    };
+  });
+}
+
+function mainNodeY(node: LayeredDiagramNode, slot: number): number {
+  if (node.layer === "response" && (node.status === "blocked" || node.status === "error")) {
+    return 210;
+  }
+
+  if (node.layer === "response") {
+    return 150;
+  }
+
+  return layeredLayout.mainStartY + slot * layeredLayout.mainGap;
 }
 
 function toLayeredDiagramNode(
@@ -1402,30 +1468,6 @@ function toLayeredDiagramNode(
     y: 0,
     ...(layer.durationMs !== undefined ? { durationMs: layer.durationMs } : {})
   };
-}
-
-function assignLayeredNodePositions(nodes: LayeredDiagramNode[]): LayeredDiagramNode[] {
-  const slotByLayer = new Map<DiagramLayerId, number>();
-  const secondarySlotByLayer = new Map<DiagramLayerId, number>();
-
-  return nodes.map((node) => {
-    const layerIndex = layeredDiagramLayers.indexOf(node.layer);
-    const key = node.isMainPath ? slotByLayer : secondarySlotByLayer;
-    const slot = key.get(node.layer) ?? 0;
-    const secondaryOffset = node.isMainPath ? 0 : 2.45;
-    const x =
-      layeredLayout.startX +
-      layerIndex * (layeredLayout.columnWidth + layeredLayout.columnGap) +
-      layeredLayout.columnWidth / 2;
-    const y =
-      layeredLayout.startY +
-      (slot + secondaryOffset) * (layeredLayout.nodeHeight + layeredLayout.nodeGap) +
-      layeredLayout.nodeHeight / 2;
-
-    key.set(node.layer, slot + 1);
-
-    return { ...node, slot, x, y };
-  });
 }
 
 function buildLayeredDiagramEdges(nodes: LayeredDiagramNode[]): LayeredDiagramEdge[] {
@@ -1639,37 +1681,6 @@ function diagramNodeStatusLabel(status: DiagramNodeStatus, locale: WorkspaceLoca
   if (status === "blocked") return t(locale, "blocked");
   if (status === "error") return t(locale, "error").toLowerCase();
   return t(locale, "matched");
-}
-
-function connectedDiagramNodeIds(edges: LayeredDiagramEdge[], nodeId: string | null): Set<string> {
-  if (!nodeId) {
-    return new Set<string>();
-  }
-
-  const connected = new Set<string>([nodeId]);
-
-  for (const edge of edges) {
-    if (edge.from === nodeId) connected.add(edge.to);
-    if (edge.to === nodeId) connected.add(edge.from);
-  }
-
-  return connected;
-}
-
-function layeredEdgePath(from: LayeredDiagramNode, to: LayeredDiagramNode): string {
-  const fromX = from.layer === to.layer ? from.x : from.x + layeredLayout.columnWidth / 2 - 12;
-  const toX = from.layer === to.layer ? to.x : to.x - layeredLayout.columnWidth / 2 + 12;
-  const fromY = from.y;
-  const toY = to.y;
-
-  if (from.layer === to.layer) {
-    const midY = fromY + (toY - fromY) / 2;
-    return `M ${from.x} ${fromY + 58} C ${from.x} ${midY}, ${to.x} ${midY}, ${to.x} ${toY - 58}`;
-  }
-
-  const midX = fromX + (toX - fromX) / 2;
-
-  return `M ${fromX} ${fromY} C ${midX} ${fromY}, ${midX} ${toY}, ${toX} ${toY}`;
 }
 
 function FlowInspector({

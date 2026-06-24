@@ -39,6 +39,7 @@
   },
   "dependencies": {
     "@anlyx/core": "workspace:*",
+    "@xyflow/react": "^12.11.1",
     "lucide-react": "^1.21.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
