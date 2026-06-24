@@ -159,7 +159,7 @@ corepack pnpm demo:dev
 corepack pnpm demo:build
 ```
 
-`docs:readme-demo` writes `docs/assets/readme/anlyx-demo.gif` and `docs/assets/readme/anlyx-demo.png`. The GitHub Pages demo lives in `apps/demo` and imports the same Flow Drawer preview.
+`docs:readme-demo` writes `docs/assets/readme/anlyx-demo.gif` and `docs/assets/readme/anlyx-demo.png`. The GitHub Pages demo lives in `apps/demo` and imports the same Flow Drawer preview. The Pages workflow builds the demo on `main` pushes, while deployment runs only from manual workflow dispatch after GitHub Pages is enabled for the repository.
 
 ## Capture And Dynamic Routes
 

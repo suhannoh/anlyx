@@ -159,7 +159,7 @@ corepack pnpm demo:dev
 corepack pnpm demo:build
 ```
 
-`docs:readme-demo`는 `docs/assets/readme/anlyx-demo.gif`와 `docs/assets/readme/anlyx-demo.png`를 생성합니다. GitHub Pages 데모는 `apps/demo`에 있고 같은 Flow Drawer preview를 import합니다.
+`docs:readme-demo`는 `docs/assets/readme/anlyx-demo.gif`와 `docs/assets/readme/anlyx-demo.png`를 생성합니다. GitHub Pages 데모는 `apps/demo`에 있고 같은 Flow Drawer preview를 import합니다. Pages workflow는 `main` push 때 데모 build만 검증하고, 실제 배포는 repository에서 GitHub Pages를 켠 뒤 manual workflow dispatch로만 실행합니다.
 
 ## Capture와 Dynamic Routes
 
