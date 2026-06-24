@@ -156,7 +156,7 @@ Rules:
 - `captureStatus` SHOULD start as `pending` before capture.
 - Manual URL pages MAY be passed to `CaptureAdapter`.
 - OpenAPI-only backend plus manual frontend is the official v0.1 Basic Support path.
-- Spring Boot plus a React SPA frontend, such as Vite, CRA, or a custom React Router app, MAY use ManualFrontendAdapter in v0.1. The adapter provides explicit page URLs only; browser-observed overlay requests remain the live interaction signal.
+- Spring Boot plus a React SPA frontend, such as Vite, CRA, or a custom React Router app, MAY use ManualFrontendAdapter in v0.1. The adapter provides explicit page URLs only; browser-observed capture requests remain the live interaction signal.
 
 Limits:
 

@@ -53,7 +53,7 @@ The diagram is evidence-aware. Browser requests are live-observed. Controller, S
 | Jumping between route files, Swagger, services, and repositories | One visual path from frontend action to backend flow           |
 | Treating health checks and polling as noise                      | Quiet background traffic that stays out of the main flow       |
 | Guessing why a node appeared                                     | Confidence and evidence next to the matched flow               |
-| Explaining a project by hand                                     | A local overlay and viewer that make onboarding visual         |
+| Explaining a project by hand                                     | A live workspace that makes onboarding visual                  |
 
 ## Quick Start
 
@@ -63,7 +63,7 @@ npx anlyx init
 npx anlyx dev
 ```
 
-Then use your app normally. Click a real button or submit a real form. Anlyx opens the real frontend URL, keeps its runtime on port `4777` in the background, and shows the matched backend flow in the injected drawer.
+Then use your app normally. Keep Anlyx Workspace open beside it at `http://localhost:4777/_anlyx/viewer`, click a real button or submit a real form, and watch the matched backend flow update live.
 
 ## Support Matrix
 
@@ -128,7 +128,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 `AnlyxDevOverlay` renders nothing in production. For special local setups, the raw fallback script is:
 
 ```html
-<script src="http://localhost:4777/_anlyx/overlay.js" defer></script>
+<script src="http://localhost:4777/_anlyx/capture.js" defer></script>
 ```
 
 ## How It Works
@@ -138,16 +138,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 3. Captures local page states and browser-visible API calls.
 4. Separates user-action requests from background auth, health, and polling traffic.
 5. Matches browser requests to scanned endpoint and backend flow data.
-6. Renders a React Flow drawer with the main path, support calls, confidence, and evidence.
+6. Streams the matched request into the full-page Live Workspace with Summary, Timing, Diagram, confidence, and evidence.
 
 ## UI Surfaces
 
-| Surface             | Purpose                                                                             |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| Injected overlay    | Primary experience. Use the real app and open Anlyx only when needed.               |
-| Flow Drawer         | Shows the latest action request, matched backend flow, recent events, and evidence. |
-| Standalone viewer   | Fallback/debug UI at `http://localhost:4777/_anlyx/viewer`.                         |
-| README / Pages demo | Generated from the actual `@anlyx/ui` preview component, not a hand-drawn mock.     |
+| Surface             | Purpose                                                                                   |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| Live Workspace      | Primary experience at `http://localhost:4777/_anlyx/viewer` for live request flow review. |
+| Capture badge       | Small optional app-side entry point that confirms capture and links back to Workspace.    |
+| Capture runtime     | Development-only `fetch`/XHR observer loaded by the app; it does not render a drawer.     |
+| README / Pages demo | Fixture-backed demo of the same workspace direction, not a hand-drawn mock.               |
 
 ## Demo Assets
 
@@ -159,7 +159,7 @@ corepack pnpm demo:dev
 corepack pnpm demo:build
 ```
 
-`docs:readme-demo` writes `docs/assets/readme/anlyx-demo.gif` and `docs/assets/readme/anlyx-demo.png`. The GitHub Pages demo lives in `apps/demo` and imports the same Flow Drawer preview. The Pages workflow builds the demo on `main` pushes, while deployment runs only from manual workflow dispatch after GitHub Pages is enabled for the repository.
+`docs:readme-demo` writes `docs/assets/readme/anlyx-demo.gif` and `docs/assets/readme/anlyx-demo.png`. The GitHub Pages demo lives in `apps/demo` and shows the fake app plus Live Workspace product direction. The Pages workflow builds the demo on `main` pushes, while deployment runs only from manual workflow dispatch after GitHub Pages is enabled for the repository.
 
 ## Capture And Dynamic Routes
 

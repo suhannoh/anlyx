@@ -10,6 +10,8 @@ Page action -> API -> Controller -> Service -> Repository -> Database -> Respons
 
 It runs beside your real local app, keeps background auth, health, and polling requests quiet, and turns the latest user-triggered API request into a readable backend flow.
 
+Open the real app on its normal localhost port and keep Anlyx Workspace open separately at `http://localhost:4777/_anlyx/viewer`.
+
 ## Quick Start
 
 ```bash
@@ -38,7 +40,7 @@ Basic Support:
 
 - OpenAPI endpoint import
 - Manual frontend URLs
-- Raw overlay script injection for non-Next React apps
+- Raw development capture script injection for non-Next React apps
 
 ## Commands
 
