@@ -377,6 +377,233 @@ JSON example:
 }
 ```
 
+## Live Workspace Records
+
+Live Workspace records are derived product data for the local Anlyx runtime. They connect a browser-observed request event to the current `ScanResult` without changing `ScanResult` itself.
+
+v0.1 Live Workspace records MUST NOT claim server runtime tracing. Browser request and response facts are live browser evidence. Controller, Service, Repository, Database, and similar backend layers are source-derived or inferred from scanned data unless a future runtime bridge explicitly proves them.
+
+### BrowserActionEvent
+
+```ts
+type BrowserActionEvent = {
+  label: string;
+  selector?: string;
+  text?: string;
+  observedAt?: string;
+};
+```
+
+Action context is optional. When present, the FlowRecord MUST include an `action` layer before the API layer.
+
+### BrowserRequestEvent
+
+```ts
+type BrowserRequestEvent = {
+  id: string;
+  type: "request";
+  method: HttpMethod | string;
+  url: string;
+  path?: string;
+  status?: number;
+  durationMs?: number;
+  observedAt: string;
+  action?: BrowserActionEvent;
+};
+```
+
+The browser runtime records `fetch` and `XMLHttpRequest` activity from the local app. `url` MAY be absolute. `path` MAY be supplied by the capture runtime when already known. Matching MUST use uppercase HTTP method plus normalized pathname without query string.
+
+`normalizeBrowserEventPath(urlOrPath)` MUST normalize absolute URLs into `pathname + search` for display. Endpoint matching MUST ignore the query string and compare only the pathname. Scanned endpoint paths MAY contain dynamic parameters as `{id}` or `:id`; these parameters match exactly one non-empty request path segment and MUST NOT over-match extra or missing segments.
+
+For same-app API requests, the browser capture runtime SHOULD add `X-Anlyx-Request-Id` with the same value as `BrowserRequestEvent.id`. Development-only backend bridges use this header to report `BackendSpanEvent.requestId` for the same request. The capture runtime SHOULD avoid adding this header to non-API document, RSC, static asset, or Anlyx internal requests.
+
+### Evidence Levels
+
+```ts
+type LiveEvidenceLevel =
+  | "browser_observed"
+  | "backend_observed"
+  | "source_derived"
+  | "inferred"
+  | "not_proven";
+```
+
+- `browser_observed`: Captured directly from the local browser, such as action label, request method/path, status, and duration.
+- `backend_observed`: Captured by an explicit development-only backend runtime bridge for the same request correlation id. This level is allowed to represent server-side method timing, but only for spans actually reported by that bridge.
+- `source_derived`: Read from scanned project source or generated `ScanResult` data.
+- `inferred`: Best-effort analysis from scanned code, naming, confidence, status, or framework behavior.
+- `not_proven`: Known only as a possible scanned path after a likely stop point, or unavailable because no endpoint/flow matched.
+
+Evidence text shown in the UI MUST keep these words visible and MUST NOT describe source-derived or inferred backend layers as runtime-executed server traces.
+
+### FlowLayer
+
+```ts
+type FlowLayerExecution =
+  | "executed"
+  | "observed"
+  | "inferred"
+  | "blocked"
+  | "scanned"
+  | "not_proven"
+  | "unknown";
+
+type FlowLayer = {
+  id: string;
+  type:
+    | "action"
+    | "api"
+    | "controller"
+    | "auth"
+    | "decision"
+    | "page"
+    | "service"
+    | "repository"
+    | "database"
+    | "dto"
+    | "schema"
+    | "externalApi"
+    | "cache"
+    | "utility"
+    | "validator"
+    | "mapper"
+    | "unknown"
+    | "result";
+  label: string;
+  execution: FlowLayerExecution;
+  evidenceLevel: LiveEvidenceLevel;
+  evidence: string[];
+  nodeId?: string;
+  filePath?: string;
+  lineNumber?: number;
+  confidence?: ConfidenceLevel;
+  startOffsetMs?: number;
+  durationMs?: number;
+  status?: number;
+};
+```
+
+Layer execution values mean:
+
+- `executed`: Browser-observed action/API/result evidence exists. In v0.1 this MUST NOT be used for server-side layers.
+- `observed`: A future development-only backend runtime bridge explicitly reported this server-side span for the correlated request. This MUST NOT be inferred from source scanning alone.
+- `scanned`: A backend/frontend layer appears in the matched `EndpointFlow.mainPath`, but execution is not runtime-proven.
+- `inferred`: A likely decision or framework behavior is inferred from status, confidence, or scanned context.
+- `blocked`: The browser-observed response status indicates the request stopped, such as 401, 403, or 409.
+- `not_proven`: A scanned downstream layer may exist but is after a likely decision point and cannot be claimed for this request.
+- `unknown`: The layer state cannot be determined.
+
+Layer rules:
+
+- Include an `action` layer when `BrowserRequestEvent.action` exists.
+- Always include an `api` layer.
+- Use matched `EndpointFlow.mainPath` nodes to derive controller, service, repository, database, and other source-derived layers.
+- Always include a `result` layer when building a FlowRecord.
+- For 401 and 403 responses, add an `auth` layer after the scanned controller when available, or after the API layer when no controller is known. This `auth` layer represents an inferred auth/policy stop from browser-observed status plus scanned path evidence, not a runtime server trace.
+- For 409 responses, add a `decision` layer near the scanned service decision point when available, or after the controller/API fallback. This `decision` layer represents an inferred business-rule stop, not a runtime server trace.
+- For 401, 403, and 409 responses, mark the result as `blocked` and mark downstream service, repository, or database layers as `not_proven` when they are after the likely decision point.
+- For 2xx responses, mark scanned downstream layers as `scanned` unless future runtime proof exists.
+
+### BackendObservedSpan
+
+```ts
+type BackendObservedSpan = {
+  id: string;
+  parentId?: string;
+  type: Exclude<FlowLayer["type"], "action" | "api" | "result">;
+  label: string;
+  nodeId?: string;
+  filePath?: string;
+  lineNumber?: number;
+  startOffsetMs: number;
+  durationMs: number;
+  status?: number;
+  evidence?: string[];
+};
+```
+
+`BackendObservedSpan` is reserved for an explicit local development backend bridge, such as a Spring Boot dev instrumentation module. It is separate from `FlowLayer[]` so repeated server calls can be represented without flattening them into one Service or Repository layer.
+
+Example:
+
+```json
+{
+  "id": "span-service-2",
+  "parentId": "span-service-1",
+  "type": "service",
+  "label": "BenefitPolicyService.checkEligibility",
+  "nodeId": "service:BenefitPolicyService#checkEligibility",
+  "startOffsetMs": 68,
+  "durationMs": 28,
+  "evidence": ["backend_observed: method enter/exit captured by Spring dev bridge"]
+}
+```
+
+Rules:
+
+- `startOffsetMs` is relative to the browser-observed API request start for the same correlated request.
+- `durationMs` is the method span duration reported by the backend bridge.
+- Repeated calls MUST be preserved as repeated spans, for example Service -> Repository -> Service -> Repository.
+- Parent-child relationships SHOULD use `parentId` when the backend bridge can report nesting.
+- Workspace Timing SHOULD prefer `backendSpans` over source-derived layer estimates when present.
+- When `backendSpans` is absent, UI MUST continue to label backend layers as source-derived, inferred, or not proven.
+
+### BackendSpanEvent
+
+Development-only backend bridges MAY report observed server method spans to the local Anlyx runtime:
+
+```ts
+type BackendSpanEvent = {
+  type: "backend_spans";
+  requestId: string;
+  spans: BackendObservedSpan[];
+  observedAt?: string;
+};
+```
+
+Rules:
+
+- `requestId` MUST match the browser request event id used for the same local request.
+- Local runtime ingestion MUST accept backend span events before or after the matching browser request event.
+- When the matching `FlowRecord` already exists, the runtime MUST merge `spans` into `FlowRecord.backendSpans` and broadcast the updated record.
+- When the matching `FlowRecord` does not exist yet, the runtime MAY hold spans pending until the browser request event arrives.
+- Backend span ingestion MUST NOT create a standalone flow without a browser-observed request.
+- Workspace UI MUST still show browser-observed API/result facts separately from backend-observed method spans.
+
+### FlowRecord
+
+```ts
+type FlowRecordMatchState = "matched" | "unmatched" | "ambiguous";
+type FlowRecordTrigger = "user_action" | "background";
+
+type FlowRecord = {
+  id: string;
+  requestId: string;
+  method: string;
+  path: string;
+  trigger: FlowRecordTrigger;
+  status?: number;
+  duration?: number;
+  durationMs?: number;
+  matchState: FlowRecordMatchState;
+  confidence: ConfidenceLevel;
+  action?: BrowserActionEvent;
+  endpoint?: Endpoint;
+  endpointId?: string;
+  endpointPath?: string;
+  flow?: EndpointFlow;
+  flowId?: string;
+  layers: FlowLayer[];
+  backendSpans?: BackendObservedSpan[];
+  evidence: string[];
+  createdAt: string;
+  label: string;
+};
+```
+
+FlowRecord fields are intended to support the Live Workspace Recent events list, Summary, Timing, Diagram, and Evidence Inspector. `trigger = "user_action"` means the browser runtime attached a fresh click or activation context to the request. `trigger = "background"` means the request was still browser-observed, but no fresh user action was correlated; Workspace SHOULD keep it visible in Recent events without stealing the selected main flow from a user-action request. `matchState = "ambiguous"` MUST NOT choose an arbitrary endpoint. `matchState = "unmatched"` MUST keep the browser-observed API/result facts visible while leaving endpoint and flow fields unset.
+
 ## Report Data
 
 `.anlyx/report-data.json` MUST be a `ScanResult`.

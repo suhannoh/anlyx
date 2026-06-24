@@ -24,6 +24,7 @@
     "demo:dev": "corepack pnpm --filter @anlyx/demo dev",
     "docs:readme-demo": "node scripts/generate-readme-demo.mjs",
     "pack:local": "node scripts/pack-local-install.mjs",
+    "pack:smoke": "node scripts/smoke-local-install.mjs",
     "test": "vitest run"
   },
   "devDependencies": {

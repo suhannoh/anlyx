@@ -1,7 +1,7 @@
 import { createRoot } from "react-dom/client";
-import "@xyflow/react/dist/style.css";
 
 import "../styles.css";
+import "../workspace/workspace.css";
 import { ViewerApp } from "./ViewerApp.js";
 
 const root = document.getElementById("root");

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { scanResultSchema, type ScanResult } from "@anlyx/core";
 
-import { AnlyxAppShell } from "../components/AnlyxAppShell.js";
+import { WorkspaceApp } from "../workspace/WorkspaceApp.js";
 
 type ViewerState =
   | { status: "loading" }
@@ -66,7 +66,7 @@ export function ViewerApp(): JSX.Element {
     );
   }
 
-  return <AnlyxAppShell data={state.data} />;
+  return <WorkspaceApp data={state.data} />;
 }
 
 function ViewerStateCard({

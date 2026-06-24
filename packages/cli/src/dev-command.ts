@@ -5,7 +5,18 @@ import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { scanResultSchema, type NormalizedAnlyxConfig, type ScanResult } from "@anlyx/core";
+import {
+  buildFlowRecordFromBrowserEvent,
+  mergeBackendSpansIntoFlowRecord,
+  scanResultSchema,
+  type BackendObservedSpan,
+  type BackendSpanEvent,
+  type BrowserActionEvent,
+  type BrowserRequestEvent,
+  type FlowRecord,
+  type NormalizedAnlyxConfig,
+  type ScanResult
+} from "@anlyx/core";
 import { createServer, type ViteDevServer } from "vite";
 
 import { loadConfig } from "./config-loader.js";
@@ -67,6 +78,18 @@ export type FrontendDevServerProcess = {
 
 type RequiredDevCommandDependencies = Required<DevCommandDependencies>;
 
+export type LocalFlowStore = {
+  records: FlowRecord[];
+  clients: Set<ServerResponse>;
+  pendingBackendSpans: Map<string, BackendObservedSpan[]>;
+  pushFlow(record: FlowRecord): void;
+  pushBackendSpans(requestId: string, spans: BackendObservedSpan[]): FlowRecord | undefined;
+};
+
+export type AnlyxRuntimeMiddlewareOptions = LocalUiServerOptions & {
+  flowStore: LocalFlowStore;
+};
+
 const activeLocalUiServers = new Set<LocalUiServer>();
 
 export async function runDevCommand(options: DevCommandOptions = {}): Promise<DevCommandResult> {
@@ -101,7 +124,7 @@ export async function runDevCommand(options: DevCommandOptions = {}): Promise<De
   activeLocalUiServers.add(server);
   const shouldOpenBrowser = options.open ?? config.server.openBrowser;
 
-  const browserUrl = config.server.mode === "inject" ? config.frontend.baseUrl : server.url;
+  const browserUrl = server.url;
 
   if (shouldOpenBrowser) {
     await dependencies.openBrowser(browserUrl);
@@ -299,92 +322,171 @@ export function startFrontendDevServer(
   };
 }
 
+export function createLocalFlowStore(): LocalFlowStore {
+  const store: LocalFlowStore = {
+    records: [],
+    clients: new Set<ServerResponse>(),
+    pendingBackendSpans: new Map<string, BackendObservedSpan[]>(),
+    pushFlow(record) {
+      const pendingSpans = store.pendingBackendSpans.get(record.requestId) ?? [];
+      const nextRecord =
+        pendingSpans.length > 0 ? mergeBackendSpans(record, pendingSpans) : record;
+
+      store.pendingBackendSpans.delete(record.requestId);
+      store.records = [nextRecord, ...store.records.filter((item) => item.id !== nextRecord.id)].slice(
+        0,
+        100
+      );
+      for (const client of store.clients) {
+        writeSseFlow(client, nextRecord);
+      }
+    },
+    pushBackendSpans(requestId, spans) {
+      const existing = store.records.find((record) => record.requestId === requestId);
+
+      if (!existing) {
+        store.pendingBackendSpans.set(
+          requestId,
+          mergeUniqueBackendSpans(store.pendingBackendSpans.get(requestId) ?? [], spans)
+        );
+        return undefined;
+      }
+
+      const nextRecord = mergeBackendSpans(existing, spans);
+      store.records = [nextRecord, ...store.records.filter((item) => item.id !== nextRecord.id)];
+      for (const client of store.clients) {
+        writeSseFlow(client, nextRecord);
+      }
+
+      return nextRecord;
+    }
+  };
+
+  return store;
+}
+
+function mergeBackendSpans(record: FlowRecord, spans: BackendObservedSpan[]): FlowRecord {
+  return mergeBackendSpansIntoFlowRecord(
+    record,
+    mergeUniqueBackendSpans(record.backendSpans ?? [], spans)
+  );
+}
+
+function mergeUniqueBackendSpans(
+  current: BackendObservedSpan[],
+  incoming: BackendObservedSpan[]
+): BackendObservedSpan[] {
+  const byId = new Map<string, BackendObservedSpan>();
+
+  for (const span of current) {
+    byId.set(span.id, span);
+  }
+
+  for (const span of incoming) {
+    byId.set(span.id, span);
+  }
+
+  return [...byId.values()].sort((a, b) => a.startOffsetMs - b.startOffsetMs);
+}
+
 function createAnlyxDevPlugin(options: LocalUiServerOptions) {
+  const flowStore = createLocalFlowStore();
+
   return {
     name: "anlyx-dev-runtime",
     configureServer(server: ViteDevServer) {
       server.middlewares.use((request, response, next) => {
-        if (request.method === "GET" && options.mode === "viewer" && request.url === "/") {
+        if (
+          request.method === "GET" &&
+          (options.mode === "viewer" || options.mode === "inject") &&
+          request.url === "/"
+        ) {
           request.url = "/viewer.html";
         }
 
         next();
       });
 
-      server.middlewares.use(async (request, response, next) => {
-        const requestUrl = request.url ?? "/";
-
-        if (request.method === "OPTIONS" && isAnlyxPath(requestUrl)) {
-          response.statusCode = 204;
-          setCorsHeaders(response);
-          response.end();
-          return;
-        }
-
-        if (request.method === "GET" && isReportDataPath(requestUrl)) {
-          sendJson(response, options.reportData);
-          return;
-        }
-
-        if (request.method === "GET" && requestUrl === "/_anlyx/overlay.js") {
-          response.statusCode = 200;
-          setCorsHeaders(response);
-          response.setHeader("content-type", "application/javascript; charset=utf-8");
-          response.end(getOverlayClientScript());
-          return;
-        }
-
-        if (request.method === "GET" && requestUrl === "/_anlyx/overlay-ui.js") {
-          await sendRuntimeAsset(
-            response,
-            join(options.viewerRoot, "../overlay/overlay-ui.js"),
-            "application/javascript; charset=utf-8"
-          );
-          return;
-        }
-
-        if (request.method === "GET" && requestUrl === "/_anlyx/overlay-ui.css") {
-          await sendRuntimeAsset(
-            response,
-            join(options.viewerRoot, "../overlay/overlay-ui.css"),
-            "text/css; charset=utf-8"
-          );
-          return;
-        }
-
-        if (request.method === "GET" && options.mode === "inject" && requestUrl === "/") {
-          response.statusCode = 200;
-          response.setHeader("content-type", "text/html; charset=utf-8");
-          response.end(
-            getInjectModeHtml(
-              options.frontendBaseUrl,
-              getOverlayScriptTag(getServerUrl(options.port))
-            )
-          );
-          return;
-        }
-
-        if (request.method === "GET" && isStandaloneViewerPath(requestUrl)) {
-          request.url = "/viewer.html";
-          next();
-          return;
-        }
-
-        if (options.mode === "viewer" || options.mode === "inject") {
-          next();
-          return;
-        }
-
-        if (isAnlyxPath(requestUrl)) {
-          response.statusCode = 404;
-          response.setHeader("content-type", "text/plain; charset=utf-8");
-          response.end("Anlyx runtime asset not found.");
-          return;
-        }
-
-        await proxyToFrontend(request, response, options.frontendBaseUrl);
-      });
+      server.middlewares.use(createAnlyxRuntimeMiddleware({ ...options, flowStore }));
     }
+  };
+}
+
+export function createAnlyxRuntimeMiddleware(options: AnlyxRuntimeMiddlewareOptions) {
+  return async (request: IncomingMessage, response: ServerResponse, next: () => void) => {
+    const requestUrl = request.url ?? "/";
+
+    if (request.method === "OPTIONS" && isAnlyxPath(requestUrl)) {
+      response.statusCode = 204;
+      setCorsHeaders(response);
+      response.end();
+      return;
+    }
+
+    if (request.method === "POST" && requestUrl === "/_anlyx/events") {
+      await handleBrowserEventPost(request, response, options);
+      return;
+    }
+
+    if (request.method === "POST" && requestUrl === "/_anlyx/backend-spans") {
+      await handleBackendSpanPost(request, response, options);
+      return;
+    }
+
+    if (request.method === "GET" && requestUrl === "/_anlyx/events/stream") {
+      handleFlowEventStream(request, response, options.flowStore);
+      return;
+    }
+
+    if (request.method === "GET" && isReportDataPath(requestUrl)) {
+      sendJson(response, options.reportData);
+      return;
+    }
+
+    if (request.method === "GET" && requestUrl === "/_anlyx/overlay.js") {
+      response.statusCode = 200;
+      setCorsHeaders(response);
+      response.setHeader("content-type", "application/javascript; charset=utf-8");
+      response.end(getOverlayClientScript());
+      return;
+    }
+
+    if (request.method === "GET" && requestUrl === "/_anlyx/capture.js") {
+      await sendRuntimeAsset(
+        response,
+        join(options.viewerRoot, "../overlay/capture.js"),
+        "application/javascript; charset=utf-8"
+      );
+      return;
+    }
+
+    if (request.method === "GET" && requestUrl === "/_anlyx/spring-bridge.java") {
+      response.statusCode = 200;
+      setCorsHeaders(response);
+      response.setHeader("content-type", "text/plain; charset=utf-8");
+      response.end(getSpringBridgeSource(`http://127.0.0.1:${options.port}`));
+      return;
+    }
+
+    if (request.method === "GET" && isStandaloneViewerPath(requestUrl)) {
+      request.url = "/viewer.html";
+      next();
+      return;
+    }
+
+    if (options.mode === "viewer" || options.mode === "inject") {
+      next();
+      return;
+    }
+
+    if (isAnlyxPath(requestUrl)) {
+      response.statusCode = 404;
+      response.setHeader("content-type", "text/plain; charset=utf-8");
+      response.end("Anlyx runtime asset not found.");
+      return;
+    }
+
+    await proxyToFrontend(request, response, options.frontendBaseUrl);
   };
 }
 
@@ -398,6 +500,120 @@ function isStandaloneViewerPath(path: string): boolean {
 
 function isAnlyxPath(path: string): boolean {
   return path.startsWith("/_anlyx/");
+}
+
+async function handleBrowserEventPost(
+  request: IncomingMessage,
+  response: ServerResponse,
+  options: AnlyxRuntimeMiddlewareOptions
+): Promise<void> {
+  const body = await readRequestBody(request);
+
+  if (!body) {
+    sendAcceptedJson(response, 400, { accepted: false, error: "Missing JSON body." });
+    return;
+  }
+
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(body.toString("utf8"));
+  } catch {
+    sendAcceptedJson(response, 400, { accepted: false, error: "Invalid JSON body." });
+    return;
+  }
+
+  if (!isBrowserRequestEvent(parsed)) {
+    sendAcceptedJson(response, 400, { accepted: false, error: "Invalid browser request event." });
+    return;
+  }
+
+  const record = buildFlowRecordFromBrowserEvent(parsed, options.reportData);
+  options.flowStore.pushFlow(record);
+  sendAcceptedJson(response, 202, { accepted: true, id: record.id });
+}
+
+async function handleBackendSpanPost(
+  request: IncomingMessage,
+  response: ServerResponse,
+  options: AnlyxRuntimeMiddlewareOptions
+): Promise<void> {
+  const body = await readRequestBody(request);
+
+  if (!body) {
+    sendAcceptedJson(response, 400, { accepted: false, error: "Missing JSON body." });
+    return;
+  }
+
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(body.toString("utf8"));
+  } catch {
+    sendAcceptedJson(response, 400, { accepted: false, error: "Invalid JSON body." });
+    return;
+  }
+
+  if (!isBackendSpanEvent(parsed)) {
+    sendAcceptedJson(response, 400, { accepted: false, error: "Invalid backend span event." });
+    return;
+  }
+
+  const updatedRecord = options.flowStore.pushBackendSpans(parsed.requestId, parsed.spans);
+  sendAcceptedJson(response, 202, {
+    accepted: true,
+    ...(updatedRecord ? { id: updatedRecord.id } : { pending: true })
+  });
+}
+
+function handleFlowEventStream(
+  request: IncomingMessage,
+  response: ServerResponse,
+  flowStore: LocalFlowStore
+) {
+  response.writeHead(200, {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET, POST, OPTIONS",
+    "access-control-allow-headers": "content-type",
+    "cache-control": "no-cache, no-transform",
+    connection: "keep-alive",
+    "content-type": "text/event-stream; charset=utf-8",
+    "x-accel-buffering": "no"
+  });
+
+  flowStore.clients.add(response);
+  response.write(": connected\n\n");
+
+  for (const record of flowStore.records.slice().reverse()) {
+    writeSseFlow(response, record);
+  }
+
+  const keepAlive = setInterval(() => {
+    response.write(": keepalive\n\n");
+  }, 15_000);
+
+  const cleanup = () => {
+    clearInterval(keepAlive);
+    flowStore.clients.delete(response);
+  };
+
+  request.once("close", cleanup);
+  response.once("close", cleanup);
+}
+
+function writeSseFlow(response: ServerResponse, record: FlowRecord) {
+  response.write(`event: flow\ndata: ${JSON.stringify(record)}\n\n`);
+}
+
+function sendAcceptedJson(
+  response: ServerResponse,
+  statusCode: number,
+  value: { accepted: boolean; id?: string; pending?: boolean; error?: string }
+) {
+  response.statusCode = statusCode;
+  setCorsHeaders(response);
+  response.setHeader("content-type", "application/json; charset=utf-8");
+  response.end(JSON.stringify(value));
 }
 
 function sendJson(response: ServerResponse, value: unknown) {
@@ -428,12 +644,118 @@ async function sendRuntimeAsset(
 
 function setCorsHeaders(response: ServerResponse) {
   response.setHeader("access-control-allow-origin", "*");
-  response.setHeader("access-control-allow-methods", "GET, OPTIONS");
+  response.setHeader("access-control-allow-methods", "GET, POST, OPTIONS");
   response.setHeader("access-control-allow-headers", "content-type");
 }
 
-function getServerUrl(port: number): string {
-  return `http://localhost:${port}`;
+function isBrowserRequestEvent(value: unknown): value is BrowserRequestEvent {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const event = value as Partial<BrowserRequestEvent>;
+  return (
+    typeof event.id === "string" &&
+    event.type === "request" &&
+    typeof event.method === "string" &&
+    typeof event.url === "string" &&
+    typeof event.observedAt === "string" &&
+    isOptionalString(event.path) &&
+    isOptionalNumber(event.status) &&
+    isOptionalNumber(event.durationMs) &&
+    isOptionalBrowserActionEvent(event.action)
+  );
+}
+
+function isBackendSpanEvent(value: unknown): value is BackendSpanEvent {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const event = value as Partial<BackendSpanEvent>;
+  return (
+    event.type === "backend_spans" &&
+    typeof event.requestId === "string" &&
+    Array.isArray(event.spans) &&
+    event.spans.every(isBackendObservedSpan) &&
+    isOptionalString(event.observedAt)
+  );
+}
+
+function isBackendObservedSpan(value: unknown): value is BackendObservedSpan {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const span = value as Partial<BackendObservedSpan>;
+  return (
+    typeof span.id === "string" &&
+    isOptionalString(span.parentId) &&
+    isBackendSpanLayerType(span.type) &&
+    typeof span.label === "string" &&
+    isOptionalString(span.nodeId) &&
+    isOptionalString(span.filePath) &&
+    isOptionalNumber(span.lineNumber) &&
+    typeof span.startOffsetMs === "number" &&
+    Number.isFinite(span.startOffsetMs) &&
+    span.startOffsetMs >= 0 &&
+    typeof span.durationMs === "number" &&
+    Number.isFinite(span.durationMs) &&
+    span.durationMs >= 0 &&
+    isOptionalNumber(span.status) &&
+    isOptionalStringArray(span.evidence)
+  );
+}
+
+function isBackendSpanLayerType(value: unknown): value is BackendObservedSpan["type"] {
+  return (
+    value === "controller" ||
+    value === "auth" ||
+    value === "decision" ||
+    value === "page" ||
+    value === "service" ||
+    value === "repository" ||
+    value === "database" ||
+    value === "dto" ||
+    value === "schema" ||
+    value === "externalApi" ||
+    value === "cache" ||
+    value === "utility" ||
+    value === "validator" ||
+    value === "mapper" ||
+    value === "unknown"
+  );
+}
+
+function isOptionalString(value: unknown): value is string | undefined {
+  return value === undefined || typeof value === "string";
+}
+
+function isOptionalNumber(value: unknown): value is number | undefined {
+  return value === undefined || (typeof value === "number" && Number.isFinite(value));
+}
+
+function isOptionalStringArray(value: unknown): value is string[] | undefined {
+  return value === undefined || (Array.isArray(value) && value.every((item) => typeof item === "string"));
+}
+
+function isOptionalBrowserActionEvent(value: unknown): value is BrowserActionEvent | undefined {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const action = value as Partial<BrowserActionEvent>;
+  return (
+    typeof action.label === "string" &&
+    isOptionalString(action.label) &&
+    isOptionalString(action.selector) &&
+    isOptionalString(action.observedAt) &&
+    isOptionalString(action.text)
+  );
 }
 
 async function proxyToFrontend(
@@ -517,31 +839,468 @@ export function getOverlayScriptTag(serverUrl: string): string {
   return `<script src="${serverUrl}/_anlyx/overlay.js" defer></script>`;
 }
 
-function getInjectModeHtml(frontendBaseUrl: string, scriptTag: string): string {
-  return `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Anlyx Inject Mode</title>
-    <style>
-      body { margin: 0; min-height: 100vh; display: grid; place-items: center; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f8fafc; color: #0f172a; }
-      main { width: min(760px, calc(100vw - 32px)); border: 1px solid #dbe4f0; border-radius: 16px; background: white; box-shadow: 0 18px 60px rgba(15, 23, 42, 0.12); padding: 28px; }
-      h1 { margin: 0 0 10px; font-size: 22px; line-height: 1.25; }
-      p { margin: 8px 0; color: #475569; line-height: 1.55; }
-      pre { overflow: auto; border-radius: 12px; background: #0f172a; color: #e2e8f0; padding: 14px; font-size: 13px; line-height: 1.5; }
-      a { color: #2563eb; font-weight: 800; text-decoration: none; }
-    </style>
-  </head>
-  <body>
-    <main>
-      <h1>Anlyx runtime is ready</h1>
-      <p>Open your real frontend at <a href="${escapeHtml(frontendBaseUrl)}">${escapeHtml(frontendBaseUrl)}</a> and inject this local-only script into the app during development.</p>
-      <pre>${escapeHtml(scriptTag)}</pre>
-      <p>The standalone debug viewer is still available at <a href="/_anlyx/viewer">/_anlyx/viewer</a>.</p>
-    </main>
-  </body>
-</html>`;
+export function getSpringBridgeSource(runtimeBaseUrl: string): string {
+  return String.raw`/*
+ * Anlyx Spring development bridge.
+ *
+ * Development only: copy this file into a local Spring Boot app while running Anlyx.
+ * It reads X-Anlyx-Request-Id from browser-observed API requests and posts
+ * source-adjacent backend spans to ${runtimeBaseUrl}/_anlyx/backend-spans.
+ *
+ * This is not a production tracing agent. It is a local bridge for the Anlyx MVP.
+ */
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+import java.time.Duration;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.UUID;
+import javax.sql.DataSource;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.Profile;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+@Profile({"local", "dev"})
+@EnableAspectJAutoProxy
+public class AnlyxDevBridge implements WebMvcConfigurer {
+  private static final String ANLYX_RUNTIME_URL = "${runtimeBaseUrl}";
+  private static final String ANLYX_REQUEST_ID_HEADER = "X-Anlyx-Request-Id";
+  private static final String CONTROLLER_SPAN_ATTRIBUTE = AnlyxDevBridge.class.getName() + ".controllerSpan";
+  private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+  private static final ThreadLocal<TraceContext> CURRENT_TRACE = new ThreadLocal<>();
+
+  @Override
+  public void addInterceptors(InterceptorRegistry registry) {
+    registry.addInterceptor(anlyxRequestInterceptor());
+  }
+
+  @Bean
+  public HandlerInterceptor anlyxRequestInterceptor() {
+    return new HandlerInterceptor() {
+      @Override
+      public boolean preHandle(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        Object handler
+      ) {
+        String requestId = request.getHeader(ANLYX_REQUEST_ID_HEADER);
+
+        if (requestId != null && !requestId.isBlank()) {
+          CURRENT_TRACE.set(new TraceContext(requestId, System.nanoTime()));
+          storeControllerSpan(request, handler);
+        }
+
+        return true;
+      }
+
+      @Override
+      public void afterCompletion(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        Object handler,
+        Exception ex
+      ) {
+        TraceContext trace = CURRENT_TRACE.get();
+        CURRENT_TRACE.remove();
+
+        appendControllerSpan(request, trace);
+
+        if (trace == null || trace.spans.isEmpty()) {
+          return;
+        }
+
+        postSpans(trace);
+      }
+    };
+  }
+
+  @Bean
+  public static BeanPostProcessor anlyxDataSourceSpanPostProcessor() {
+    return new BeanPostProcessor() {
+      @Override
+      public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        if (!(bean instanceof DataSource dataSource) || Proxy.isProxyClass(bean.getClass())) {
+          return bean;
+        }
+
+        return wrapDataSource(dataSource);
+      }
+    };
+  }
+
+  private static DataSource wrapDataSource(DataSource delegate) {
+    return (DataSource) Proxy.newProxyInstance(
+      delegate.getClass().getClassLoader(),
+      new Class<?>[] {DataSource.class},
+      (proxy, method, args) -> {
+        if (isObjectMethod(method)) {
+          return invoke(method, delegate, args);
+        }
+
+        Object result = invoke(method, delegate, args);
+
+        if (result instanceof Connection connection && "getConnection".equals(method.getName())) {
+          return wrapConnection(connection);
+        }
+
+        return result;
+      }
+    );
+  }
+
+  private static Connection wrapConnection(Connection delegate) {
+    return (Connection) Proxy.newProxyInstance(
+      delegate.getClass().getClassLoader(),
+      new Class<?>[] {Connection.class},
+      (proxy, method, args) -> {
+        Object result = invoke(method, delegate, args);
+
+        if (result instanceof Statement statement) {
+          String sqlHint = firstStringArg(args);
+
+          if (isStatementFactory(method.getName())) {
+            return wrapStatement(statement, sqlHint);
+          }
+        }
+
+        return result;
+      }
+    );
+  }
+
+  private static Statement wrapStatement(Statement delegate, String sqlHint) {
+    List<Class<?>> interfaces = new ArrayList<>();
+
+    if (delegate instanceof CallableStatement) {
+      interfaces.add(CallableStatement.class);
+    }
+
+    if (delegate instanceof PreparedStatement) {
+      interfaces.add(PreparedStatement.class);
+    }
+
+    interfaces.add(Statement.class);
+
+    return (Statement) Proxy.newProxyInstance(
+      delegate.getClass().getClassLoader(),
+      interfaces.toArray(Class<?>[]::new),
+      (proxy, method, args) -> {
+        if (!isJdbcExecuteMethod(method.getName())) {
+          return invoke(method, delegate, args);
+        }
+
+        String sql = firstStringArg(args);
+        return captureJdbcSpan(sql == null ? sqlHint : sql, () -> invoke(method, delegate, args));
+      }
+    );
+  }
+
+  private static Object captureJdbcSpan(String sql, ThrowingSupplier<?> supplier) throws Throwable {
+    TraceContext trace = CURRENT_TRACE.get();
+
+    if (trace == null) {
+      return supplier.get();
+    }
+
+    long startNanos = System.nanoTime();
+    Span span = new Span();
+    span.id = "span:" + UUID.randomUUID();
+    span.parentId = trace.stack.peek();
+    span.type = "database";
+    span.label = compactSqlLabel(sql);
+    span.startOffsetMs = millisBetween(trace.startedAtNanos, startNanos);
+
+    trace.stack.push(span.id);
+
+    try {
+      return supplier.get();
+    } catch (Throwable error) {
+      span.evidence.add(error.getClass().getSimpleName());
+      throw error;
+    } finally {
+      trace.stack.pop();
+      span.durationMs = Math.max(1, millisBetween(startNanos, System.nanoTime()));
+      span.evidence.add("jdbc_execute");
+      trace.spans.add(span);
+    }
+  }
+
+  private static Object invoke(Method method, Object target, Object[] args) throws Throwable {
+    try {
+      return method.invoke(target, args);
+    } catch (InvocationTargetException error) {
+      throw error.getCause();
+    }
+  }
+
+  private static boolean isObjectMethod(Method method) {
+    return method.getDeclaringClass().equals(Object.class);
+  }
+
+  private static boolean isStatementFactory(String methodName) {
+    return "createStatement".equals(methodName)
+      || "prepareStatement".equals(methodName)
+      || "prepareCall".equals(methodName);
+  }
+
+  private static boolean isJdbcExecuteMethod(String methodName) {
+    return "execute".equals(methodName)
+      || "executeQuery".equals(methodName)
+      || "executeUpdate".equals(methodName)
+      || "executeLargeUpdate".equals(methodName)
+      || "executeBatch".equals(methodName)
+      || "executeLargeBatch".equals(methodName);
+  }
+
+  private static String firstStringArg(Object[] args) {
+    if (args == null || args.length == 0 || !(args[0] instanceof String value)) {
+      return null;
+    }
+
+    return value;
+  }
+
+  private static String compactSqlLabel(String sql) {
+    if (sql == null || sql.isBlank()) {
+      return "JDBC statement";
+    }
+
+    String compact = sql.replaceAll("\\s+", " ").trim();
+    return compact.length() > 96 ? compact.substring(0, 93) + "..." : compact;
+  }
+
+  private static void storeControllerSpan(HttpServletRequest request, Object handler) {
+    if (!(handler instanceof HandlerMethod handlerMethod)) {
+      return;
+    }
+
+    Span span = new Span();
+    span.id = "span:" + UUID.randomUUID();
+    span.type = "controller";
+    span.label = handlerMethod.getBeanType().getSimpleName() + "." + handlerMethod.getMethod().getName();
+    span.startOffsetMs = 0;
+    span.evidence.add("handler_method:" + handlerMethod.getBeanType().getName() + "#" + handlerMethod.getMethod().getName());
+
+    request.setAttribute(CONTROLLER_SPAN_ATTRIBUTE, span);
+  }
+
+  private static void appendControllerSpan(HttpServletRequest request, TraceContext trace) {
+    if (trace == null) {
+      return;
+    }
+
+    Object rawSpan = request.getAttribute(CONTROLLER_SPAN_ATTRIBUTE);
+
+    if (!(rawSpan instanceof Span controllerSpan)) {
+      return;
+    }
+
+    boolean alreadyCaptured = trace.spans.stream()
+      .anyMatch(span -> "controller".equals(span.type) && controllerSpan.label.equals(span.label));
+
+    if (alreadyCaptured) {
+      return;
+    }
+
+    controllerSpan.durationMs = Math.max(1, millisBetween(trace.startedAtNanos, System.nanoTime()));
+    trace.spans.add(0, controllerSpan);
+  }
+
+  @Bean
+  public AnlyxSpanAspect anlyxSpanAspect() {
+    return new AnlyxSpanAspect();
+  }
+
+  @Aspect
+  public static class AnlyxSpanAspect {
+    @Around(
+      "@within(org.springframework.web.bind.annotation.RestController) || " +
+      "@within(org.springframework.stereotype.Service) || " +
+      "@within(org.springframework.stereotype.Repository) || " +
+      "this(org.springframework.data.repository.Repository)"
+    )
+    public Object captureSpringLayer(ProceedingJoinPoint joinPoint) throws Throwable {
+      TraceContext trace = CURRENT_TRACE.get();
+
+      if (trace == null) {
+        return joinPoint.proceed();
+      }
+
+      long startNanos = System.nanoTime();
+      Span span = new Span();
+      span.id = "span:" + UUID.randomUUID();
+      span.parentId = trace.stack.peek();
+      span.type = spanType(joinPoint);
+      span.label = joinPoint.getSignature().getDeclaringType().getSimpleName()
+        + "."
+        + joinPoint.getSignature().getName();
+      span.startOffsetMs = millisBetween(trace.startedAtNanos, startNanos);
+
+      trace.stack.push(span.id);
+
+      try {
+        return joinPoint.proceed();
+      } catch (Throwable error) {
+        span.evidence.add(error.getClass().getSimpleName());
+        throw error;
+      } finally {
+        trace.stack.pop();
+        span.durationMs = Math.max(1, millisBetween(startNanos, System.nanoTime()));
+        trace.spans.add(span);
+      }
+    }
+
+    private static String spanType(ProceedingJoinPoint joinPoint) {
+      Class<?> declaringType = joinPoint.getSignature().getDeclaringType();
+
+      if (declaringType.isAnnotationPresent(org.springframework.web.bind.annotation.RestController.class)) {
+        return "controller";
+      }
+
+      if (declaringType.isAnnotationPresent(org.springframework.stereotype.Repository.class)) {
+        return "repository";
+      }
+
+      if (declaringType.isAnnotationPresent(org.springframework.stereotype.Service.class)) {
+        return "service";
+      }
+
+      return "unknown";
+    }
+  }
+
+  private static void postSpans(TraceContext trace) {
+    String payload = toJson(trace);
+    HttpRequest request = HttpRequest.newBuilder()
+      .uri(URI.create(ANLYX_RUNTIME_URL + "/_anlyx/backend-spans"))
+      .version(HttpClient.Version.HTTP_1_1)
+      .timeout(Duration.ofSeconds(2))
+      .header("content-type", "application/json")
+      .POST(HttpRequest.BodyPublishers.ofString(payload))
+      .build();
+
+    try {
+      HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.discarding());
+    } catch (Exception ignored) {
+      // The local Anlyx workspace is optional; never break the app under test.
+      if (ignored instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+    }
+  }
+
+  private static String toJson(TraceContext trace) {
+    StringBuilder json = new StringBuilder();
+    json.append("{\"type\":\"backend_spans\",");
+    json.append("\"requestId\":\"").append(escapeJson(trace.requestId)).append("\",");
+    json.append("\"spans\":[");
+
+    for (int index = 0; index < trace.spans.size(); index += 1) {
+      Span span = trace.spans.get(index);
+
+      if (index > 0) {
+        json.append(",");
+      }
+
+      json.append("{");
+      json.append("\"id\":\"").append(escapeJson(span.id)).append("\",");
+
+      if (span.parentId != null) {
+        json.append("\"parentId\":\"").append(escapeJson(span.parentId)).append("\",");
+      }
+
+      json.append("\"type\":\"").append(escapeJson(span.type)).append("\",");
+      json.append("\"label\":\"").append(escapeJson(span.label)).append("\",");
+      json.append("\"startOffsetMs\":").append(span.startOffsetMs).append(",");
+      json.append("\"durationMs\":").append(span.durationMs);
+
+      if (!span.evidence.isEmpty()) {
+        json.append(",\"evidence\":[");
+
+        for (int evidenceIndex = 0; evidenceIndex < span.evidence.size(); evidenceIndex += 1) {
+          if (evidenceIndex > 0) {
+            json.append(",");
+          }
+
+          json.append("\"").append(escapeJson(span.evidence.get(evidenceIndex))).append("\"");
+        }
+
+        json.append("]");
+      }
+
+      json.append("}");
+    }
+
+    json.append("]}");
+    return json.toString();
+  }
+
+  private static long millisBetween(long startNanos, long endNanos) {
+    return Math.max(0, (endNanos - startNanos) / 1_000_000L);
+  }
+
+  private static String escapeJson(String value) {
+    return value
+      .replace("\\", "\\\\")
+      .replace("\"", "\\\"")
+      .replace("\n", "\\n")
+      .replace("\r", "\\r");
+  }
+
+  private static final class TraceContext {
+    final String requestId;
+    final long startedAtNanos;
+    final List<Span> spans = new ArrayList<>();
+    final Deque<String> stack = new ArrayDeque<>();
+
+    TraceContext(String requestId, long startedAtNanos) {
+      this.requestId = requestId;
+      this.startedAtNanos = startedAtNanos;
+    }
+  }
+
+  private static final class Span {
+    String id;
+    String parentId;
+    String type;
+    String label;
+    long startOffsetMs;
+    long durationMs;
+    List<String> evidence = new ArrayList<>();
+  }
+
+  @FunctionalInterface
+  private interface ThrowingSupplier<T> {
+    T get() throws Throwable;
+  }
+}
+`;
 }
 
 function getProxyRequestHeaders(request: IncomingMessage): Headers {
@@ -610,7 +1369,7 @@ function getProxyErrorHtml(frontendBaseUrl: string, error: unknown): string {
     <main>
       <h1>Anlyx could not reach the frontend app</h1>
       <p>Overlay Mode proxies your configured frontend at <code>${escapeHtml(frontendBaseUrl)}</code>.</p>
-      <p>Start the frontend dev server, then refresh this page. The standalone viewer is still available at <code>/_anlyx/viewer</code>.</p>
+      <p>Start the frontend dev server, then refresh this page. The Live Workspace is still available at <code>/_anlyx/viewer</code>.</p>
       <p>${escapeHtml(message)}</p>
     </main>
   </body>
@@ -629,1009 +1388,66 @@ function escapeHtml(value: string): string {
 export function getOverlayClientScript(): string {
   return String.raw`
 (() => {
-  if (window.__ANLYX_OVERLAY_INSTALLED__) {
+  if (window.__ANLYX_CAPTURE_BADGE_INSTALLED__) {
     return;
   }
-  window.__ANLYX_OVERLAY_INSTALLED__ = true;
 
-  const state = {
-    report: null,
-    events: [],
-    actions: [],
-    selectedEventId: null,
-    open: false,
-    loadError: null
-  };
+  window.__ANLYX_CAPTURE_BADGE_INSTALLED__ = true;
 
-  let drawer = null;
-  let body = null;
-  let launcher = null;
-  let overlayUiReady = false;
-  let overlayUiLoading = false;
-  let overlayRootGuardInstalled = false;
-  let overlayRootRestoreScheduled = false;
-  let overlayInfrastructureInstalled = false;
-  const endpointRegexCache = new Map();
   const currentScript = document.currentScript;
   const runtimeBaseUrl = currentScript && currentScript.src ? new URL(currentScript.src).origin : window.location.origin;
-  const ANLYX_PENDING_ACTION_KEY = "__anlyx_pending_action__";
-  const ANLYX_DRAWER_SETTINGS_KEY = "__anlyx_drawer_settings__";
-  const ANLYX_LAUNCHER_SETTINGS_KEY = "__anlyx_launcher_settings__";
-  const drawerSettings = Object.assign({
-    width: 600,
-    height: 760,
-    x: null,
-    y: 12,
-    opacity: 0.98,
-    language: "en"
-  }, restoreDrawerSettings());
-  const launcherSettings = Object.assign({
-    x: null,
-    y: null,
-    expandedUntil: 0
-  }, restoreLauncherSettings());
+  window.__ANLYX_RUNTIME_BASE_URL__ = runtimeBaseUrl;
 
-  scheduleOverlayMount();
+  installCaptureRuntime();
+  installCaptureBadge();
 
-  function scheduleOverlayMount() {
-    const mount = () => window.setTimeout(mountOverlayUi, 0);
-
-    if (document.body) {
-      mount();
+  function installCaptureRuntime() {
+    if (window.__ANLYX_CAPTURE_INSTALLED__ || document.querySelector("script[data-anlyx-capture-runtime]")) {
       return;
     }
 
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", mount, { once: true });
-      return;
-    }
-
-    mount();
-  }
-
-  function mountOverlayUi() {
-    const existingRoot = document.getElementById("anlyx-overlay-root");
-    if (existingRoot) {
-      launcher = existingRoot.querySelector(".anlyx-fab");
-      drawer = existingRoot.querySelector(".anlyx-drawer");
-      body = existingRoot.querySelector(".anlyx-body");
-      if (drawer && body) {
-        installOverlayRootGuard();
-        applyLauncherSettings();
-        render();
-        return;
-      }
-      existingRoot.remove();
-    }
-
-    if (!document.body) {
-      return;
-    }
-
-    if (!document.querySelector("style[data-anlyx-overlay-base]")) {
-      const style = document.createElement("style");
-      style.setAttribute("data-anlyx-overlay-base", "true");
-      style.textContent = ${"`"}
-    #anlyx-overlay-root { position: fixed; inset: 0; pointer-events: none; z-index: 2147483647; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #0f172a; }
-    .anlyx-fab { pointer-events: auto; position: absolute; left: auto; top: auto; right: 18px; bottom: 18px; display: inline-flex; align-items: center; justify-content: flex-start; gap: 3px; width: 38px; height: 38px; min-width: 38px; max-width: 38px; padding: 0; overflow: hidden; border: 1px solid rgba(37, 99, 235, .20); border-radius: 999px; background: rgba(37, 99, 235, .72); color: white; font-weight: 850; font-size: 12px; box-shadow: 0 14px 36px rgba(37, 99, 235, 0.20); cursor: grab; opacity: .72; backdrop-filter: blur(10px); transition: width 160ms ease, max-width 160ms ease, opacity 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
-    .anlyx-fab:hover, .anlyx-fab:focus-visible, .anlyx-fab[data-expanded="true"] { width: 86px; max-width: 86px; opacity: .96; background: rgba(37, 99, 235, .96); box-shadow: 0 18px 46px rgba(37, 99, 235, 0.26); transform: translate(-48px, -1px); }
-    .anlyx-fab:active { cursor: grabbing; transform: translateY(0); }
-    .anlyx-fab__mark { width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 38px; }
-    .anlyx-fab__mark svg { width: 22px; height: 22px; display: block; filter: drop-shadow(0 1px 1px rgba(15, 23, 42, .16)); }
-    .anlyx-fab__label { padding-right: 10px; white-space: nowrap; line-height: 1; letter-spacing: 0; opacity: 0; transform: translateX(-4px); transition: opacity 140ms ease, transform 140ms ease; }
-    .anlyx-fab:hover .anlyx-fab__label, .anlyx-fab:focus-visible .anlyx-fab__label, .anlyx-fab[data-expanded="true"] .anlyx-fab__label { opacity: 1; transform: translateX(0); }
-    .anlyx-drawer { pointer-events: auto; position: absolute; top: 12px; left: auto; right: auto; width: 600px; height: min(760px, calc(100vh - 24px)); min-width: 420px; min-height: 420px; max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); border: 1px solid rgba(15, 23, 42, .12); border-radius: 18px; background: rgba(248, 250, 252, .98); box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22); overflow: hidden; display: none; }
-    .anlyx-drawer[data-open="true"] { display: grid; grid-template-rows: auto minmax(0, 1fr); }
-    .anlyx-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 14px; border-bottom: 1px solid rgba(15, 23, 42, .08); background: rgba(255,255,255,.88); }
-    .anlyx-drag-handle { min-width: 0; cursor: grab; user-select: none; }
-    .anlyx-drag-handle:active { cursor: grabbing; }
-    .anlyx-title { margin: 0; font-size: 15px; line-height: 1.2; font-weight: 900; letter-spacing: 0; }
-    .anlyx-subtitle { margin: 3px 0 0; font-size: 11px; color: #64748b; font-weight: 650; }
-    .anlyx-shell-controls { display: flex; align-items: center; gap: 7px; }
-    .anlyx-shell-field { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 8px; border: 1px solid #e2e8f0; border-radius: 10px; background: rgba(255,255,255,.9); color: #475569; font-size: 10px; font-weight: 800; white-space: nowrap; }
-    .anlyx-opacity-control { width: 70px; accent-color: #2563eb; }
-    .anlyx-language-control { width: 58px; border: 0; outline: 0; background: transparent; color: #0f172a; font-size: 10px; font-weight: 900; }
-    .anlyx-close { border: 1px solid #e2e8f0; background: #fff; border-radius: 10px; width: 32px; height: 32px; cursor: pointer; font-size: 17px; line-height: 1; color: #0f172a; box-shadow: 0 1px 2px rgba(15, 23, 42, .06); }
-    .anlyx-body { overflow: auto; padding: 12px; background: #f8fafc; }
-    .anlyx-resize-handle { position: absolute; left: 0; bottom: 0; width: 22px; height: 22px; cursor: nesw-resize; opacity: .62; }
-    .anlyx-resize-handle::before { content: ""; position: absolute; left: 6px; bottom: 6px; width: 10px; height: 10px; border-left: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8; border-radius: 0 0 0 3px; }
-    .anlyx-section { border: 1px solid rgba(15, 23, 42, .08); border-radius: 14px; background: #fff; margin-bottom: 10px; overflow: hidden; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
-    .anlyx-section-title { margin: 0; padding: 10px 12px; font-size: 10px; text-transform: uppercase; color: #64748b; letter-spacing: .08em; border-bottom: 1px solid #eef2f7; font-weight: 900; }
-    .anlyx-empty { padding: 18px 12px; color: #667085; font-size: 13px; line-height: 1.5; }
-    @media (max-width: 700px) {
-      .anlyx-drawer { min-width: 0; width: calc(100vw - 16px); height: calc(100vh - 16px); border-radius: 14px; }
-      .anlyx-head { grid-template-columns: 1fr; }
-      .anlyx-shell-controls { justify-content: space-between; }
-    }
-  ${"`"};
-      document.head.appendChild(style);
-    }
-
-    const root = document.createElement("div");
-    root.id = "anlyx-overlay-root";
-    root.innerHTML = ${"`"}
-    <button class="anlyx-fab" type="button" aria-label="Open Anlyx" title="Open Anlyx">
-      <span class="anlyx-fab__mark" aria-hidden="true">
-        <svg viewBox="0 0 32 32" role="img" focusable="false">
-          <circle cx="8" cy="7" r="4.3" fill="none" stroke="currentColor" stroke-width="2.7" />
-          <path d="M12.4 7h5.2c2.2 0 4 1.8 4 4v3.7" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" />
-          <path d="M20.2 17.3h-5.6c-2.2 0-4 1.8-4 4v3.1h9.1" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round" />
-          <rect x="20.2" y="21.2" width="6.4" height="6.4" rx="1.8" fill="none" stroke="currentColor" stroke-width="2.7" />
-          <rect x="15" y="13.1" width="5.2" height="5.2" rx="1" fill="#f59e0b" transform="rotate(45 17.6 15.7)" />
-        </svg>
-      </span>
-      <span class="anlyx-fab__label">Anlyx</span>
-    </button>
-    <aside class="anlyx-drawer" aria-label="Anlyx flow drawer">
-      <div class="anlyx-head">
-        <div class="anlyx-drag-handle" data-anlyx-label="Move Anlyx drawer">
-          <h2 class="anlyx-title">Anlyx Flow Drawer</h2>
-          <p class="anlyx-subtitle">Click the real app and inspect the API flow.</p>
-        </div>
-        <div class="anlyx-shell-controls">
-          <label class="anlyx-shell-field">
-            <span class="anlyx-opacity-label">Opacity</span>
-            <input class="anlyx-opacity-control" type="range" min="70" max="100" step="5" aria-label="Anlyx opacity" />
-          </label>
-          <label class="anlyx-shell-field">
-            <span class="anlyx-language-label">Lang</span>
-            <select class="anlyx-language-control" aria-label="Anlyx language">
-              <option value="en">EN</option>
-              <option value="ko">KO</option>
-            </select>
-          </label>
-          <button class="anlyx-close" type="button" aria-label="Close Anlyx">×</button>
-        </div>
-      </div>
-      <div class="anlyx-body"></div>
-      <div class="anlyx-resize-handle" role="separator" aria-label="Resize Anlyx drawer"></div>
-    </aside>
-  ${"`"};
-    document.body.appendChild(root);
-
-    const button = root.querySelector(".anlyx-fab");
-    launcher = button;
-    drawer = root.querySelector(".anlyx-drawer");
-    body = root.querySelector(".anlyx-body");
-    const closeButton = root.querySelector(".anlyx-close");
-    const opacityControl = root.querySelector(".anlyx-opacity-control");
-    const languageControl = root.querySelector(".anlyx-language-control");
-    const dragHandle = root.querySelector(".anlyx-drag-handle");
-    const resizeHandle = root.querySelector(".anlyx-resize-handle");
-
-    installLauncherDrag(button);
-    button.addEventListener("click", () => {
-      if (button.__anlyxSuppressClick) {
-        button.__anlyxSuppressClick = false;
-        return;
-      }
-      state.open = !state.open;
-      render();
-    });
-    closeButton.addEventListener("click", () => {
-      state.open = false;
-      render();
-    });
-    if (opacityControl) {
-      opacityControl.addEventListener("input", () => {
-        drawerSettings.opacity = Number(opacityControl.value || 98) / 100;
-        applyDrawerSettings();
-        persistDrawerSettings();
-      });
-    }
-    if (languageControl) {
-      languageControl.addEventListener("change", () => {
-        drawerSettings.language = languageControl.value === "ko" ? "ko" : "en";
-        applyDrawerSettings();
-        persistDrawerSettings();
-      });
-    }
-    installDrawerDrag(dragHandle);
-    installDrawerResize(resizeHandle);
-    applyDrawerSettings();
-    applyLauncherSettings();
-
-    installOverlayRootGuard();
-
-    if (!overlayInfrastructureInstalled) {
-      overlayInfrastructureInstalled = true;
-      restorePendingAction();
-      installUserActionTracker(root);
-      installFetchInterceptor();
-      installXhrInterceptor();
-      loadReport();
-    }
-
-    render();
-  }
-
-  function applyDrawerSettings() {
-    if (!drawer) {
-      return;
-    }
-    const viewportWidth = window.innerWidth || 1280;
-    const viewportHeight = window.innerHeight || 800;
-    const width = clamp(Number(drawerSettings.width) || 600, Math.min(420, viewportWidth - 16), viewportWidth - 16);
-    const height = clamp(Number(drawerSettings.height) || 760, Math.min(420, viewportHeight - 16), viewportHeight - 16);
-    const defaultX = viewportWidth - width - 12;
-    const x = clamp(drawerSettings.x === null ? defaultX : Number(drawerSettings.x), 8, viewportWidth - width - 8);
-    const y = clamp(Number(drawerSettings.y) || 12, 8, viewportHeight - height - 8);
-    drawerSettings.width = Math.round(width);
-    drawerSettings.height = Math.round(height);
-    drawerSettings.x = Math.round(x);
-    drawerSettings.y = Math.round(y);
-    drawerSettings.opacity = clamp(Number(drawerSettings.opacity) || 0.98, 0.7, 1);
-    drawer.style.width = drawerSettings.width + "px";
-    drawer.style.height = drawerSettings.height + "px";
-    drawer.style.left = drawerSettings.x + "px";
-    drawer.style.top = drawerSettings.y + "px";
-    drawer.style.opacity = String(drawerSettings.opacity);
-
-    const opacityControl = document.querySelector("#anlyx-overlay-root .anlyx-opacity-control");
-    const languageControl = document.querySelector("#anlyx-overlay-root .anlyx-language-control");
-    if (opacityControl) {
-      opacityControl.value = String(Math.round(drawerSettings.opacity * 100));
-    }
-    if (languageControl) {
-      languageControl.value = drawerSettings.language === "ko" ? "ko" : "en";
-    }
-    applyDrawerLanguage();
-  }
-
-  function applyLauncherSettings() {
-    if (!launcher) {
-      return;
-    }
-    const viewportWidth = window.innerWidth || 1280;
-    const viewportHeight = window.innerHeight || 800;
-    const width = 38;
-    const height = 38;
-    const defaultX = viewportWidth - width - 18;
-    const defaultY = viewportHeight - height - 18;
-    const x = clamp(launcherSettings.x === null ? defaultX : Number(launcherSettings.x), 8, viewportWidth - width - 8);
-    const y = clamp(launcherSettings.y === null ? defaultY : Number(launcherSettings.y), 8, viewportHeight - height - 8);
-    launcherSettings.x = Math.round(x);
-    launcherSettings.y = Math.round(y);
-    launcher.style.left = launcherSettings.x + "px";
-    launcher.style.top = launcherSettings.y + "px";
-    launcher.style.right = "auto";
-    launcher.style.bottom = "auto";
-    launcher.dataset.expanded = Date.now() < Number(launcherSettings.expandedUntil || 0) ? "true" : "false";
-  }
-
-  function applyDrawerLanguage() {
-    const isKo = drawerSettings.language === "ko";
-    const title = document.querySelector("#anlyx-overlay-root .anlyx-title");
-    const subtitle = document.querySelector("#anlyx-overlay-root .anlyx-subtitle");
-    const opacityLabel = document.querySelector("#anlyx-overlay-root .anlyx-opacity-label");
-    const languageLabel = document.querySelector("#anlyx-overlay-root .anlyx-language-label");
-    if (title) {
-      title.textContent = isKo ? "Anlyx 플로우 드로어" : "Anlyx Flow Drawer";
-    }
-    if (subtitle) {
-      subtitle.textContent = isKo ? "앱을 그대로 사용하며 API 흐름을 확인하세요." : "Click the real app and inspect the API flow.";
-    }
-    if (opacityLabel) {
-      opacityLabel.textContent = isKo ? "투명도" : "Opacity";
-    }
-    if (languageLabel) {
-      languageLabel.textContent = isKo ? "언어" : "Lang";
-    }
-  }
-
-  function installDrawerDrag(handle) {
-    if (!handle || !drawer) {
-      return;
-    }
-    handle.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0) {
-        return;
-      }
-      const startX = event.clientX;
-      const startY = event.clientY;
-      const initialX = Number(drawerSettings.x) || drawer.getBoundingClientRect().left;
-      const initialY = Number(drawerSettings.y) || drawer.getBoundingClientRect().top;
-      const onMove = (moveEvent) => {
-        drawerSettings.x = initialX + moveEvent.clientX - startX;
-        drawerSettings.y = initialY + moveEvent.clientY - startY;
-        applyDrawerSettings();
-      };
-      const onUp = () => {
-        window.removeEventListener("pointermove", onMove);
-        window.removeEventListener("pointerup", onUp);
-        persistDrawerSettings();
-      };
-      window.addEventListener("pointermove", onMove);
-      window.addEventListener("pointerup", onUp, { once: true });
-    });
-  }
-
-  function installDrawerResize(handle) {
-    if (!handle || !drawer) {
-      return;
-    }
-    handle.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0) {
-        return;
-      }
-      event.preventDefault();
-      const startX = event.clientX;
-      const startY = event.clientY;
-      const initialX = Number(drawerSettings.x) || drawer.getBoundingClientRect().left;
-      const initialWidth = Number(drawerSettings.width) || drawer.getBoundingClientRect().width;
-      const initialHeight = Number(drawerSettings.height) || drawer.getBoundingClientRect().height;
-      const onMove = (moveEvent) => {
-        const width = initialWidth - (moveEvent.clientX - startX);
-        drawerSettings.width = width;
-        drawerSettings.height = initialHeight + moveEvent.clientY - startY;
-        drawerSettings.x = initialX + initialWidth - width;
-        applyDrawerSettings();
-      };
-      const onUp = () => {
-        window.removeEventListener("pointermove", onMove);
-        window.removeEventListener("pointerup", onUp);
-        persistDrawerSettings();
-      };
-      window.addEventListener("pointermove", onMove);
-      window.addEventListener("pointerup", onUp, { once: true });
-    });
-  }
-
-  function installLauncherDrag(button) {
-    if (!button) {
-      return;
-    }
-    button.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0) {
-        return;
-      }
-      const startX = event.clientX;
-      const startY = event.clientY;
-      const initialX = launcherSettings.x === null ? button.getBoundingClientRect().left : Number(launcherSettings.x);
-      const initialY = launcherSettings.y === null ? button.getBoundingClientRect().top : Number(launcherSettings.y);
-      let dragged = false;
-      const onMove = (moveEvent) => {
-        const deltaX = moveEvent.clientX - startX;
-        const deltaY = moveEvent.clientY - startY;
-        if (Math.abs(deltaX) + Math.abs(deltaY) > 4) {
-          dragged = true;
-        }
-        if (!dragged) {
-          return;
-        }
-        launcherSettings.x = initialX + deltaX;
-        launcherSettings.y = initialY + deltaY;
-        applyLauncherSettings();
-      };
-      const onUp = () => {
-        window.removeEventListener("pointermove", onMove);
-        window.removeEventListener("pointerup", onUp);
-        if (dragged) {
-          button.__anlyxSuppressClick = true;
-          persistLauncherSettings();
-        }
-      };
-      window.addEventListener("pointermove", onMove);
-      window.addEventListener("pointerup", onUp, { once: true });
-    });
-  }
-
-  function restoreDrawerSettings() {
-    try {
-      const raw = window.localStorage && window.localStorage.getItem(ANLYX_DRAWER_SETTINGS_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
-  }
-
-  function restoreLauncherSettings() {
-    try {
-      const raw = window.localStorage && window.localStorage.getItem(ANLYX_LAUNCHER_SETTINGS_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
-  }
-
-  function persistDrawerSettings() {
-    try {
-      if (window.localStorage) {
-        window.localStorage.setItem(ANLYX_DRAWER_SETTINGS_KEY, JSON.stringify(drawerSettings));
-      }
-    } catch {
-      // Ignore storage failures in strict browser privacy modes.
-    }
-  }
-
-  function persistLauncherSettings() {
-    try {
-      if (window.localStorage) {
-        window.localStorage.setItem(ANLYX_LAUNCHER_SETTINGS_KEY, JSON.stringify({
-          x: launcherSettings.x,
-          y: launcherSettings.y
-        }));
-      }
-    } catch {
-      // Ignore storage failures in strict browser privacy modes.
-    }
-  }
-
-  function clamp(value, min, max) {
-    return Math.min(Math.max(value, min), max);
-  }
-
-  function installOverlayRootGuard() {
-    if (overlayRootGuardInstalled || !document.body || !window.MutationObserver) {
-      return;
-    }
-    overlayRootGuardInstalled = true;
-    const observer = new MutationObserver(() => {
-      if (!document.body || document.getElementById("anlyx-overlay-root") || overlayRootRestoreScheduled) {
-        return;
-      }
-      overlayRootRestoreScheduled = true;
-      window.setTimeout(() => {
-        overlayRootRestoreScheduled = false;
-        mountOverlayUi();
-      }, 50);
-    });
-    observer.observe(document.body, { childList: true });
-  }
-
-  function loadOverlayUiAssets() {
-    if (!document.querySelector("link[data-anlyx-overlay-ui]")) {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = runtimeBaseUrl + "/_anlyx/overlay-ui.css";
-      link.setAttribute("data-anlyx-overlay-ui", "true");
-      document.head.appendChild(link);
-    }
-
-    if (window.__ANLYX_RENDER_FLOW_DRAWER__) {
-      overlayUiReady = true;
-      return;
-    }
-
-    if (overlayUiLoading) {
-      return;
-    }
-
-    overlayUiLoading = true;
     const script = document.createElement("script");
-    script.src = runtimeBaseUrl + "/_anlyx/overlay-ui.js";
+    script.src = runtimeBaseUrl + "/_anlyx/capture.js";
     script.defer = true;
-    script.onload = () => {
-      overlayUiReady = true;
-      render();
-    };
-    script.onerror = () => {
-      overlayUiReady = false;
-      render();
-    };
+    script.setAttribute("data-anlyx-capture-runtime", "true");
     document.head.appendChild(script);
   }
 
-  async function loadReport() {
-    try {
-      const response = await fetch(runtimeBaseUrl + "/_anlyx/report-data");
-      if (!response.ok) {
-        throw new Error("Report data request failed with status " + response.status);
-      }
-      state.report = await response.json();
-      render();
-    } catch (error) {
-      state.loadError = error instanceof Error ? error.message : "Failed to load report data";
-      render();
-    }
-  }
-
-  function installFetchInterceptor() {
-    const originalFetch = window.fetch;
-    window.fetch = async function anlyxFetch(input, init) {
-      const method = ((init && init.method) || (input && input.method) || "GET").toUpperCase();
-      const url = typeof input === "string" ? input : input && input.url;
-      const startedAt = performance.now();
-      try {
-        const response = await originalFetch.apply(this, arguments);
-        if (shouldTrackRequestUrl(url)) {
-          scheduleApiEventRecord({ method, url, status: response.status, durationMs: performance.now() - startedAt, startedAt });
-        }
-        return response;
-      } catch (error) {
-        if (shouldTrackRequestUrl(url)) {
-          scheduleApiEventRecord({ method, url, status: "failed", durationMs: performance.now() - startedAt, startedAt });
-        }
-        throw error;
-      }
-    };
-  }
-
-  function installUserActionTracker(root) {
-    document.addEventListener("pointerdown", (event) => captureUserAction(event, root), true);
-    document.addEventListener("click", (event) => captureUserAction(event, root), true);
-    document.addEventListener("submit", (event) => captureUserAction(event, root), true);
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        captureUserAction(event, root);
-      }
-    }, true);
-  }
-
-  function captureUserAction(event, root) {
-    const target = getActionTarget(event.target);
-    if (!target || root.contains(target)) {
+  function installCaptureBadge() {
+    if (document.getElementById("anlyx-capture-badge")) {
       return;
     }
 
-    const action = {
-      id: String(Date.now()) + "-" + Math.random().toString(36).slice(2),
-      type: getActionType(event, target),
-      label: getActionLabel(target),
-      selector: getElementPath(target),
-      at: performance.now(),
-      capturedAt: Date.now()
-    };
-    rememberAction(action);
-    persistPendingAction(action);
-  }
+    const badge = document.createElement("a");
+    badge.id = "anlyx-capture-badge";
+    badge.href = runtimeBaseUrl + "/";
+    badge.target = "_blank";
+    badge.rel = "noreferrer";
+    badge.textContent = "Anlyx capturing · Open workspace";
+    badge.setAttribute("aria-label", "Open Anlyx live workspace");
 
-  function rememberAction(action) {
-    state.actions = [action].concat(state.actions).slice(0, 20);
-  }
-
-  function persistPendingAction(action) {
-    try {
-      window.sessionStorage.setItem(ANLYX_PENDING_ACTION_KEY, JSON.stringify(action));
-    } catch {
-      // Ignore storage failures in strict browser privacy modes.
-    }
-  }
-
-  function restorePendingAction() {
-    try {
-      const raw = window.sessionStorage.getItem(ANLYX_PENDING_ACTION_KEY);
-      if (!raw) {
-        return;
-      }
-      const action = JSON.parse(raw);
-      if (isFreshAction(action)) {
-        rememberAction(Object.assign({}, action, { at: performance.now() }));
-        return;
-      }
-      window.sessionStorage.removeItem(ANLYX_PENDING_ACTION_KEY);
-    } catch {
-      try {
-        window.sessionStorage.removeItem(ANLYX_PENDING_ACTION_KEY);
-      } catch {
-        // Ignore storage cleanup failures.
-      }
-    }
-  }
-
-  function isFreshAction(action) {
-    return action && action.capturedAt && Date.now() - action.capturedAt <= 8000;
-  }
-
-  function getActionTarget(target) {
-    if (!target || !target.closest) {
-      return null;
-    }
-    return target.closest("[data-anlyx-label], button, a, input, select, textarea, label, summary, [role='button'], [role='link'], [role='menuitem'], [role='tab']");
-  }
-
-  function getActionType(event, target) {
-    if (event.type === "submit") {
-      return "Submitted";
-    }
-    if (event.type === "keydown") {
-      return "Pressed";
-    }
-    if (target.tagName === "A" || target.getAttribute("role") === "link") {
-      return "Opened";
-    }
-    return "Clicked";
-  }
-
-  function getActionLabel(target) {
-    const label =
-      target.getAttribute("data-anlyx-label") ||
-      target.getAttribute("aria-label") ||
-      target.getAttribute("title") ||
-      target.getAttribute("placeholder") ||
-      target.name ||
-      target.textContent ||
-      target.value ||
-      getElementPath(target);
-    return compactLabel(label);
-  }
-
-  function compactLabel(value) {
-    const label = String(value || "").replace(/\s+/g, " ").trim();
-    if (!label) {
-      return "unnamed element";
-    }
-    return label.length > 80 ? label.slice(0, 77) + "..." : label;
-  }
-
-  function getElementPath(target) {
-    const tag = String(target.tagName || "element").toLowerCase();
-    if (target.id) {
-      return tag + "#" + target.id;
-    }
-    const testId = target.getAttribute("data-testid");
-    if (testId) {
-      return tag + "[data-testid='" + testId + "']";
-    }
-    const className = String(target.className || "").split(/\s+/).filter(Boolean).slice(0, 2).join(".");
-    return className ? tag + "." + className : tag;
-  }
-
-  function installXhrInterceptor() {
-    const originalOpen = XMLHttpRequest.prototype.open;
-    const originalSend = XMLHttpRequest.prototype.send;
-
-    XMLHttpRequest.prototype.open = function anlyxOpen(method, url) {
-      this.__anlyxRequest = { method: String(method || "GET").toUpperCase(), url: String(url || ""), startedAt: 0 };
-      return originalOpen.apply(this, arguments);
-    };
-
-    XMLHttpRequest.prototype.send = function anlyxSend() {
-      const request = this.__anlyxRequest;
-      if (request) {
-        request.startedAt = performance.now();
-        this.addEventListener("loadend", () => {
-          if (shouldTrackRequestUrl(request.url)) {
-            scheduleApiEventRecord({
-              method: request.method,
-              url: request.url,
-              status: this.status || "unknown",
-              durationMs: performance.now() - request.startedAt,
-              startedAt: request.startedAt
-            });
-          }
-        });
-      }
-      return originalSend.apply(this, arguments);
-    };
-  }
-
-  function scheduleApiEventRecord(event) {
-    window.setTimeout(() => recordApiEvent(event), 0);
-  }
-
-  function recordApiEvent(event) {
-    const normalized = normalizeUrl(event.url);
-    if (!normalized || shouldIgnoreRequest(normalized)) {
-      return;
-    }
-
-    const matched = matchEndpoint(event.method, normalized.pathname);
-    const passive = isPassiveRequest(event.method, normalized.pathname);
-    const triggeredBy = passive ? null : findActionForRequest(event.startedAt);
-    const item = {
-      id: String(Date.now()) + "-" + Math.random().toString(36).slice(2),
-      method: event.method,
-      path: normalized.pathname,
-      status: event.status,
-      durationMs: Math.round(event.durationMs),
-      count: 1,
-      lastSeenAt: Date.now(),
-      triggeredBy,
-      source: triggeredBy ? "action" : classifyApiEventSource(normalized.pathname),
-      matchedEndpoint: matched.endpoint,
-      matchedFlow: matched.flow,
-      matchedPages: matched.pages
-    };
-
-    const existingIndex = findExistingEventIndex(item);
-    if (existingIndex >= 0) {
-      const existing = state.events[existingIndex];
-      const updated = Object.assign({}, existing, {
-        status: item.status,
-        durationMs: item.durationMs,
-        count: (existing.count || 1) + 1,
-        lastSeenAt: item.lastSeenAt,
-        triggeredBy: item.triggeredBy || existing.triggeredBy,
-        source: item.triggeredBy ? "action" : item.source,
-        matchedEndpoint: item.matchedEndpoint,
-        matchedFlow: item.matchedFlow,
-        matchedPages: item.matchedPages
-      });
-      state.events = [updated].concat(state.events.filter((_, index) => index !== existingIndex)).slice(0, 12);
-      if (shouldAutoFocusEvent(updated)) {
-        brieflyExpandLauncher();
-        state.selectedEventId = updated.id;
-        state.open = true;
-      }
-      render();
-      return;
-    }
-
-    state.events = [item].concat(state.events).slice(0, 12);
-    if (shouldAutoFocusEvent(item)) {
-      brieflyExpandLauncher();
-      state.selectedEventId = item.id;
-      state.open = true;
-    }
-    render();
-  }
-
-  function shouldAutoFocusEvent(item) {
-    return Boolean(item && item.triggeredBy);
-  }
-
-  function brieflyExpandLauncher() {
-    launcherSettings.expandedUntil = Date.now() + 2600;
-    applyLauncherSettings();
-    window.setTimeout(applyLauncherSettings, 2700);
-  }
-
-  function classifyApiEventSource(pathname) {
-    if (isHealthOrPollingPath(pathname)) {
-      return "health";
-    }
-    return "background";
-  }
-
-  function isPassiveRequest(method, pathname) {
-    const normalizedMethod = String(method || "GET").toUpperCase();
-    const segments = getPathSegments(pathname);
-    if (isHealthOrPollingPath(pathname)) {
-      return true;
-    }
-    if (segments.some((segment) => {
-      return segment === "page-views" ||
-        segment === "analytics" ||
-        segment === "telemetry" ||
-        segment === "events" ||
-        segment === "metrics";
-    })) {
-      return true;
-    }
-    if (isAutomaticSupportPath(normalizedMethod, segments)) {
-      return true;
-    }
-    return false;
-  }
-
-  function isAutomaticSupportPath(method, segments) {
-    if (method === "GET" && isSessionProbePath(segments)) {
-      return true;
-    }
-    if (segments.includes("csrf") || segments.includes("xsrf")) {
-      return true;
-    }
-    if (!segments.includes("auth")) {
-      return false;
-    }
-    const last = segments[segments.length - 1] || "";
-    return last === "session" ||
-      last === "refresh" ||
-      last === "token" ||
-      last === "csrf" ||
-      last === "status";
-  }
-
-  function isSessionProbePath(segments) {
-    const last = segments[segments.length - 1] || "";
-    if (last === "me" || last === "session" || last === "profile" || last === "current-user") {
-      return true;
-    }
-    return segments.includes("saved-benefits") ||
-      segments.includes("saved-items") ||
-      segments.includes("bookmarks") ||
-      segments.includes("favorites");
-  }
-
-  function isHealthOrPollingPath(pathname) {
-    const segments = getPathSegments(pathname);
-    return segments.some((segment) => {
-      return segment === "health" ||
-        segment === "healthz" ||
-        segment === "ready" ||
-        segment === "readyz" ||
-        segment === "live" ||
-        segment === "livez" ||
-        segment === "ping" ||
-        segment === "metrics" ||
-        segment === "poll" ||
-        segment === "polling";
-    });
-  }
-
-  function getPathSegments(pathname) {
-    return String(pathname || "").toLowerCase().split("/").filter(Boolean);
-  }
-
-  function findExistingEventIndex(item) {
-    return state.events.findIndex((event) => {
-      return event.method === item.method &&
-        event.path === item.path &&
-        String(event.status) === String(item.status) &&
-        getEndpointId(event.matchedEndpoint) === getEndpointId(item.matchedEndpoint);
-    });
-  }
-
-  function getEndpointId(endpoint) {
-    return endpoint && endpoint.id ? endpoint.id : "";
-  }
-
-  function findActionForRequest(startedAt) {
-    const requestStartedAt = Number(startedAt || performance.now());
-    return state.actions.find((action) => {
-      const age = requestStartedAt - action.at;
-      if (age >= -50 && age <= 3000) {
-        return true;
-      }
-      return Date.now() - action.capturedAt <= 8000;
-    }) || null;
-  }
-
-  function normalizeUrl(value) {
-    if (!value) {
-      return null;
-    }
-    try {
-      return new URL(String(value), window.location.href);
-    } catch {
-      return null;
-    }
-  }
-
-  function shouldIgnoreRequest(url) {
-    if (
-      url.pathname.startsWith("/_anlyx/") ||
-      url.pathname.startsWith("/@vite/") ||
-      url.pathname.startsWith("/_next/") ||
-      url.pathname.startsWith("/getconfig/") ||
-      url.pathname.includes("hot-update") ||
-      url.pathname === "/favicon.ico"
-    ) {
-      return true;
-    }
-    return /\.(css|js|map|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|otf)$/i.test(url.pathname);
-  }
-
-  function shouldTrackRequestUrl(value) {
-    const normalized = normalizeUrl(value);
-    return Boolean(normalized && !shouldIgnoreRequest(normalized));
-  }
-
-  function matchEndpoint(method, path) {
-    const report = state.report || {};
-    const endpoints = Array.isArray(report.endpoints) ? report.endpoints : [];
-    const endpoint = endpoints.find((candidate) => {
-      return String(candidate.method || "").toUpperCase() === method && endpointPathToRegex(candidate.path).test(path);
-    });
-    const flows = Array.isArray(report.flows) ? report.flows : [];
-    const pages = Array.isArray(report.pages) ? report.pages : [];
-    return {
-      endpoint,
-      flow: endpoint ? flows.find((flow) => flow.endpointId === endpoint.id) : null,
-      pages: endpoint
-        ? pages.filter((page) => Array.isArray(page.apiCalls) && page.apiCalls.some((call) => call.endpointId === endpoint.id))
-        : []
-    };
-  }
-
-  function endpointPathToRegex(path) {
-    const key = String(path || "");
-    const cached = endpointRegexCache.get(key);
-    if (cached) {
-      return cached;
-    }
-    const escaped = String(path || "")
-      .replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")
-      .replace(/\\\{[^/]+\\\}/g, "[^/]+");
-    const regex = new RegExp("^" + escaped + "$");
-    endpointRegexCache.set(key, regex);
-    return regex;
-  }
-
-  function render() {
-    if (!drawer || !body) {
-      return;
-    }
-
-    drawer.dataset.open = state.open ? "true" : "false";
-    if (!state.open) {
-      return;
-    }
-
-    const selected = state.events.find((event) => event.id === state.selectedEventId) || null;
-    renderReactDrawer(selected, getLatestAction());
-
-    installEventSelectionHandler();
-  }
-
-  function installEventSelectionHandler() {
-    if (!body || body.dataset.eventSelectionBound === "true") {
-      return;
-    }
-    body.dataset.eventSelectionBound = "true";
-    const selectEventFromTarget = (target) => {
-      const row = target && target.closest ? target.closest("[data-event-id]") : null;
-      if (!row) {
-        return false;
-      }
-      state.selectedEventId = row.getAttribute("data-event-id");
-      state.open = true;
-      render();
-      return true;
-    };
-    body.addEventListener("click", (event) => {
-      selectEventFromTarget(event.target);
-    });
-    body.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter" && event.key !== " ") {
-        return;
-      }
-      if (selectEventFromTarget(event.target)) {
-        event.preventDefault();
-      }
-    });
-  }
-
-  function getLatestAction() {
-    return state.actions.find((action) => isFreshAction(action)) || null;
-  }
-
-  function getScannedHints() {
-    const report = state.report || {};
-    const pages = Array.isArray(report.pages) ? report.pages : [];
-    const endpoints = Array.isArray(report.endpoints) ? report.endpoints : [];
-    const pathname = window.location && window.location.pathname ? window.location.pathname : "/";
-    const matchingPages = pages.filter((page) => {
-      return page && page.route && routeToRegex(page.route).test(pathname);
+    Object.assign(badge.style, {
+      position: "fixed",
+      right: "16px",
+      bottom: "16px",
+      zIndex: "2147483647",
+      padding: "9px 11px",
+      border: "1px solid rgba(37, 99, 235, 0.24)",
+      borderRadius: "999px",
+      background: "rgba(255, 255, 255, 0.94)",
+      color: "#0f172a",
+      boxShadow: "0 12px 32px rgba(15, 23, 42, 0.16)",
+      font: "600 12px/1.2 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+      textDecoration: "none",
+      pointerEvents: "auto"
     });
 
-    return matchingPages.flatMap((page) => {
-      const apiCalls = Array.isArray(page.apiCalls) ? page.apiCalls : [];
-      return apiCalls.map((apiCall) => {
-        const endpoint = apiCall.endpointId
-          ? endpoints.find((candidate) => candidate && candidate.id === apiCall.endpointId)
-          : null;
-        const method = String(apiCall.method || (endpoint && endpoint.method) || "GET").toUpperCase();
-        const path = String(apiCall.path || (endpoint && endpoint.path) || "");
-        return {
-          pageRoute: page.route,
-          pageFilePath: page.filePath,
-          method,
-          path,
-          endpointId: apiCall.endpointId || (endpoint && endpoint.id),
-          endpointLabel: endpoint ? String(endpoint.method || method).toUpperCase() + " " + endpoint.path : method + " " + path,
-          evidence: page.captureStatus === "success" ? "capture" : "scanned-page"
-        };
-      });
-    }).filter((hint) => hint.path).slice(0, 4);
-  }
-
-  function routeToRegex(route) {
-    const escaped = String(route || "/")
-      .replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")
-      .replace(/\\\[\\\.\\\.\\\.[^\]]+\\\]/g, ".+")
-      .replace(/\\\[\\\[\\\.\\\.\\\.[^\]]+\\\]\\\]/g, ".*")
-      .replace(/\\\[[^\]]+\\\]/g, "[^/]+");
-    return new RegExp("^" + escaped + "/?$");
-  }
-
-  function renderReactDrawer(selected, latestAction) {
-    loadOverlayUiAssets();
-
-    if (!window.__ANLYX_RENDER_FLOW_DRAWER__) {
-      body.innerHTML = '<section class="anlyx-section"><h3 class="anlyx-section-title">Loading</h3><div class="anlyx-empty">Loading Anlyx Flow Drawer...</div></section>';
-      return;
+    const mount = () => document.body && document.body.appendChild(badge);
+    if (document.body) {
+      mount();
+    } else {
+      document.addEventListener("DOMContentLoaded", mount, { once: true });
     }
-
-    window.__ANLYX_RENDER_FLOW_DRAWER__(body, {
-      selectedEvent: selected,
-      events: state.events,
-      latestAction,
-      scannedHints: getScannedHints(),
-      loadError: state.loadError,
-      runtimeBaseUrl
-    });
   }
 })();
 `;

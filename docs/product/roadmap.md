@@ -9,10 +9,10 @@ v0.1.3 is the first release intended for normal `npm install anlyx` usage.
 It focuses on:
 
 - Spring Boot + Next.js App Router Deep Support
-- Inject Mode on the real local frontend
-- Action-first Flow Drawer
+- Live Workspace Mode beside the real local frontend
+- Action-first browser capture
 - Background request separation
-- React Flow backend diagrams
+- Summary, Timing, and Diagram request views
 - npm packaging fixes for published packages
 
 ## Near-Term Priorities
@@ -45,7 +45,7 @@ It focuses on:
 
 6. README media
    - Add a shorter 10-15 second top-level demo loop
-   - Add separate screenshots for Flow Story, Structure, Captures, and Process
+   - Add separate screenshots for Live Workspace, Recent Events, Timing, and Diagram
    - Keep empty, pending, and failed states visible in docs so first-time users know what to do next
 
 ## v0.2 Candidates

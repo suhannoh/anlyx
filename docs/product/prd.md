@@ -61,11 +61,11 @@ PRD, Scope Lock, Adapter Contract, Screen Contract가 충돌하거나 구현 중
 
 # 1. 프로젝트 개요
 
-**Anlyx**는 실제 로컬 프론트엔드 앱 위에 얇은 개발자 오버레이를 올리고, 사용자가 앱에서 버튼이나 컴포넌트를 눌러 발생시킨 API 요청을 브라우저에서 관찰한 뒤, 그 요청이 스캔된 백엔드 엔드포인트, 서비스 레이어, Repository, 데이터베이스 흐름과 어떻게 연결되는지 즉시 보여주는 개발자 도구다.
+**Anlyx**는 사용자가 실제 로컬 프론트엔드 앱에서 버튼이나 컴포넌트를 눌러 발생시킨 API 요청을 브라우저에서 관찰한 뒤, 별도의 Live Workspace에서 그 요청이 스캔된 백엔드 엔드포인트, 서비스 레이어, Repository, 데이터베이스 흐름과 어떻게 연결되는지 즉시 보여주는 개발자 도구다.
 
-개발자는 Anlyx를 통해 별도의 목록 화면에서 엔드포인트를 고르는 대신, 평소처럼 로컬 앱을 사용한다. Anlyx는 브라우저에서 관찰한 API 요청을 스캔된 정적 분석 결과와 매칭하고, 우측 Flow Drawer에서 해당 요청이 어떤 Controller, Service, Repository, Database Table, Frontend Page와 연결되는지 보여준다.
+개발자는 Anlyx를 통해 별도의 목록 화면에서 엔드포인트를 고르는 대신, 평소처럼 로컬 앱을 사용한다. Anlyx는 브라우저에서 관찰한 API 요청을 스캔된 정적 분석 결과와 매칭하고, Full-page Workspace에서 해당 요청이 어떤 Controller, Service, Repository, Database Table, Frontend Page와 연결되는지 보여준다.
 
-또한 프론트 화면에서 시작된 브라우저 요청과 스캔된 백엔드 경로를 애니메이션으로 재생하여, 정적인 문서가 아니라 **“실제 앱에서 바로 열리는 애플리케이션 구조 지도”**처럼 보여주는 것을 목표로 한다. v0.1은 런타임 트레이서가 아니므로 브라우저 관찰값, 정적 스캔 결과, 추론 결과를 명확히 구분한다.
+또한 프론트 화면에서 시작된 브라우저 요청과 스캔된 백엔드 경로를 Summary, Timing, Diagram, Evidence Inspector로 나누어 보여주며, 정적인 문서가 아니라 **“실제 앱 사용에 반응하는 라이브 애플리케이션 구조 지도”**처럼 느껴지게 하는 것을 목표로 한다. v0.1은 런타임 트레이서가 아니므로 브라우저 관찰값, 정적 스캔 결과, 추론 결과를 명확히 구분한다.
 
 ---
 
@@ -182,13 +182,13 @@ Controller, Service, Repository, Database가 실제로 어떻게 이어지는지
 
 1. `anlyx dev`가 로컬 Anlyx 런타임 서버를 띄우고, 실제 프론트 앱은 기존 `frontend.baseUrl`에서 그대로 실행되도록 유지한다.
 2. 사용자가 실제 앱에서 버튼이나 컴포넌트를 눌렀을 때 발생한 API 요청을 브라우저에서 관찰한다.
-3. 관찰된 요청을 스캔된 엔드포인트와 매칭하고, 우측 Flow Drawer에서 내부 처리 흐름을 보여준다.
+3. 관찰된 요청을 스캔된 엔드포인트와 매칭하고, 별도 Live Workspace에서 내부 처리 흐름을 보여준다.
 4. Main Flow와 Sub Flow를 구분해 복잡한 호출 구조를 읽기 쉽게 만든다.
 5. 프론트 페이지에서 백엔드로 요청이 이동하고, DB 처리 후 다시 화면으로 응답이 돌아오는 과정을 애니메이션으로 보여준다.
 6. 실제 프론트 Page 단위만 탐색하고, Playwright 기반으로 화면을 캡처해 fallback/debug 스토리보드로 만든다.
 7. 세로로 긴 페이지는 Desktop 기준으로 여러 구간으로 나누어 캡처한다.
 8. npm 기반 CLI로 설치 및 실행할 수 있게 한다.
-9. 결과물을 실제 앱 위에 주입된 로컬 오버레이와 fallback/debug 로컬 웹 UI에서 확인할 수 있게 한다.
+9. 결과물을 별도 Live Workspace와 fallback/debug 로컬 웹 UI에서 확인할 수 있게 한다.
 10. v0.1에서는 Spring Boot + Next.js App Router 조합을 가장 완성도 있게 지원한다.
 11. 다른 백엔드는 OpenAPI 기반 Basic Support를 제공한다.
 
@@ -1117,16 +1117,16 @@ npx anlyx init
 npx anlyx dev
 ```
 
-사용자는 이 3단계 외에 `localhost:4777`, `/_anlyx/overlay.js`, `report-data` endpoint, 수동 script tag 주입을 알 필요가 없어야 한다.
+사용자는 이 3단계 외에 `localhost:4777`, browser capture script, live event stream, `report-data` endpoint, 수동 script tag 주입을 알 필요가 없어야 한다.
 
 `npx anlyx dev`는 장기적으로 다음 작업을 하나의 개발 명령으로 처리한다.
 
 - 필요한 경우 scan을 자동 실행하거나 stale 상태를 감지한다.
 - 실제 프론트엔드 dev server를 실행하거나 이미 실행 중인 서버를 감지한다.
 - Anlyx runtime을 실행한다.
-- 개발 모드에서만 overlay script를 실제 프론트엔드에 자동 주입한다.
-- 실제 앱 URL을 연다.
-- 앱 실행 자체는 막지 않고, Anlyx 분석 실패나 대기 상태는 overlay 안에서 표시한다.
+- 개발 모드에서만 browser capture runtime을 실제 프론트엔드에 연결한다.
+- 실제 앱 URL과 Anlyx Workspace를 함께 열 수 있게 한다.
+- 앱 실행 자체는 막지 않고, Anlyx 분석 실패나 대기 상태는 Workspace 안에서 표시한다.
 
 ```bash
 npx anlyx dev
@@ -1138,20 +1138,20 @@ npx anlyx dev
 http://localhost:4777
 ```
 
-기본 모드인 Inject Mode에서는 `http://localhost:4777`이 실제 앱을 대신 보여주지 않는다. 실제 앱은 기존 개발 서버인 `frontend.baseUrl`에서 그대로 열고, Anlyx는 로컬 전용 스크립트와 report data API를 제공한다.
+기본 모드인 Workspace Mode에서는 `http://localhost:4777`이 실제 앱을 대신 보여주지 않는다. 실제 앱은 기존 개발 서버인 `frontend.baseUrl`에서 그대로 열고, Anlyx는 로컬 전용 capture runtime, live event ingest/stream, Workspace, report data API를 제공한다.
 
-Inject Mode의 기본 사용 화면은 실제 앱 URL이다. 예를 들어 Zup 데모는 `http://localhost:3000`에서 그대로 사용하고, `http://localhost:4777`은 overlay script, report data, standalone debug viewer를 제공하는 백그라운드 런타임으로 취급한다.
+Workspace Mode의 기본 사용 화면은 실제 앱 URL과 Anlyx Workspace를 나란히 열어두는 구조다. 예를 들어 Zup 데모는 `http://localhost:3000`에서 그대로 사용하고, `http://localhost:4777`은 live workspace, capture ingest/stream, report data를 제공하는 로컬 Anlyx 런타임으로 취급한다.
 
-Overlay가 보여주는 핵심 대상은 “모든 네트워크 로그”가 아니라 사용자가 방금 클릭, 제출, 키 입력 등으로 발생시킨 실제 요청 흐름이다. 클릭과 가까운 시점에 발생한 API 요청은 메인 Flow Drawer로 자동 승격한다. `useEffect`, health check, polling, page-load성 요청은 기록하되 Drawer를 자동으로 열거나 현재 선택 흐름을 빼앗지 않는다. 사용자가 필요할 때 Recent API events에서 직접 선택해 확인한다.
+Workspace가 보여주는 핵심 대상은 “모든 네트워크 로그”가 아니라 사용자가 방금 클릭, 제출, 키 입력 등으로 발생시킨 실제 요청 흐름이다. 클릭과 가까운 시점에 발생한 API 요청은 Workspace의 선택 요청으로 자동 승격한다. `useEffect`, health check, polling, page-load성 요청은 기록하되 현재 선택 흐름을 빼앗지 않는다. 사용자가 필요할 때 Recent events에서 직접 선택해 확인한다.
 
-Flow Drawer는 실제 앱 위에 얹히므로 사용자가 앱을 계속 확인할 수 있어야 한다. 최소한 다음 dev-only 조작을 지원한다.
+실제 앱 안에는 필요할 때 작은 capture badge 정도만 표시한다. 큰 overlay, modal, drawer는 기본 분석 화면이 아니다. Workspace는 최소한 다음 dev-only 조작을 지원한다.
 
-- 투명도 조절
-- Drawer 크기 조절
-- Drawer 위치 드래그 이동
+- Workspace 열기
+- Recent events에서 요청 선택
+- Summary / Timing / Diagram 탭 전환
 - 한국어/영어 shell label 전환
 
-Next.js App Router에서는 다음 dev-only helper를 root layout에 추가하는 것을 기본 경로로 한다.
+Next.js App Router에서는 다음 dev-only helper 또는 동등한 browser capture 연결을 root layout에 추가하는 것을 기본 경로로 한다.
 
 ```tsx
 import { AnlyxDevOverlay } from "anlyx/next";
@@ -1168,15 +1168,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-`AnlyxDevOverlay`는 production에서 아무것도 렌더링하지 않아야 한다. 특수한 환경이나 디버깅에서는 다음 raw script tag를 fallback으로 사용할 수 있다.
+`AnlyxDevOverlay` 또는 후속 capture helper는 production에서 아무것도 렌더링하지 않아야 한다. 특수한 환경이나 디버깅에서는 다음 raw script tag를 fallback으로 사용할 수 있다.
 
 ```html
-<script src="http://localhost:4777/_anlyx/overlay.js" defer></script>
+<script src="http://localhost:4777/_anlyx/capture.js" defer></script>
 ```
 
 스크립트는 실제 앱 origin 안에서 실행되므로, 프록시 origin 차이로 인해 hydration, auth, theme, cookie, localStorage 동작이 달라지는 문제를 피한다.
 
-Standalone debug viewer는 다음 경로에서 계속 사용할 수 있다.
+기존 viewer 경로는 호환성을 위해 남길 수 있지만, 별도 static viewer가 아니라 Live Workspace shell을 렌더링해야 한다.
 
 ```txt
 http://localhost:4777/_anlyx/viewer

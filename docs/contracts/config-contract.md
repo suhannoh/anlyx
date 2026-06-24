@@ -155,11 +155,12 @@ Rules:
 - `mode` SHOULD default to `"inject"`.
 - `mode = "inject"` MUST keep `frontend.baseUrl` as the real app URL and serve only Anlyx runtime assets and data from the Anlyx server.
 - `mode = "inject"` MUST treat the Anlyx server root as a runtime/status surface, not as the primary application URL.
-- `mode = "inject"` MUST make `/_anlyx/overlay.js` usable from the real app origin, including report data access through CORS-safe Anlyx runtime endpoints.
-- `mode = "overlay"` MAY proxy `frontend.baseUrl` through the Anlyx server and inject the local overlay script into HTML responses as a fallback/debug mode.
-- `mode = "viewer"` MUST serve the standalone local viewer directly at the server root.
-- Inject Mode and Overlay Mode MUST keep the standalone viewer reachable at an Anlyx-owned debug path such as `/_anlyx/viewer`.
-- Anlyx-owned runtime endpoints MUST use the `/_anlyx/*` namespace. `/api/report-data` MAY remain available as a compatibility alias for the standalone viewer.
+- `mode = "inject"` MUST make `/_anlyx/capture.js` usable from the real app origin.
+- `mode = "inject"` MAY keep `/_anlyx/overlay.js` as a compatibility alias, but that alias MUST only install the capture runtime and a small workspace badge. It MUST NOT render a large drawer, modal, or overlay as the primary analysis surface.
+- `mode = "overlay"` MAY proxy `frontend.baseUrl` through the Anlyx server and inject the local capture script into HTML responses as a fallback/debug mode.
+- `mode = "viewer"` MUST serve the Live Workspace directly at the server root.
+- Inject Mode and Overlay Mode MAY keep `/_anlyx/viewer` reachable as a compatibility alias, but that route MUST render the Live Workspace shell instead of the legacy static viewer.
+- Anlyx-owned runtime endpoints MUST use the `/_anlyx/*` namespace. `/api/report-data` MAY remain available as a compatibility alias for Workspace report loading.
 
 ## Dev Config
 
@@ -168,12 +169,12 @@ Rules:
 - `dev.command` MAY define the frontend development command, for example `"npm run dev"`.
 - If `dev.command` is present, `anlyx dev` SHOULD check `frontend.baseUrl` first and only start the command when the frontend is not already reachable.
 - If `.anlyx/report-data.json` is missing, `anlyx dev` SHOULD run a lightweight scan before starting the runtime.
-- Analysis or scan failures MUST be reported clearly and MUST NOT be hidden behind a blank overlay.
-- Next.js users SHOULD use `AnlyxDevOverlay` from `anlyx/next` to render the local overlay script during development.
+- Analysis or scan failures MUST be reported clearly and MUST NOT be hidden behind a blank workspace.
+- Next.js users SHOULD use `AnlyxDevOverlay` from `anlyx/next` to render the local capture helper during development.
 - `AnlyxDevOverlay` MUST render nothing when `NODE_ENV = "production"`.
-- Non-Next React users MAY inject `/_anlyx/overlay.js` with a development-only raw script tag or their app's local HTML/template mechanism. This is a supported local-development path for React SPA compatibility and MUST NOT require Next.js.
+- Non-Next React users MAY inject `/_anlyx/capture.js` directly or use the compatibility `/_anlyx/overlay.js` helper with a development-only raw script tag or their app's local HTML/template mechanism. This is a supported local-development path for React SPA compatibility and MUST NOT require Next.js.
 - Browser-observed API events caused by recent user actions SHOULD become the selected main flow automatically.
-- Background events such as page-load effects, health checks, and polling SHOULD be recorded but MUST NOT automatically open the overlay or replace the selected main flow.
+- Background events such as page-load effects, health checks, and polling SHOULD be recorded but MUST NOT replace the selected main flow.
 
 ## Spring Boot + Next.js Example
 

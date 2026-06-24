@@ -1,14 +1,17 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runInNewContext } from "node:vm";
+import { EventEmitter } from "node:events";
 
-import type { NormalizedAnlyxConfig, ScanResult } from "@anlyx/core";
+import type { BrowserRequestEvent, NormalizedAnlyxConfig, ScanResult } from "@anlyx/core";
 import { describe, expect, it } from "vitest";
 
 import { getHelpText, runCli } from "./index.js";
 import {
   buildProxyTargetUrl,
+  createAnlyxRuntimeMiddleware,
+  createLocalFlowStore,
   getOverlayClientScript,
   getOverlayScriptTag,
   injectOverlayScript,
@@ -95,290 +98,338 @@ const config: NormalizedAnlyxConfig = {
   dev: {}
 };
 
-type TimerCallback = () => void;
+type FakeRequest = IncomingMessage & EventEmitter & { method?: string; url?: string };
 
-type HarnessElement = {
-  id: string;
-  tagName: string;
-  className: string;
-  dataset: Record<string, string>;
-  style: Record<string, string>;
-  textContent: string;
-  value: string;
-  name: string;
-  innerHTML: string;
-  appendChild(child: HarnessElement): HarnessElement;
-  addEventListener(type?: string, listener?: (event: Record<string, unknown>) => void): void;
-  contains(target: unknown): boolean;
-  closest(): null;
-  getAttribute(name: string): string | null;
-  getBoundingClientRect(): { left: number; top: number; width: number; height: number };
-  querySelector(selector: string): HarnessElement | null;
-  querySelectorAll(): HarnessElement[];
-  remove(): void;
-  setAttribute(name: string, value: string): void;
+type FakeResponse = ServerResponse & {
+  body: string;
+  chunks: string[];
+  headers: Record<string, string | number | readonly string[]>;
+  statusCode: number;
+  ended: boolean;
+  end(chunk?: string | Buffer): FakeResponse;
+  getHeader(name: string): string | number | readonly string[] | undefined;
+  setHeader(name: string, value: string | number | readonly string[]): FakeResponse;
+  write(chunk: string | Buffer): boolean;
+  writeHead(statusCode: number, headers?: Record<string, string>): FakeResponse;
 };
 
-function createOverlayHarness(options: { report?: ScanResult; path?: string } = {}) {
-  const timers: TimerCallback[] = [];
-  const order: string[] = [];
-  let drawerProps: Record<string, unknown> | null = null;
-  const elementsById = new Map<string, HarnessElement>();
-  const documentListeners = new Map<string, Array<(event: Record<string, unknown>) => void>>();
-  const windowListeners = new Map<string, Array<(event: Record<string, unknown>) => void>>();
-
-  const createElement = (tagName: string): HarnessElement => {
-    const attributes = new Map<string, string>();
-    const children: HarnessElement[] = [];
-    const element: HarnessElement = {
-      id: "",
-      tagName: tagName.toUpperCase(),
-      className: "",
-      dataset: {},
-      style: {},
-      textContent: "",
-      value: "",
-      name: "",
-      innerHTML: "",
-      appendChild(child) {
-        children.push(child);
-        if (child.id) {
-          elementsById.set(child.id, child);
-        }
-        return child;
-      },
-      addEventListener() {
-        return undefined;
-      },
-      contains(target) {
-        return target === element || children.includes(target as HarnessElement);
-      },
-      closest() {
-        return null;
-      },
-      getAttribute(name) {
-        return attributes.get(name) ?? null;
-      },
-      getBoundingClientRect() {
-        return {
-          left: Number.parseInt(String(element.style.left ?? "0"), 10) || 0,
-          top: Number.parseInt(String(element.style.top ?? "0"), 10) || 0,
-          width: Number.parseInt(String(element.style.width ?? "600"), 10) || 600,
-          height: Number.parseInt(String(element.style.height ?? "760"), 10) || 760
-        };
-      },
-      querySelector(selector) {
-        const knownSelectors = new Set([
-          ".anlyx-fab",
-          ".anlyx-fab__mark",
-          ".anlyx-fab__label",
-          ".anlyx-drawer",
-          ".anlyx-body",
-          ".anlyx-close",
-          ".anlyx-opacity-control",
-          ".anlyx-language-control",
-          ".anlyx-drag-handle",
-          ".anlyx-resize-handle",
-          ".anlyx-title",
-          ".anlyx-subtitle",
-          ".anlyx-opacity-label",
-          ".anlyx-language-label"
-        ]);
-        if (knownSelectors.has(selector)) {
-          const child = createElement("div");
-          child.className = selector.slice(1);
-          return child;
-        }
-        return null;
-      },
-      querySelectorAll() {
-        return [];
-      },
-      remove() {
-        if (element.id) {
-          elementsById.delete(element.id);
-        }
-      },
-      setAttribute(name, value) {
-        attributes.set(name, value);
-        if (name === "id") {
-          element.id = value;
-          elementsById.set(value, element);
-        }
-        if (name === "class") {
-          element.className = value;
-        }
-      }
-    };
-    return element;
-  };
-
-  const document = {
-    body: createElement("body"),
-    currentScript: { src: "http://localhost:4777/_anlyx/overlay.js" },
-    head: createElement("head"),
-    readyState: "complete",
-    addEventListener(type: string, listener: (event: Record<string, unknown>) => void) {
-      documentListeners.set(type, [...(documentListeners.get(type) ?? []), listener]);
-    },
-    createElement,
-    getElementById(id: string) {
-      return elementsById.get(id) ?? null;
-    },
-    querySelector(selector: string) {
-      if (selector.startsWith("#anlyx-overlay-root ")) {
-        const root = elementsById.get("anlyx-overlay-root");
-        return root?.querySelector(selector.replace("#anlyx-overlay-root ", "")) ?? null;
-      }
-      return null;
-    }
-  };
-
-  class FakeMutationObserver {
-    observe() {
-      return undefined;
-    }
-  }
-
-  function FakeXmlHttpRequest() {
-    return undefined;
-  }
-
-  FakeXmlHttpRequest.prototype = {
-    addEventListener() {
-      return undefined;
-    },
-    open() {
-      return undefined;
-    },
-    send() {
-      return undefined;
-    }
-  };
-
-  const window = {
-    document,
-    location: {
-      href: `http://localhost:3000${options.path ?? "/"}`,
-      origin: "http://localhost:3000",
-      pathname: options.path ?? "/"
-    },
-    innerHeight: 900,
-    innerWidth: 1440,
-    MutationObserver: FakeMutationObserver,
-    XMLHttpRequest: FakeXmlHttpRequest,
-    __ANLYX_RENDER_FLOW_DRAWER__(_container: unknown, props: Record<string, unknown>) {
-      drawerProps = props;
-      order.push("drawer-render");
-    },
-    fetch: async (input: string, init?: { method?: string }) => {
-      void init;
-      order.push(`original-fetch:${input}`);
-      return {
-        ok: true,
-        status: 200,
-        async json() {
-          return options.report ?? scanResult;
-        }
-      };
-    },
-    performance: {
-      now() {
-        return order.length * 10;
-      }
-    },
-    sessionStorage: {
-      getItem() {
-        return null;
-      },
-      removeItem() {
-        return undefined;
-      },
-      setItem() {
-        return undefined;
-      }
-    },
-    localStorage: {
-      getItem() {
-        return null;
-      },
-      setItem() {
-        return undefined;
-      }
-    },
-    addEventListener(type: string, listener: (event: Record<string, unknown>) => void) {
-      windowListeners.set(type, [...(windowListeners.get(type) ?? []), listener]);
-    },
-    removeEventListener(type: string, listener: (event: Record<string, unknown>) => void) {
-      windowListeners.set(
-        type,
-        (windowListeners.get(type) ?? []).filter((candidate) => candidate !== listener)
-      );
-    },
-    setTimeout(callback: TimerCallback) {
-      timers.push(callback);
-      return timers.length;
-    }
-  };
-
-  const context = {
-    Date,
-    Error,
-    Math,
-    MutationObserver: FakeMutationObserver,
-    Promise,
-    URL,
-    XMLHttpRequest: FakeXmlHttpRequest,
-    console,
-    document,
-    fetch(...args: [string, { method?: string }?]) {
-      return window.fetch(...args);
-    },
-    performance: window.performance,
-    window
-  };
-
-  const waitForMicrotasks = async () => {
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
-  };
-
-  const flushNextTimer = async () => {
-    const callback = timers.shift();
-    if (callback) {
-      callback();
-      await waitForMicrotasks();
-    }
-  };
-
-  const flushTimers = async () => {
-    while (timers.length > 0) {
-      await flushNextTimer();
-    }
-  };
-
-  const dispatchDocumentEvent = (type: string, event: Record<string, unknown>) => {
-    for (const listener of documentListeners.get(type) ?? []) {
-      listener(event);
-    }
-  };
-
-  runInNewContext(getOverlayClientScript(), context);
-
-  return {
-    dispatchDocumentEvent,
-    flushNextTimer,
-    flushTimers,
-    getDrawerProps: () => drawerProps,
-    order,
-    timers,
-    waitForMicrotasks,
-    window
-  };
-}
-
 describe("dev command", () => {
+  it("accepts browser events and returns a FlowRecord id derived from the event", async () => {
+    const { request, response } = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/events",
+      body: JSON.stringify(createBrowserEvent())
+    });
+
+    await handleRuntimeRequest(request, response);
+
+    expect(response.statusCode).toBe(202);
+    expect(response.getHeader("content-type")).toContain("application/json");
+    expect(JSON.parse(response.body)).toEqual({ accepted: true, id: "flow:evt_saved_1" });
+  });
+
+  it("streams retained flow records to EventSource clients", async () => {
+    const flowStore = createLocalFlowStore();
+    const post = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/events",
+      body: JSON.stringify(createBrowserEvent())
+    });
+    await handleRuntimeRequest(post.request, post.response, flowStore);
+
+    const stream = createRuntimeHarness({
+      method: "GET",
+      url: "/_anlyx/events/stream"
+    });
+    try {
+      await handleRuntimeRequest(stream.request, stream.response, flowStore);
+
+      expect(stream.response.statusCode).toBe(200);
+      expect(stream.response.getHeader("content-type")).toContain("text/event-stream");
+      expect(stream.response.body).toContain("event: flow");
+      expect(stream.response.body).toContain('"id":"flow:evt_saved_1"');
+      expect(flowStore.clients.size).toBe(1);
+    } finally {
+      stream.request.emit("close");
+    }
+
+    expect(flowStore.clients.size).toBe(0);
+  });
+
+  it("merges backend span events into an existing browser flow and broadcasts the update", async () => {
+    const flowStore = createLocalFlowStore();
+    const post = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/events",
+      body: JSON.stringify(createBrowserEvent({ id: "evt_with_spans" }))
+    });
+    await handleRuntimeRequest(post.request, post.response, flowStore);
+
+    const stream = createRuntimeHarness({
+      method: "GET",
+      url: "/_anlyx/events/stream"
+    });
+
+    try {
+      await handleRuntimeRequest(stream.request, stream.response, flowStore);
+
+      const spans = createBackendSpanEvent("evt_with_spans");
+      const spanPost = createRuntimeHarness({
+        method: "POST",
+        url: "/_anlyx/backend-spans",
+        body: JSON.stringify(spans)
+      });
+      await handleRuntimeRequest(spanPost.request, spanPost.response, flowStore);
+
+      expect(spanPost.response.statusCode).toBe(202);
+      expect(JSON.parse(spanPost.response.body)).toEqual({
+        accepted: true,
+        id: "flow:evt_with_spans"
+      });
+      expect(flowStore.records[0]?.backendSpans?.map((span) => span.id)).toEqual([
+        "span-controller",
+        "span-service",
+        "span-repository"
+      ]);
+      expect(stream.response.body).toContain('"backendSpans"');
+      expect(stream.response.body).toContain('"label":"SavedBenefitService.save"');
+    } finally {
+      stream.request.emit("close");
+    }
+  });
+
+  it("queues backend span events until the matching browser flow arrives", async () => {
+    const flowStore = createLocalFlowStore();
+    const spanPost = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/backend-spans",
+      body: JSON.stringify(createBackendSpanEvent("evt_pending_spans"))
+    });
+
+    await handleRuntimeRequest(spanPost.request, spanPost.response, flowStore);
+
+    expect(spanPost.response.statusCode).toBe(202);
+    expect(JSON.parse(spanPost.response.body)).toEqual({ accepted: true, pending: true });
+    expect(flowStore.records).toHaveLength(0);
+    expect(flowStore.pendingBackendSpans.get("evt_pending_spans")).toHaveLength(3);
+
+    const eventPost = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/events",
+      body: JSON.stringify(createBrowserEvent({ id: "evt_pending_spans" }))
+    });
+
+    await handleRuntimeRequest(eventPost.request, eventPost.response, flowStore);
+
+    expect(flowStore.records[0]?.id).toBe("flow:evt_pending_spans");
+    expect(flowStore.records[0]?.backendSpans).toHaveLength(3);
+    expect(flowStore.pendingBackendSpans.has("evt_pending_spans")).toBe(false);
+  });
+
+  it("rejects malformed backend span events", async () => {
+    const { request, response } = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/backend-spans",
+      body: JSON.stringify({
+        type: "backend_spans",
+        requestId: "evt_bad",
+        spans: [{ id: "bad", type: "api", label: "GET /api", startOffsetMs: -1, durationMs: 5 }]
+      })
+    });
+
+    await handleRuntimeRequest(request, response);
+
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body)).toMatchObject({ accepted: false });
+  });
+
+  it("replays retained flow records oldest first so viewers settle on the newest request", async () => {
+    const flowStore = createLocalFlowStore();
+    const firstPost = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/events",
+      body: JSON.stringify(createBrowserEvent({ id: "evt_old" }))
+    });
+
+    await handleRuntimeRequest(firstPost.request, firstPost.response, flowStore);
+
+    const secondPost = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/events",
+      body: JSON.stringify(createBrowserEvent({ id: "evt_new" }))
+    });
+
+    await handleRuntimeRequest(secondPost.request, secondPost.response, flowStore);
+
+    const stream = createRuntimeHarness({
+      method: "GET",
+      url: "/_anlyx/events/stream"
+    });
+
+    try {
+      await handleRuntimeRequest(stream.request, stream.response, flowStore);
+
+      expect(stream.response.body.indexOf('"id":"flow:evt_old"')).toBeLessThan(
+        stream.response.body.indexOf('"id":"flow:evt_new"')
+      );
+    } finally {
+      stream.request.emit("close");
+    }
+  });
+
+  it("broadcasts new flow records to active EventSource clients", async () => {
+    const flowStore = createLocalFlowStore();
+    const stream = createRuntimeHarness({
+      method: "GET",
+      url: "/_anlyx/events/stream"
+    });
+
+    try {
+      await handleRuntimeRequest(stream.request, stream.response, flowStore);
+      const post = createRuntimeHarness({
+        method: "POST",
+        url: "/_anlyx/events",
+        body: JSON.stringify(createBrowserEvent({ id: "evt_live_1" }))
+      });
+
+      await handleRuntimeRequest(post.request, post.response, flowStore);
+
+      expect(post.response.statusCode).toBe(202);
+      expect(stream.response.body).toContain('"id":"flow:evt_live_1"');
+    } finally {
+      stream.request.emit("close");
+    }
+
+    expect(flowStore.clients.size).toBe(0);
+  });
+
+  it("rejects invalid browser event JSON", async () => {
+    const { request, response } = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/events",
+      body: "{"
+    });
+
+    await handleRuntimeRequest(request, response);
+
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body)).toMatchObject({ accepted: false });
+  });
+
+  it("rejects malformed browser event bodies", async () => {
+    const { request, response } = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/events",
+      body: JSON.stringify({ type: "request", method: "GET", url: "/api/test" })
+    });
+
+    await handleRuntimeRequest(request, response);
+
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body)).toMatchObject({ accepted: false });
+  });
+
+  it("rejects browser events with invalid optional fields", async () => {
+    const { request, response } = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/events",
+      body: JSON.stringify({
+        ...createBrowserEvent(),
+        action: "bad action",
+        durationMs: "slow",
+        status: "200"
+      })
+    });
+
+    await handleRuntimeRequest(request, response);
+
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body)).toMatchObject({ accepted: false });
+  });
+
+  it("retains only the latest 100 flow records", () => {
+    const flowStore = createLocalFlowStore();
+
+    for (let index = 0; index < 105; index += 1) {
+      flowStore.pushFlow({
+        id: `flow:${index}`,
+        requestId: `evt_${index}`,
+        method: "GET",
+        path: `/api/${index}`,
+        trigger: "background",
+        matchState: "unmatched",
+        confidence: "low",
+        durationMs: 0,
+        layers: [],
+        evidence: [],
+        createdAt: "2026-06-24T00:00:01.000Z",
+        label: `GET /api/${index}`
+      });
+    }
+
+    expect(flowStore.records).toHaveLength(100);
+    expect(flowStore.records[0]?.id).toBe("flow:104");
+    expect(flowStore.records.at(-1)?.id).toBe("flow:5");
+  });
+
+  it("serves the capture runtime asset", async () => {
+    await withTempDir(async (dir) => {
+      const viewerRoot = join(dir, "dist/viewer");
+      const overlayRoot = join(dir, "dist/overlay");
+      await mkdir(viewerRoot, { recursive: true });
+      await mkdir(overlayRoot, { recursive: true });
+      await writeFile(
+        join(overlayRoot, "capture.js"),
+        "window.__ANLYX_CAPTURE_INSTALLED__ = true;",
+        "utf8"
+      );
+
+      const { request, response } = createRuntimeHarness({
+        method: "GET",
+        url: "/_anlyx/capture.js"
+      });
+
+      await handleRuntimeRequest(request, response, createLocalFlowStore(), viewerRoot);
+
+      expect(response.statusCode).toBe(200);
+      expect(response.getHeader("content-type")).toContain("application/javascript");
+      expect(response.body).toContain("__ANLYX_CAPTURE_INSTALLED__");
+    });
+  });
+
+  it("serves a development-only Spring backend bridge template", async () => {
+    const { request, response } = createRuntimeHarness({
+      method: "GET",
+      url: "/_anlyx/spring-bridge.java"
+    });
+
+    await handleRuntimeRequest(request, response);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.getHeader("content-type")).toContain("text/plain");
+    expect(response.body).toContain("Development only");
+    expect(response.body).toContain("X-Anlyx-Request-Id");
+    expect(response.body).toContain("/_anlyx/backend-spans");
+    expect(response.body).toContain("http://127.0.0.1:4777");
+    expect(response.body).toContain("HandlerMethod");
+    expect(response.body).toContain("HttpClient.Version.HTTP_1_1");
+    expect(response.body).toContain("BeanPostProcessor");
+    expect(response.body).toContain("jdbc_execute");
+  });
+
+  it("allows POST in runtime CORS methods", async () => {
+    const { request, response } = createRuntimeHarness({
+      method: "OPTIONS",
+      url: "/_anlyx/events"
+    });
+
+    await handleRuntimeRequest(request, response);
+
+    expect(response.statusCode).toBe(204);
+    expect(response.getHeader("access-control-allow-methods")).toBe("GET, POST, OPTIONS");
+    expect(response.getHeader("access-control-allow-headers")).toBe("content-type");
+  });
+
   it("reads valid report-data.json", async () => {
     await withTempDir(async (dir) => {
       await writeReportData(dir, scanResult);
@@ -532,7 +583,7 @@ describe("dev command", () => {
     });
   });
 
-  it("opens the real frontend in inject mode", async () => {
+  it("opens the live workspace in inject mode", async () => {
     await withTempDir(async (dir) => {
       await writeReportData(dir, scanResult);
       const opened: string[] = [];
@@ -546,7 +597,7 @@ describe("dev command", () => {
         })
       });
 
-      expect(opened).toEqual(["http://localhost:3000"]);
+      expect(opened).toEqual(["http://localhost:4777"]);
       expect(result).toMatchObject({
         url: "http://localhost:4777",
         frontendUrl: "http://localhost:3000",
@@ -616,13 +667,13 @@ describe("dev command", () => {
     });
   });
 
-  it("injects overlay script before the closing body tag", () => {
+  it("injects the compatibility capture helper before the closing body tag", () => {
     expect(injectOverlayScript("<html><body><main>App</main></body></html>")).toBe(
       '<html><body><main>App</main><script src="/_anlyx/overlay.js" defer></script></body></html>'
     );
   });
 
-  it("does not inject overlay script twice", () => {
+  it("does not inject the compatibility capture helper twice", () => {
     const html = '<html><body><script src="/_anlyx/overlay.js" defer></script></body></html>';
 
     expect(injectOverlayScript(html)).toBe(html);
@@ -634,431 +685,29 @@ describe("dev command", () => {
     );
   });
 
-  it("builds an absolute overlay script tag for inject mode", () => {
+  it("builds an absolute compatibility capture helper tag for inject mode", () => {
     expect(getOverlayScriptTag("http://localhost:4777")).toBe(
       '<script src="http://localhost:4777/_anlyx/overlay.js" defer></script>'
     );
   });
 
-  it("serves a flow-first overlay drawer for real app interactions", () => {
+  it("serves a lightweight capture badge instead of the legacy drawer", () => {
     const script = getOverlayClientScript();
 
-    expect(script).toContain("/_anlyx/overlay-ui.js");
-    expect(script).toContain("/_anlyx/overlay-ui.css");
-    expect(script).toContain("__ANLYX_RENDER_FLOW_DRAWER__");
-    expect(script).toContain("renderReactDrawer");
+    expect(script).toContain("/_anlyx/capture.js");
+    expect(script).toContain("Anlyx capturing");
+    expect(script).toContain("Open workspace");
+    expect(script).toContain("__ANLYX_CAPTURE_BADGE_INSTALLED__");
+    expect(script).not.toContain("__ANLYX_RENDER_FLOW_DRAWER__");
+    expect(script).not.toContain("overlay-ui.js");
   });
 
-  it("filters development noise and groups repeated overlay API events", () => {
+  it("points the injected capture badge at the full workspace", () => {
     const script = getOverlayClientScript();
 
-    expect(script).toContain('url.pathname.startsWith("/_next/")');
-    expect(script).toContain('url.pathname.startsWith("/getconfig/")');
-    expect(script).toContain('url.pathname.includes("hot-update")');
-    expect(script).toContain("findExistingEventIndex");
-    expect(script).toContain("count: (existing.count || 1) + 1");
-    expect(script).toContain("DOMContentLoaded");
-  });
-
-  it("captures recent user actions and attaches them to overlay API events", () => {
-    const script = getOverlayClientScript();
-
-    expect(script).toContain("installUserActionTracker");
-    expect(script).toContain("captureUserAction");
-    expect(script).toContain("findActionForRequest");
-    expect(script).toContain("triggeredBy");
-    expect(script).toContain("Clicked");
-    expect(script).toContain("Action");
-  });
-
-  it("keeps background API events quiet until the user selects them", () => {
-    const script = getOverlayClientScript();
-
-    expect(script).toContain("shouldAutoFocusEvent");
-    expect(script).toContain("classifyApiEventSource");
-    expect(script).toContain("isPassiveRequest");
-    expect(script).toContain("isSessionProbePath");
-    expect(script).toContain("isHealthOrPollingPath");
-    expect(script).toContain("installEventSelectionHandler");
-    expect(script).toContain('target.closest("[data-event-id]")');
-    expect(script).toContain("const passive = isPassiveRequest(event.method, normalized.pathname)");
-    expect(script).toContain(
-      "const triggeredBy = passive ? null : findActionForRequest(event.startedAt)"
-    );
-    expect(script).toContain("if (shouldAutoFocusEvent(item))");
-    expect(script).toContain("selectedEventId: null");
-  });
-
-  it("keeps a short-lived user action across client navigation", () => {
-    const script = getOverlayClientScript();
-
-    expect(script).toContain("ANLYX_PENDING_ACTION_KEY");
-    expect(script).toContain("restorePendingAction");
-    expect(script).toContain("persistPendingAction");
-    expect(script).toContain('document.addEventListener("pointerdown"');
-    expect(script).toContain("Date.now() - action.capturedAt");
-  });
-
-  it("delegates drawer rendering to the React overlay bundle", () => {
-    const script = getOverlayClientScript();
-
-    expect(script).toContain("loadOverlayUiAssets");
-    expect(script).toContain("Loading Anlyx Flow Drawer");
-    expect(script).toContain("window.__ANLYX_RENDER_FLOW_DRAWER__(body");
-    expect(script).toContain("selectedEvent: selected");
-    expect(script).toContain("events: state.events");
-  });
-
-  it("exposes persistent drawer customization controls", () => {
-    const script = getOverlayClientScript();
-
-    expect(script).toContain("ANLYX_DRAWER_SETTINGS_KEY");
-    expect(script).toContain("ANLYX_LAUNCHER_SETTINGS_KEY");
-    expect(script).toContain("anlyx-drag-handle");
-    expect(script).toContain("anlyx-opacity-control");
-    expect(script).toContain("anlyx-language-control");
-    expect(script).toContain("anlyx-resize-handle");
-    expect(script).toContain("anlyx-fab__mark");
-    expect(script).toContain("anlyx-fab__label");
-    expect(script).toContain("installDrawerDrag");
-    expect(script).toContain("installDrawerResize");
-    expect(script).toContain("installLauncherDrag");
-    expect(script).toContain("applyLauncherSettings");
-    expect(script).toContain("persistLauncherSettings");
-    expect(script).toContain("applyDrawerSettings");
-    expect(script).toContain("persistDrawerSettings");
-  });
-
-  it("keeps the launcher compact until hover, focus, or a captured flow", () => {
-    const script = getOverlayClientScript();
-
-    expect(script).toContain("width: 38px");
-    expect(script).toContain("max-width: 38px");
-    expect(script).toContain(".anlyx-fab:hover");
-    expect(script).toContain("launcher.dataset.expanded");
-    expect(script).toContain("brieflyExpandLauncher");
-    expect(script).toContain("Date.now() + 2600");
-  });
-
-  it("keeps the injected overlay lightweight and resilient across app shell changes", () => {
-    const script = getOverlayClientScript();
-
-    expect(script).toContain("installOverlayRootGuard");
-    expect(script).toContain("new MutationObserver");
-    expect(script).toContain("observer.observe(document.body, { childList: true })");
-    expect(script).toContain("overlayRootRestoreScheduled");
-    expect(script).toContain("overlayInfrastructureInstalled");
-    expect(script).toContain("style[data-anlyx-overlay-base]");
-  });
-
-  it("defers expensive overlay work away from the application request path", () => {
-    const script = getOverlayClientScript();
-
-    expect(script).toContain("scheduleApiEventRecord");
-    expect(script).toContain("window.setTimeout(() => recordApiEvent(event), 0)");
-    expect(script).toContain("const endpointRegexCache = new Map()");
-    expect(script).toContain("endpointRegexCache.get(key)");
-    expect(script).toContain("endpointRegexCache.set(key, regex)");
-  });
-
-  it("does not enqueue matching work for Anlyx runtime requests", async () => {
-    const harness = createOverlayHarness();
-
-    await harness.flushNextTimer();
-
-    expect(harness.order).toEqual(["original-fetch:http://localhost:4777/_anlyx/report-data"]);
-    expect(harness.timers).toHaveLength(0);
-  });
-
-  it("records background fetch responses without opening the drawer", async () => {
-    const harness = createOverlayHarness();
-    await harness.flushNextTimer();
-
-    const response = await harness.window.fetch("/api/public/benefits/123");
-    harness.order.push("app-response-returned");
-
-    expect(response.status).toBe(200);
-    expect(harness.order).not.toContain("drawer-render");
-    expect(harness.timers).toHaveLength(1);
-
-    await harness.flushTimers();
-
-    expect(harness.order).not.toContain("drawer-render");
-  });
-
-  it("returns clicked application fetch responses before overlay matching and rendering", async () => {
-    const harness = createOverlayHarness();
-    await harness.flushNextTimer();
-    const target = {
-      id: "claim-benefit",
-      tagName: "BUTTON",
-      className: "cta",
-      name: "",
-      textContent: "Claim benefit",
-      value: "",
-      closest() {
-        return target;
-      },
-      getAttribute(name: string) {
-        return name === "data-testid" ? "claim-benefit" : null;
-      }
-    };
-
-    harness.dispatchDocumentEvent("pointerdown", { type: "pointerdown", target });
-
-    const response = await harness.window.fetch("/api/public/benefits/123");
-    harness.order.push("app-response-returned");
-
-    expect(response.status).toBe(200);
-    expect(harness.order).not.toContain("drawer-render");
-    expect(harness.timers).toHaveLength(1);
-
-    await harness.flushTimers();
-
-    expect(harness.order.indexOf("app-response-returned")).toBeLessThan(
-      harness.order.indexOf("drawer-render")
-    );
-  });
-
-  it("does not promote passive session probes to the action drawer", async () => {
-    const harness = createOverlayHarness();
-    await harness.flushNextTimer();
-    const target = {
-      id: "benefit-link",
-      tagName: "A",
-      className: "benefit",
-      name: "",
-      textContent: "Open benefit",
-      value: "",
-      closest() {
-        return target;
-      },
-      getAttribute(name: string) {
-        return name === "data-testid" ? "benefit-link" : null;
-      }
-    };
-
-    harness.dispatchDocumentEvent("pointerdown", { type: "pointerdown", target });
-
-    await harness.window.fetch("/api/account/me");
-    await harness.window.fetch("/api/account/saved-benefits");
-    await harness.window.fetch("/api/public/page-views", { method: "POST" });
-    await harness.flushTimers();
-
-    expect(harness.order).not.toContain("drawer-render");
-  });
-
-  it("keeps automatic account and auth support requests in the background", async () => {
-    const harness = createOverlayHarness();
-    await harness.flushNextTimer();
-    const target = {
-      id: "login-button",
-      tagName: "BUTTON",
-      className: "login",
-      name: "",
-      textContent: "Login",
-      value: "",
-      closest() {
-        return target;
-      },
-      getAttribute(name: string) {
-        return name === "data-testid" ? "login-button" : null;
-      }
-    };
-
-    harness.dispatchDocumentEvent("pointerdown", { type: "pointerdown", target });
-
-    await harness.window.fetch("/api/account/me");
-    await harness.window.fetch("/api/auth/session");
-    await harness.window.fetch("/api/auth/refresh", { method: "POST" });
-    await harness.window.fetch("/api/csrf");
-    await harness.flushTimers();
-
-    expect(harness.order).not.toContain("drawer-render");
-  });
-
-  it("passes scanned page API hints for the current route to the drawer", async () => {
-    const reportWithPageApi: ScanResult = {
-      ...scanResult,
-      pages: [
-        {
-          id: "page:next:benefit-detail",
-          route: "/benefit/[brandSlug]/[benefitSlugWithId]",
-          filePath: "src/app/benefit/[brandSlug]/[benefitSlugWithId]/page.tsx",
-          screenshots: [],
-          apiCalls: [
-            {
-              method: "GET",
-              path: "/api/public/benefits/{id}",
-              endpointId: "endpoint:get:/api/public/benefits/{id}"
-            }
-          ],
-          captureStatus: "pending"
-        }
-      ]
-    };
-    const harness = createOverlayHarness({
-      report: reportWithPageApi,
-      path: "/benefit/starbucks/birthday-coupon-123"
-    });
-    await harness.flushNextTimer();
-    const target = {
-      id: "benefit-link",
-      tagName: "A",
-      className: "benefit",
-      name: "",
-      textContent: "Open benefit",
-      value: "",
-      closest() {
-        return target;
-      },
-      getAttribute(name: string) {
-        return name === "data-testid" ? "benefit-link" : null;
-      }
-    };
-
-    harness.dispatchDocumentEvent("pointerdown", { type: "pointerdown", target });
-    await harness.window.fetch("/api/public/benefits/123");
-    await harness.flushTimers();
-
-    const drawerProps = harness.getDrawerProps();
-    expect(drawerProps?.scannedHints).toEqual([
-      {
-        pageRoute: "/benefit/[brandSlug]/[benefitSlugWithId]",
-        pageFilePath: "src/app/benefit/[brandSlug]/[benefitSlugWithId]/page.tsx",
-        method: "GET",
-        path: "/api/public/benefits/{id}",
-        endpointId: "endpoint:get:/api/public/benefits/{id}",
-        endpointLabel: "GET /api/public/benefits/{id}",
-        evidence: "scanned-page"
-      }
-    ]);
-  });
-
-  it("opens the main drawer for manual React SPA fetch actions without the Next helper", async () => {
-    const manualReactReport: ScanResult = {
-      ...scanResult,
-      endpoints: [
-        ...scanResult.endpoints,
-        {
-          id: "endpoint:get:/api/public/benefits",
-          method: "GET",
-          path: "/api/public/benefits",
-          framework: "spring",
-          supportLevel: "deep",
-          confidence: "high"
-        }
-      ],
-      flows: [
-        ...scanResult.flows,
-        {
-          endpointId: "endpoint:get:/api/public/benefits",
-          nodes: [
-            {
-              id: "endpoint:get:/api/public/benefits",
-              type: "endpoint",
-              label: "GET /api/public/benefits",
-              confidence: "high"
-            }
-          ],
-          edges: [],
-          mainPath: ["endpoint:get:/api/public/benefits"],
-          subFlows: []
-        }
-      ],
-      pages: [
-        {
-          id: "page:manual:benefits",
-          route: "/benefits",
-          screenshots: [],
-          apiCalls: [],
-          captureStatus: "pending"
-        }
-      ]
-    };
-    const harness = createOverlayHarness({
-      report: manualReactReport,
-      path: "/benefits"
-    });
-    await harness.flushNextTimer();
-    const target = {
-      id: "load-benefits",
-      tagName: "BUTTON",
-      className: "load-benefits",
-      name: "",
-      textContent: "Load benefits",
-      value: "",
-      closest() {
-        return target;
-      },
-      getAttribute(name: string) {
-        return name === "data-testid" ? "load-benefits" : null;
-      }
-    };
-
-    harness.dispatchDocumentEvent("pointerdown", { type: "pointerdown", target });
-    const response = await harness.window.fetch("/api/public/benefits");
-    harness.order.push("react-spa-response-returned");
-
-    expect(response.status).toBe(200);
-    expect(harness.order).not.toContain("drawer-render");
-
-    await harness.flushTimers();
-
-    const drawerProps = harness.getDrawerProps();
-    expect(harness.order.indexOf("react-spa-response-returned")).toBeLessThan(
-      harness.order.indexOf("drawer-render")
-    );
-    expect(drawerProps?.selectedEvent).toMatchObject({
-      method: "GET",
-      path: "/api/public/benefits",
-      source: "action",
-      matchedEndpoint: {
-        id: "endpoint:get:/api/public/benefits",
-        path: "/api/public/benefits"
-      },
-      matchedFlow: {
-        endpointId: "endpoint:get:/api/public/benefits"
-      },
-      triggeredBy: {
-        type: "Clicked",
-        label: "Load benefits",
-        selector: "button#load-benefits"
-      }
-    });
-  });
-
-  it("loads the React drawer bundle only after the drawer opens", () => {
-    const script = getOverlayClientScript();
-    const mountBlock = script.slice(
-      script.indexOf("function mountOverlayUi()"),
-      script.indexOf("function installOverlayRootGuard()")
-    );
-    const renderBlock = script.slice(
-      script.indexOf("function render()"),
-      script.indexOf("function renderReactDrawer")
-    );
-
-    expect(mountBlock).not.toContain("loadOverlayUiAssets()");
-    expect(renderBlock).toContain("if (!state.open)");
-    expect(renderBlock).toContain("return;");
-    expect(script).toContain("function getLatestAction()");
-    expect(script).toContain("function getScannedHints()");
-    expect(script).toContain("routeToRegex(page.route).test(pathname)");
-    expect(script).toContain("renderReactDrawer(selected, getLatestAction())");
-    expect(script).toContain("function renderReactDrawer(selected, latestAction)");
-    expect(script).toContain("scannedHints: getScannedHints()");
-    expect(script).toContain("loadOverlayUiAssets()");
-  });
-
-  it("keeps capture and matching logic in the injected proxy script", () => {
-    const script = getOverlayClientScript();
-
-    expect(script).toContain("matchEndpoint");
-    expect(script).toContain("flows.find");
-    expect(script).toContain("matchedEndpoint");
-    expect(script).toContain("matchedFlow");
-    expect(script).not.toContain("renderRequestMetrics");
+    expect(script).toContain('badge.href = runtimeBaseUrl + "/"');
+    expect(script).toContain('badge.target = "_blank"');
+    expect(script).toContain("window.__ANLYX_RUNTIME_BASE_URL__ = runtimeBaseUrl");
   });
 
   it("--no-open disables browser opening", async () => {
@@ -1099,8 +748,8 @@ describe("dev command", () => {
 
       expect(exitCode).toBe(0);
       expect(ports).toEqual([4777]);
-      expect(writes.join("\n")).toContain("Started Anlyx runtime at http://localhost:4777");
-      expect(writes.join("\n")).toContain("Open your app at http://localhost:3000");
+      expect(writes.join("\n")).toContain("Started Anlyx Live Workspace at http://localhost:4777");
+      expect(writes.join("\n")).toContain("Use your app at http://localhost:3000");
       expect(writes.join("\n")).not.toContain("Inject during local development");
     });
   });
@@ -1233,4 +882,122 @@ function fakeDependencies(
     },
     ...dependencyOverrides
   };
+}
+
+function createBrowserEvent(overrides: Partial<BrowserRequestEvent> = {}): BrowserRequestEvent {
+  return {
+    id: "evt_saved_1",
+    type: "request",
+    method: "GET",
+    url: "http://localhost:8080/api/public/benefits/123",
+    path: "/api/public/benefits/123",
+    status: 200,
+    durationMs: 33,
+    observedAt: "2026-06-24T00:00:01.000Z",
+    ...overrides
+  };
+}
+
+function createBackendSpanEvent(requestId: string) {
+  return {
+    type: "backend_spans",
+    requestId,
+    spans: [
+      {
+        id: "span-controller",
+        type: "controller",
+        label: "SavedBenefitController.create",
+        startOffsetMs: 8,
+        durationMs: 48
+      },
+      {
+        id: "span-service",
+        parentId: "span-controller",
+        type: "service",
+        label: "SavedBenefitService.save",
+        startOffsetMs: 18,
+        durationMs: 26
+      },
+      {
+        id: "span-repository",
+        parentId: "span-service",
+        type: "repository",
+        label: "SavedBenefitRepository.insert",
+        startOffsetMs: 32,
+        durationMs: 7
+      }
+    ]
+  };
+}
+
+function createRuntimeHarness(options: { method: string; url: string; body?: string }): {
+  request: FakeRequest;
+  response: FakeResponse;
+} {
+  const request = new EventEmitter() as FakeRequest;
+  request.method = options.method;
+  request.url = options.url;
+
+  const headers: Record<string, string | number | readonly string[]> = {};
+  const response = Object.assign(new EventEmitter(), {
+    body: "",
+    chunks: [] as string[],
+    ended: false,
+    headers,
+    statusCode: 200,
+    end(chunk?: string | Buffer) {
+      if (chunk !== undefined) {
+        this.write(chunk);
+      }
+      this.ended = true;
+      return this;
+    },
+    getHeader(name: string) {
+      return headers[name.toLowerCase()];
+    },
+    setHeader(name: string, value: string | number | readonly string[]) {
+      headers[name.toLowerCase()] = value;
+      return this;
+    },
+    write(chunk: string | Buffer) {
+      const text = Buffer.isBuffer(chunk) ? chunk.toString("utf8") : chunk;
+      this.chunks.push(text);
+      this.body += text;
+      return true;
+    },
+    writeHead(statusCode: number, head?: Record<string, string>) {
+      this.statusCode = statusCode;
+      for (const [key, value] of Object.entries(head ?? {})) {
+        this.setHeader(key, value);
+      }
+      return this;
+    }
+  }) as unknown as FakeResponse;
+
+  if (options.body !== undefined) {
+    queueMicrotask(() => {
+      request.emit("data", Buffer.from(options.body ?? "", "utf8"));
+      request.emit("end");
+    });
+  }
+
+  return { request, response };
+}
+
+function handleRuntimeRequest(
+  request: FakeRequest,
+  response: FakeResponse,
+  flowStore = createLocalFlowStore(),
+  viewerRoot = join(process.cwd(), "packages/ui/dist/viewer")
+): Promise<void> {
+  const middleware = createAnlyxRuntimeMiddleware({
+    port: 4777,
+    reportData: scanResult,
+    viewerRoot,
+    frontendBaseUrl: "http://localhost:3000",
+    mode: "inject",
+    flowStore
+  });
+
+  return middleware(request, response, () => undefined);
 }

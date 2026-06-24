@@ -1,9 +1,19 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from "@testing-library/react";
+import type { ScanResult } from "@anlyx/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { mockScanResult } from "../mock-data.js";
 import { ViewerApp } from "./ViewerApp.js";
+
+const scanResult: ScanResult = {
+  projectName: "Anlyx test project",
+  generatedAt: "2026-06-24T00:00:00.000Z",
+  schemaVersion: "0.1",
+  endpoints: [],
+  flows: [],
+  pages: [],
+  warnings: []
+};
 
 describe("ViewerApp", () => {
   afterEach(() => {
@@ -46,19 +56,17 @@ describe("ViewerApp", () => {
     expect(within(state).getByText("/api/report-data returned 500")).toBeTruthy();
   });
 
-  it("renders AnlyxAppShell after successful report fetch", async () => {
+  it("renders the live workspace after successful report fetch", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
         ok: true,
-        json: async () => mockScanResult
+        json: async () => scanResult
       }))
     );
 
     render(<ViewerApp />);
 
-    expect(
-      await screen.findByRole("application", { name: "Anlyx application shell" })
-    ).toBeTruthy();
+    expect(await screen.findByRole("application", { name: "Anlyx live workspace" })).toBeTruthy();
   });
 });

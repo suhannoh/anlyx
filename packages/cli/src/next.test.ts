@@ -9,7 +9,7 @@ afterEach(() => {
 });
 
 describe("Anlyx Next.js helper", () => {
-  it("renders the local overlay script in development", () => {
+  it("renders the local capture helper script in development", () => {
     process.env.NODE_ENV = "development";
 
     const element = AnlyxDevOverlay();

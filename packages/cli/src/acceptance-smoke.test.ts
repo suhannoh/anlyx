@@ -95,7 +95,7 @@ describe("v0.1 acceptance smoke", () => {
 
       expect(devExitCode).toBe(0);
       expect(devPorts).toEqual([4777]);
-      expect(writes.join("\n")).toContain("Started Anlyx runtime at http://localhost:4777");
+      expect(writes.join("\n")).toContain("Started Anlyx Live Workspace at http://localhost:4777");
     });
   });
 });

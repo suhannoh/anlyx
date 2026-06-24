@@ -34,6 +34,7 @@ if (!options.dryRun) {
       }
     );
     await assertPackedManifest(join(destination, item.tarball));
+    await assertPackedFiles(join(destination, item.tarball));
   }
 }
 
@@ -47,6 +48,9 @@ function parseArgs(args) {
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
+    if (arg === "--") {
+      continue;
+    }
     if (arg === "--dry-run") {
       parsed.dryRun = true;
       continue;
@@ -87,6 +91,31 @@ async function assertPackedManifest(tarballPath) {
 
   if (manifest.name === "anlyx" && manifest.bin?.anlyx !== "./dist/index.js") {
     throw new Error("Packed anlyx manifest must expose bin.anlyx as ./dist/index.js.");
+  }
+}
+
+async function assertPackedFiles(tarballPath) {
+  const { stdout } = await execFileAsync("tar", ["-tf", tarballPath], {
+    timeout: 10_000
+  });
+  const files = stdout
+    .split("\n")
+    .map((file) => file.trim())
+    .filter(Boolean);
+  const nonReleaseFiles = files.filter(
+    (file) =>
+      file.endsWith(".map") ||
+      /\.test\.(?:d\.ts|js)$/.test(file) ||
+      file.includes("/__tests__/") ||
+      file.startsWith("package/src/")
+  );
+
+  if (nonReleaseFiles.length > 0) {
+    throw new Error(
+      `${basename(tarballPath)} contains non-release files:\n${nonReleaseFiles
+        .slice(0, 20)
+        .join("\n")}`
+    );
   }
 }
 

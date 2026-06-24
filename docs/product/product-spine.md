@@ -45,7 +45,7 @@ Anlyx must distinguish these evidence levels in data, UI, and wording.
 
 ### 1. Live Browser Event
 
-A request observed by the injected browser overlay through `fetch` or `XMLHttpRequest`.
+A request observed by the development-only browser capture runtime through `fetch` or `XMLHttpRequest`.
 
 Use this for:
 
@@ -128,14 +128,14 @@ Anlyx must not drift into these shapes:
 
 ## Primary Product Surface
 
-The primary surface is the real local app with an injected Anlyx overlay.
+The primary surface is a separate full-page Anlyx Workspace that listens to the real local app.
 
 ```txt
 localhost:3000 or 5173 or another frontend.baseUrl = real app
-localhost:4777 = Anlyx runtime assets, report data, debug viewer
+localhost:4777 = Anlyx runtime assets, live workspace, report data, debug viewer
 ```
 
-The standalone viewer is fallback/debug. It is useful, but it must not become the main product experience.
+The developer uses the app normally and keeps Anlyx Workspace open beside it. A small capture badge in the app is allowed as an entry point, but a large overlay, modal, or drawer is not the primary product experience.
 
 ## Frontend Support Model
 
@@ -148,7 +148,7 @@ Anlyx may:
 - Discover `app/**/page.*`
 - Link scanned pages to backend endpoints
 - Capture representative pages with Playwright
-- Use `AnlyxDevOverlay` from `anlyx/next`
+- Install the development-only browser capture runtime from a Next.js helper or equivalent local script
 - Show server-side data fetches as scanned/inferred until a real server bridge exists
 
 ### React SPA / Vite / CRA / Custom React Router
@@ -159,11 +159,11 @@ Anlyx must support these apps through:
 
 - `frontend.type = "manual"`
 - Explicit URL list
-- Injected browser overlay script
+- Development-only browser capture script
 - Browser-observed `fetch` and `XMLHttpRequest`
 - Spring backend flow matching
 
-Anlyx must not require Next.js for the injected overlay.
+Anlyx must not require Next.js for browser capture or the live workspace.
 
 ## Backend Support Model
 
@@ -196,7 +196,7 @@ Anlyx must not invent internal Controller/Service/Repository/DB nodes from OpenA
 
 ## Main Flow Selection Rules
 
-The main drawer should focus on user-intentful requests.
+The workspace selection should focus on user-intentful requests.
 
 Promote to the main flow when:
 
@@ -216,19 +216,19 @@ Keep as secondary/background when:
 - Framework dev assets
 - Hot reload requests
 
-These requests should remain observable in Recent API events, but they must not steal the main flow.
+These requests should remain observable in Recent events, but they must not steal the selected main flow.
 
-## Drawer Hierarchy
+## Workspace Hierarchy
 
-The Flow Drawer should be ordered like this:
+The full-page Workspace should be ordered like this:
 
-1. Captured request summary
-2. Matched backend flow diagram
-3. Scanned/inferred hints, only when needed
-4. Recent API events
-5. Diagnostics / evidence details
+1. Recent events list
+2. Selected request summary with method, path, status, duration, and confidence
+3. Summary / Timing / Diagram tabs for the same selected request
+4. Evidence inspector with live browser evidence, scanned backend match, inferred or not-proven states, and notes
+5. Diagnostics when a request is unmatched, failed, pending, or unknown
 
-The diagram is the product. Recent events are supporting context.
+The workspace is the product. Recent events are the entry point, and the selected request explains the backend path.
 
 ## Design Direction
 
@@ -254,7 +254,7 @@ Before adding or changing a feature, ask:
 
 1. Does this make the user's recent app interaction easier to understand?
 2. Does this separate live evidence from scanned or inferred evidence?
-3. Does this work for React SPA through the common overlay path?
+3. Does this work for React SPA through the common browser-capture path?
 4. Does this keep Next-specific behavior inside the Next adapter or a clearly named Next integration?
 5. Does this avoid turning Anlyx into a generic network log?
 
@@ -262,11 +262,11 @@ If the answer is no, do not make the change in v0.1.
 
 ## Current Next Work Direction
 
-The next Next.js-specific improvement should not change the common overlay into a Next-only system.
+The next Next.js-specific improvement should not change the common browser-capture and workspace system into a Next-only system.
 
 It should:
 
 - Use Next adapter scan/capture data to identify likely server-side page data fetches.
 - Show those as scanned/inferred hints, not live requests.
-- Explain why the browser overlay did not capture them.
+- Explain why browser capture did not observe them.
 - Keep React SPA behavior browser-live and manual-URL based.

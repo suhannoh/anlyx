@@ -105,3 +105,13 @@ v0.1 MUST NOT fully trace:
 - Runtime tracing
 
 When the adapter cannot analyze a section, it MUST return an `unknown` node or warning instead of hiding the gap.
+
+## Development Runtime Bridge
+
+The Spring adapter remains a source scanner. A local development bridge MAY be installed separately while running `anlyx dev`, but bridge-reported spans are runtime input to the Live Workspace, not adapter scan output.
+
+- Browser capture MAY add `X-Anlyx-Request-Id` to same-app API requests so a local Spring bridge can correlate backend spans to the browser-observed request.
+- A development bridge MAY POST `BackendSpanEvent` payloads to `/_anlyx/backend-spans`.
+- Bridge-reported spans MAY be shown as backend-observed timing in the Workspace.
+- Source-scanned nodes MUST remain `scanned`, `inferred`, or `not proven` unless a bridge explicitly reports the matching span.
+- The development bridge MUST be local/dev-only and MUST NOT be described as Java Agent runtime tracing or production tracing.

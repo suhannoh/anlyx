@@ -36,6 +36,20 @@ export type {
 } from "./report-aggregation.js";
 
 export type {
+  BrowserActionEvent,
+  BackendObservedSpan,
+  BackendSpanEvent,
+  BrowserRequestEvent,
+  FlowLayer,
+  FlowLayerExecution,
+  FlowLayerType,
+  FlowRecord,
+  FlowRecordMatchState,
+  FlowRecordTrigger,
+  LiveEvidenceLevel
+} from "./live-flow.js";
+
+export type {
   AnalysisEvidence,
   ApiCall,
   CaptureResult,
@@ -75,6 +89,12 @@ export {
 export { validateFixtureExpectedData } from "./fixture-validation.js";
 
 export { aggregateReportData, matchApiCallToEndpoint } from "./report-aggregation.js";
+
+export {
+  buildFlowRecordFromBrowserEvent,
+  mergeBackendSpansIntoFlowRecord,
+  normalizeBrowserEventPath
+} from "./live-flow.js";
 
 export {
   analysisEvidenceSchema,

@@ -1,5 +1,7 @@
 # Injected Overlay Implementation Plan
 
+> **Superseded:** This plan records the previous overlay/drawer MVP direction. The current product direction is full-page Live Workspace first: the real app remains usable on its own screen, browser-observed requests stream into Anlyx Workspace, and large overlay/modal/drawer UI is legacy fallback/debug behavior only. Use [Product Spine](./product-spine.md), [v0.1 Scope Lock](./v0.1-scope-lock.md), and [Screens](../design/screens.md) as the current source of truth.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make the public developer experience converge on `npm i -D anlyx`, `npx anlyx init`, and `npx anlyx dev`. The `dev` command keeps the real local app on its own development origin and opens a right-side flow drawer when real app interactions trigger API requests.

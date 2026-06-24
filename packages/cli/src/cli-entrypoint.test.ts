@@ -72,7 +72,7 @@ describe("built CLI entrypoint", () => {
     });
   });
 
-  it("exports the Next.js development overlay helper", async () => {
+  it("exports the Next.js development capture helper", async () => {
     const originalNodeEnv = process.env.NODE_ENV;
     const helperPath = join(repositoryRoot, "packages/cli/dist/next.js");
     const helper = (await import(helperPath)) as {
