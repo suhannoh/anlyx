@@ -1559,49 +1559,6 @@ function SummaryStep({
   );
 }
 
-function EvidenceHighlights({ flow }: { flow: FlowRecord }): JSX.Element {
-  const decisionNode = flow.nodes.find((node) => node.id === "auth");
-  const controllerNode = flow.nodes.find((node) => node.id === "controller");
-  const resultNode = flow.nodes.find((node) => node.id === "result");
-
-  return (
-    <section className="evidence-highlights">
-      <article>
-        <h2>{flow.outcome === "success" ? "Request completed" : "Where latency happened"}</h2>
-        <span className={`outcome-pill outcome-pill--${flow.outcome}`}>
-          {flow.outcome === "success" ? "Matched" : "Auth gate"}
-        </span>
-        <strong>
-          {decisionNode?.durationMs ?? flow.diagramDurationMs} ms in{" "}
-          {flow.outcome === "success" ? "backend path" : "Auth / Session"}
-        </strong>
-        <p>{outcomeDescription(flow)}</p>
-      </article>
-      <article>
-        <h2>
-          <Check size={17} />
-          Confirmed backend path
-        </h2>
-        <div className="path-chips">
-          <span>{flow.method}</span>
-          <span>{flow.shortPath}</span>
-          <ChevronRight size={14} />
-          <span>{controllerNode?.subtitle ?? controllerNode?.title ?? "Controller"}</span>
-          <ChevronRight size={14} />
-          <span>{decisionNode?.title ?? "Decision"}</span>
-          <ChevronRight size={14} />
-          <span>{resultNode?.title ?? flow.outcomeLabel}</span>
-        </div>
-        <p>
-          {flow.outcome === "success"
-            ? "Downstream Service, Repository, and Database layers were matched."
-            : "Downstream Service, Repository, and Database layers were not proven executed."}
-        </p>
-      </article>
-    </section>
-  );
-}
-
 function InspectorSection({
   title,
   count,
@@ -1667,24 +1624,6 @@ function ConfidenceBars(): JSX.Element {
       <i />
     </span>
   );
-}
-
-function outcomeDescription(flow: FlowRecord, locale: WorkspaceLocale = "en"): string {
-  if (flow.outcome === "success") {
-    return locale === "ko"
-      ? "요청이 완료됐고 스캔된 백엔드 흐름과 매칭됐습니다."
-      : "Request completed and matched scanned backend flow.";
-  }
-
-  if (flow.statusCode === 409) {
-    return locale === "ko"
-      ? "요청이 결정 분기까지 도달했지만 차단 결과를 반환했습니다."
-      : "Request reached a decision branch and returned a blocked result.";
-  }
-
-  return locale === "ko"
-    ? "하위 비즈니스 로직 실행이 확인되기 전에 요청이 차단됐습니다."
-    : "Request blocked before downstream business logic could be confirmed.";
 }
 
 function flowNote(flow: FlowRecord, locale: WorkspaceLocale = "en"): string {
@@ -1962,10 +1901,6 @@ function t(locale: WorkspaceLocale, key: keyof (typeof translations)["en"]): str
 function summaryStatusLabel(status: FlowNodeStatus): string {
   if (status === "not-proven") return "scanned";
   return status;
-}
-
-function timingAxisMax(totalDurationMs: number): number {
-  return Math.max(totalDurationMs, 1);
 }
 
 function timingTicks(startMs: number, endMs?: number): number[] {

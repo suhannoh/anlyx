@@ -1290,47 +1290,6 @@ function RecentEventsList({
   );
 }
 
-function EvidenceHighlights({ record }: { record: FlowRecord }): JSX.Element {
-  const locale = useWorkspaceLocale();
-  const layers = diagramLayers(record);
-  const decision = findFirstLayer(layers, ["auth", "decision"]);
-  const controller = findFirstLayer(layers, ["controller"]);
-  const result = findFirstLayer(layers, ["result"]);
-
-  return (
-    <section className="evidence-highlights">
-      <article>
-        <h2>{hasBlockedOutcome(record) ? "Where latency happened" : "Request completed"}</h2>
-        <span className={`outcome-pill outcome-pill--${outcomeTone(record)}`}>
-          {hasBlockedOutcome(record) ? "Decision" : "Matched"}
-        </span>
-        <strong>
-          {Math.round(decision?.durationMs ?? record.durationMs ?? record.duration ?? 0)} ms in{" "}
-          {decision ? layerLabel(decision, locale) : t(locale, "backend")}
-        </strong>
-        <p>{outcomeDescription(record, locale)}</p>
-      </article>
-      <article>
-        <h2>
-          <Check size={17} />
-          Confirmed backend path
-        </h2>
-        <div className="path-chips">
-          <span>{record.method}</span>
-          <span>{shortPath(record.path)}</span>
-          <ChevronRight size={14} />
-          <span>{controller?.label ?? "Controller"}</span>
-          <ChevronRight size={14} />
-          <span>{decision?.label ?? t(locale, "backend")}</span>
-          <ChevronRight size={14} />
-          <span>{result?.label ?? outcomeLabel(record, locale)}</span>
-        </div>
-        <p>{flowNote(record, locale)}</p>
-      </article>
-    </section>
-  );
-}
-
 function EmptyWorkspace({ data }: { data: ScanResult }): JSX.Element {
   const locale = useWorkspaceLocale();
 
