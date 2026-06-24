@@ -1578,7 +1578,7 @@
 .solid-line,
 .dashed-line {
   width: 24px;
-  border-top: 4px solid #2563eb;
+  border-top: 3px solid #64748b;
   border-radius: 999px;
 }
 
@@ -1617,14 +1617,8 @@
 
 .diagram-canvas--layered {
   inset: 76px 0 48px;
-  background:
-    radial-gradient(circle at 18% 8%, rgba(124, 58, 237, 0.1), transparent 28%),
-    radial-gradient(circle at 78% 12%, rgba(37, 99, 235, 0.1), transparent 30%),
-    linear-gradient(180deg, rgba(241, 245, 249, 0.92), rgba(248, 250, 252, 0.98)),
-    radial-gradient(rgba(100, 116, 139, 0.22) 1px, transparent 1px);
+  background: #f8fafc, radial-gradient(rgba(100, 116, 139, 0.22) 1px, transparent 1px);
   background-size:
-    auto,
-    auto,
     auto,
     18px 18px;
 }
@@ -1682,8 +1676,8 @@
 }
 
 .anlyx-flow-edge-halo--blocked {
-  opacity: 0.2;
-  stroke: rgba(248, 113, 113, 0.42);
+  opacity: 0.16;
+  stroke: rgba(100, 116, 139, 0.34);
 }
 
 .anlyx-flow-edge {
@@ -1700,7 +1694,7 @@
 }
 
 .anlyx-flow-edge--inferred {
-  stroke: #7c3aed;
+  stroke: #64748b;
   stroke-dasharray: 3 7;
 }
 
@@ -1712,17 +1706,8 @@
 }
 
 .anlyx-flow-edge--blocked {
-  opacity: 0.76;
-  stroke: #f87171;
-}
-
-.layered-diagram--highlight-path .layered-node.is-secondary-path {
-  opacity: 0.58;
-}
-
-.layered-diagram--highlight-path .anlyx-flow-edge--not_proven,
-.layered-diagram--highlight-path .anlyx-flow-edge-halo--not_proven {
-  opacity: 0.28;
+  opacity: 0.82;
+  stroke: #64748b;
 }
 
 .layered-column {
@@ -1733,9 +1718,7 @@
   padding: 14px 12px 16px;
   border: 1px solid rgba(148, 163, 184, 0.34);
   border-radius: 20px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(248, 250, 252, 0.58)),
-    rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(14px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.86),
@@ -1763,23 +1746,23 @@
 }
 
 .layered-column--browser .layered-column__header > span {
-  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  background: #8b5cf6;
 }
 
 .layered-column--api .layered-column__header > span {
-  background: linear-gradient(135deg, #60a5fa, #2563eb);
+  background: #2563eb;
 }
 
 .layered-column--application .layered-column__header > span {
-  background: linear-gradient(135deg, #2dd4bf, #0d9488);
+  background: #0f9f91;
 }
 
 .layered-column--data .layered-column__header > span {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  background: #f59e0b;
 }
 
 .layered-column--response .layered-column__header > span {
-  background: linear-gradient(135deg, #4ade80, #16a34a);
+  background: #22c55e;
 }
 
 .layered-column__header strong {
@@ -1930,37 +1913,27 @@
 
 .layered-node--browser {
   border-color: rgba(124, 58, 237, 0.38);
-  background:
-    radial-gradient(circle at 18% 12%, rgba(167, 139, 250, 0.2), transparent 44%),
-    linear-gradient(180deg, rgba(250, 245, 255, 0.9), rgba(255, 255, 255, 0.84));
+  background: #ffffff;
 }
 
 .layered-node--api {
   border-color: rgba(37, 99, 235, 0.38);
-  background:
-    radial-gradient(circle at 18% 12%, rgba(96, 165, 250, 0.22), transparent 44%),
-    linear-gradient(180deg, rgba(239, 246, 255, 0.92), rgba(255, 255, 255, 0.84));
+  background: #ffffff;
 }
 
 .layered-node--application {
   border-color: rgba(13, 148, 136, 0.4);
-  background:
-    radial-gradient(circle at 18% 12%, rgba(45, 212, 191, 0.2), transparent 44%),
-    linear-gradient(180deg, rgba(240, 253, 250, 0.92), rgba(255, 255, 255, 0.84));
+  background: #ffffff;
 }
 
 .layered-node--data {
   border-color: rgba(245, 158, 11, 0.44);
-  background:
-    radial-gradient(circle at 18% 12%, rgba(251, 191, 36, 0.22), transparent 44%),
-    linear-gradient(180deg, rgba(255, 251, 235, 0.92), rgba(255, 255, 255, 0.84));
+  background: #ffffff;
 }
 
 .layered-node--response {
   border-color: rgba(22, 163, 74, 0.4);
-  background:
-    radial-gradient(circle at 18% 12%, rgba(74, 222, 128, 0.2), transparent 44%),
-    linear-gradient(180deg, rgba(240, 253, 244, 0.92), rgba(255, 255, 255, 0.84));
+  background: #ffffff;
 }
 
 .layered-node:hover,
@@ -1986,49 +1959,26 @@
   box-shadow: none;
 }
 
-.layered-node__step {
+.layered-node__entry {
   position: absolute;
-  top: -13px;
-  left: 12px;
+  top: -8px;
+  left: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 14px;
+  height: 14px;
+  border: 3px solid #ffffff;
   border-radius: 999px;
-  background: #2563eb;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 800;
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24);
+  background: #64748b;
+  box-shadow: 0 0 0 1px #94a3b8;
 }
 
-.layered-node--browser .layered-node__step {
-  background: #7c3aed;
-}
-
-.layered-node--application .layered-node__step {
-  background: #0d9488;
-}
-
-.layered-node--data .layered-node__step {
-  background: #d97706;
-}
-
-.layered-node--response .layered-node__step {
-  background: #16a34a;
-}
-
-.layered-node--not_proven .layered-node__step,
-.layered-node--no_evidence .layered-node__step {
-  background: #94a3b8;
-  box-shadow: none;
-}
-
-.layered-node--blocked .layered-node__step,
-.layered-node--error .layered-node__step {
-  background: #ef4444;
-  box-shadow: 0 8px 18px rgba(239, 68, 68, 0.2);
+.layered-node.is-entry-point {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 18px 36px rgba(15, 23, 42, 0.08),
+    0 0 0 3px rgba(100, 116, 139, 0.08);
 }
 
 .layered-node__icon {
@@ -2044,28 +1994,28 @@
 }
 
 .layered-node__icon--browser {
-  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  background: #8b5cf6;
 }
 
 .layered-node__icon--api {
-  background: linear-gradient(135deg, #60a5fa, #2563eb);
+  background: #2563eb;
 }
 
 .layered-node__icon--application {
-  background: linear-gradient(135deg, #2dd4bf, #0d9488);
+  background: #0f9f91;
 }
 
 .layered-node__icon--data {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  background: #f59e0b;
 }
 
 .layered-node__icon--response {
-  background: linear-gradient(135deg, #4ade80, #16a34a);
+  background: #22c55e;
 }
 
 .layered-node--blocked .layered-node__icon,
 .layered-node--error .layered-node__icon {
-  background: linear-gradient(135deg, #fb7185, #ef4444);
+  background: #ef4444;
 }
 
 .layered-node--not_proven .layered-node__icon,
@@ -2102,9 +2052,7 @@
 .layered-node--blocked,
 .layered-node--error {
   border-color: rgba(244, 63, 94, 0.46);
-  background:
-    radial-gradient(circle at 18% 12%, rgba(251, 113, 133, 0.22), transparent 44%),
-    linear-gradient(180deg, rgba(255, 241, 242, 0.92), rgba(255, 255, 255, 0.84));
+  background: #ffffff;
 }
 
 .layered-node strong {

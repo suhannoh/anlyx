@@ -999,15 +999,14 @@ function SummaryPathRow({ index, layer }: { index: number; layer: FlowLayer }): 
 
 function DiagramFlowView({ record }: { record: FlowRecord }): JSX.Element {
   const locale = useWorkspaceLocale();
-  const [zoom, setZoom] = useState(1);
-  const [highlightPath, setHighlightPath] = useState(true);
-  const [showAllSteps, setShowAllSteps] = useState(true);
+  const [zoom, setZoom] = useState(0.92);
   const nodeTypes = useMemo(() => ({ anlyxNode: AnlyxFlowNode }), []);
   const edgeTypes = useMemo(() => ({ anlyxSmooth: AnlyxSmoothEdge }), []);
-  const model = useMemo(
-    () => buildReactFlowDiagram(record, locale, { showAllSteps }),
-    [record, locale, showAllSteps]
-  );
+  const model = useMemo(() => buildReactFlowDiagram(record, locale), [record, locale]);
+
+  useEffect(() => {
+    setZoom(0.92);
+  }, [record.id]);
 
   return (
     <section className="diagram-canvas-card" aria-label={t(locale, "flowDiagram")}>
@@ -1027,22 +1026,6 @@ function DiagramFlowView({ record }: { record: FlowRecord }): JSX.Element {
           </span>
         </div>
         <div className="diagram-controls">
-          <button
-            className={highlightPath ? "is-active" : ""}
-            type="button"
-            onClick={() => setHighlightPath((value) => !value)}
-          >
-            <Workflow size={16} />
-            {t(locale, "highlightPath")}
-          </button>
-          <button
-            className={showAllSteps ? "is-active" : ""}
-            type="button"
-            onClick={() => setShowAllSteps((value) => !value)}
-          >
-            <Layers3 size={16} />
-            {t(locale, "showAllSteps")}
-          </button>
           <button type="button" onClick={() => setZoom(0.92)}>
             <Gauge size={16} />
             {t(locale, "fitView")}
@@ -1073,7 +1056,7 @@ function DiagramFlowView({ record }: { record: FlowRecord }): JSX.Element {
       <div className="diagram-canvas diagram-canvas--layered">
         <div
           className={`layered-diagram layered-diagram--react-flow ${
-            highlightPath ? "layered-diagram--highlight-path" : ""
+            zoom === 0.92 ? "layered-diagram--fit" : ""
           }`}
           style={{ transform: `translateX(-50%) scale(${zoom})` }}
         >
@@ -1260,7 +1243,7 @@ function LayeredNodeCard({ node }: { node: LayeredDiagramNode }): JSX.Element {
     <article
       className={`layered-node layered-node--${node.layer} layered-node--${node.status} ${
         node.isMainPath ? "is-main-path" : "is-secondary-path"
-      }`}
+      } ${node.step === 1 ? "is-entry-point" : ""}`}
       title={node.detail}
     >
       <Handle
@@ -1299,7 +1282,7 @@ function LayeredNodeCard({ node }: { node: LayeredDiagramNode }): JSX.Element {
         position={Position.Bottom}
         type="target"
       />
-      <span className="layered-node__step">{node.step}</span>
+      {node.step === 1 ? <span className="layered-node__entry" aria-hidden="true" /> : null}
       <span className={`layered-node__icon layered-node__icon--${node.layer}`}>
         <Icon size={20} />
       </span>
@@ -1349,17 +1332,11 @@ function AnlyxSmoothEdge({
   );
 }
 
-function buildReactFlowDiagram(
-  record: FlowRecord,
-  locale: WorkspaceLocale,
-  options: { showAllSteps: boolean }
-): ReactFlowDiagramModel {
-  const sourceLayers = diagramLayers(record);
-  const visibleLayers = options.showAllSteps
-    ? sourceLayers
-    : sourceLayers.filter((layer) => !isUnprovenLayer(layer));
+function buildReactFlowDiagram(record: FlowRecord, locale: WorkspaceLocale): ReactFlowDiagramModel {
   const diagramNodes = assignLayeredNodePositions(
-    visibleLayers.map((layer, index) => toLayeredDiagramNode(layer, index + 1, record, locale))
+    diagramLayers(record).map((layer, index) =>
+      toLayeredDiagramNode(layer, index + 1, record, locale)
+    )
   );
   const diagramEdges = buildLayeredDiagramEdges(diagramNodes);
 
@@ -1430,14 +1407,6 @@ function assignLayeredNodePositions(nodes: LayeredDiagramNode[]): LayeredDiagram
 }
 
 function mainNodeY(node: LayeredDiagramNode, slot: number): number {
-  if (node.layer === "response" && (node.status === "blocked" || node.status === "error")) {
-    return 210;
-  }
-
-  if (node.layer === "response") {
-    return 150;
-  }
-
   return layeredLayout.mainStartY + slot * layeredLayout.mainGap;
 }
 
