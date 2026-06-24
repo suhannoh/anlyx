@@ -83,7 +83,9 @@ describe("WorkspaceApp", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "Diagram" }));
     expect(screen.getByLabelText("Flow diagram")).toBeTruthy();
-    expect(screen.getByText("Known scanned path, not proven executed")).toBeTruthy();
+    expect(screen.getByText("Browser")).toBeTruthy();
+    expect(screen.getByText("Application")).toBeTruthy();
+    expect(screen.getAllByText("Known but not proven").length).toBeGreaterThan(0);
 
     const inspector = screen.getByRole("complementary", { name: "Evidence inspector" });
     expect(within(inspector).getByText("Browser-observed request")).toBeTruthy();

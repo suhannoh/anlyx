@@ -1,22 +1,25 @@
 import {
-  BarChart3,
   Box,
   Check,
   ChevronRight,
   Circle,
   Clock3,
+  Cuboid,
   Database,
   FileCode2,
   Flag,
   Gauge,
+  Globe2,
   Layers3,
   Lock,
   Minus,
+  Monitor,
+  MousePointerClick,
   Network,
   Plus,
   RotateCw,
   Search,
-  Shield,
+  Send,
   Workflow,
   Zap
 } from "lucide-react";
@@ -77,6 +80,8 @@ type TranslationKey =
   | "observedSourceMatchedLegend"
   | "knownDownstreamLegend"
   | "entryPoint"
+  | "highlightPath"
+  | "showAllSteps"
   | "fitView"
   | "reset"
   | "zoomOut"
@@ -119,6 +124,11 @@ type TranslationKey =
   | "serverError"
   | "observed"
   | "sourceMatched"
+  | "success"
+  | "warning"
+  | "error"
+  | "noEvidence"
+  | "knownButNotProven"
   | "browserSpan"
   | "browserObserved"
   | "devRuntimeSpan"
@@ -184,6 +194,8 @@ const translations: Record<WorkspaceLocale, Record<TranslationKey, string>> = {
     observedSourceMatchedLegend: "Observed / source-matched path",
     knownDownstreamLegend: "Known downstream (not proven)",
     entryPoint: "Entry point",
+    highlightPath: "Highlight path",
+    showAllSteps: "Show all steps",
     fitView: "Fit view",
     reset: "Reset",
     zoomOut: "Zoom out",
@@ -227,6 +239,11 @@ const translations: Record<WorkspaceLocale, Record<TranslationKey, string>> = {
     serverError: "Server error",
     observed: "observed",
     sourceMatched: "source matched",
+    success: "Success",
+    warning: "Warning",
+    error: "Error",
+    noEvidence: "no evidence",
+    knownButNotProven: "Known but not proven",
     browserSpan: "browser span",
     browserObserved: "browser observed",
     devRuntimeSpan: "dev runtime span",
@@ -289,6 +306,8 @@ const translations: Record<WorkspaceLocale, Record<TranslationKey, string>> = {
     observedSourceMatchedLegend: "관찰 / 소스 매칭 경로",
     knownDownstreamLegend: "알려진 하위 경로(실행 미확인)",
     entryPoint: "진입점",
+    highlightPath: "경로 강조",
+    showAllSteps: "전체 단계",
     fitView: "화면 맞춤",
     reset: "초기화",
     zoomOut: "축소",
@@ -332,6 +351,11 @@ const translations: Record<WorkspaceLocale, Record<TranslationKey, string>> = {
     serverError: "서버 오류",
     observed: "관찰됨",
     sourceMatched: "소스 매칭",
+    success: "성공",
+    warning: "주의",
+    error: "오류",
+    noEvidence: "근거 없음",
+    knownButNotProven: "알려졌지만 실행 미확인",
     browserSpan: "브라우저 구간",
     browserObserved: "브라우저 관찰",
     devRuntimeSpan: "개발 런타임 구간",
@@ -965,16 +989,16 @@ function SummaryPathRow({ index, layer }: { index: number; layer: FlowLayer }): 
 function DiagramFlowView({ record }: { record: FlowRecord }): JSX.Element {
   const locale = useWorkspaceLocale();
   const [zoom, setZoom] = useState(1);
-  const layers = diagramLayers(record);
-  const api = findFirstLayer(layers, ["api"]);
-  const controller = findFirstLayer(layers, ["controller"]);
-  const decision = findFirstLayer(layers, ["auth", "decision"]);
-  const result = findFirstLayer(layers, ["result"]);
-  const service = findFirstLayer(layers, ["service"]);
-  const repository = findFirstLayer(layers, ["repository"]);
-  const database = findFirstLayer(layers, ["database"]);
-  const downstreamProven = [service, repository, database].some(
-    (layer) => layer && !isUnprovenLayer(layer)
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [highlightPath, setHighlightPath] = useState(true);
+  const [showAllSteps, setShowAllSteps] = useState(true);
+  const model = useMemo(
+    () => buildLayeredDiagramModel(record, locale, { showAllSteps }),
+    [record, locale, showAllSteps]
+  );
+  const connectedNodeIds = useMemo(
+    () => connectedDiagramNodeIds(model.edges, hoveredNodeId),
+    [model.edges, hoveredNodeId]
   );
 
   return (
@@ -995,6 +1019,22 @@ function DiagramFlowView({ record }: { record: FlowRecord }): JSX.Element {
           </span>
         </div>
         <div className="diagram-controls">
+          <button
+            className={highlightPath ? "is-active" : ""}
+            type="button"
+            onClick={() => setHighlightPath((value) => !value)}
+          >
+            <Workflow size={16} />
+            {t(locale, "highlightPath")}
+          </button>
+          <button
+            className={showAllSteps ? "is-active" : ""}
+            type="button"
+            onClick={() => setShowAllSteps((value) => !value)}
+          >
+            <Layers3 size={16} />
+            {t(locale, "showAllSteps")}
+          </button>
           <button type="button" onClick={() => setZoom(0.92)}>
             <Gauge size={16} />
             {t(locale, "fitView")}
@@ -1022,150 +1062,614 @@ function DiagramFlowView({ record }: { record: FlowRecord }): JSX.Element {
           </div>
         </div>
       </div>
-      <div className="diagram-canvas">
+      <div className="diagram-canvas diagram-canvas--layered">
         <div
-          className="diagram-canvas__stage"
+          className={`layered-diagram ${
+            highlightPath ? "layered-diagram--highlight-path" : ""
+          } ${hoveredNodeId ? "has-hover" : ""}`}
           style={{ transform: `translateX(-50%) scale(${zoom})` }}
         >
-          <DiagramNode
-            layer={api}
-            fallbackLabel={`${record.method} ${record.path}`}
-            icon={Network}
-            className="diagram-node--api"
+          {model.layers.map((layer) => (
+            <LayeredDiagramColumn
+              connectedNodeIds={connectedNodeIds}
+              hoveredNodeId={hoveredNodeId}
+              key={layer}
+              layer={layer}
+              nodes={model.nodes.filter((node) => node.layer === layer)}
+              onHoverNode={setHoveredNodeId}
+            />
+          ))}
+          <LayeredDiagramEdges
+            connectedNodeIds={connectedNodeIds}
+            edges={model.edges}
+            hoveredNodeId={hoveredNodeId}
+            nodes={model.nodes}
           />
-          <Arrow className="arrow-api-controller" />
-          <DiagramNode
-            layer={controller}
-            fallbackLabel="Controller"
-            icon={BarChart3}
-            className="diagram-node--controller"
-          />
-          <Arrow className="arrow-controller-auth" />
-          <DiagramNode
-            layer={decision}
-            fallbackLabel={
-              record.status && record.status >= 400
-                ? t(locale, "authDecision")
-                : t(locale, "backend")
-            }
-            icon={Lock}
-            className={`diagram-node--auth ${
-              decision && decision.execution === "blocked" ? "is-selected" : ""
-            }`}
-          />
-          <Arrow className="arrow-auth-result" />
-          <DiagramNode
-            layer={result}
-            fallbackLabel={outcomeLabel(record, locale)}
-            icon={Shield}
-            className="diagram-node--result"
-          />
-          <div className={`branch-lines ${downstreamProven ? "is-proven" : ""}`}>
-            <span />
-            <span />
-            <span />
-          </div>
-          <GhostNode
-            layer={service}
-            fallbackLabel={t(locale, "service")}
-            className={`ghost-service ${downstreamProven ? "is-proven" : ""}`}
-            icon={Box}
-          />
-          <GhostNode
-            layer={repository}
-            fallbackLabel={t(locale, "repository")}
-            className={`ghost-repository ${downstreamProven ? "is-proven" : ""}`}
-            icon={Database}
-          />
-          <GhostNode
-            layer={database}
-            fallbackLabel={t(locale, "database")}
-            className={`ghost-database ${downstreamProven ? "is-proven" : ""}`}
-            icon={Database}
-          />
-          <p className="diagram-caption">
-            {downstreamProven ? t(locale, "downstreamMatched") : t(locale, "knownScannedNotProven")}
-          </p>
         </div>
+      </div>
+      <div className="layered-diagram-status">
+        <span>
+          <i className="status-dot status-dot--success" />
+          {t(locale, "success")}
+        </span>
+        <span>
+          <i className="status-dot status-dot--warning" />
+          {t(locale, "warning")}
+        </span>
+        <span>
+          <i className="status-dot status-dot--error" />
+          {t(locale, "error")}
+        </span>
+        <span>
+          <i className="dashed-line" />
+          {t(locale, "notProven")}
+        </span>
+        <strong>
+          {t(locale, "totalDuration")}: {formatDuration(record.durationMs ?? record.duration)}
+        </strong>
       </div>
     </section>
   );
 }
 
-function DiagramNode({
-  className,
-  fallbackLabel,
-  icon: Icon,
-  layer
+type DiagramLayerId = "browser" | "api" | "application" | "data" | "response";
+type DiagramNodeStatus =
+  | "observed"
+  | "matched"
+  | "source_matched"
+  | "inferred"
+  | "not_proven"
+  | "no_evidence"
+  | "success"
+  | "blocked"
+  | "error";
+type DiagramEdgeKind = "executed" | "source_matched" | "inferred" | "not_proven" | "blocked";
+
+type LayeredDiagramNode = {
+  id: string;
+  sourceLayer: FlowLayer;
+  layer: DiagramLayerId;
+  kind: FlowLayer["type"];
+  title: string;
+  subtitle: string;
+  detail: string;
+  durationMs?: number;
+  step: number;
+  status: DiagramNodeStatus;
+  edgeKind: DiagramEdgeKind;
+  isMainPath: boolean;
+  evidenceKind: "browser" | "backend" | "source" | "inferred" | "none";
+  slot: number;
+  x: number;
+  y: number;
+};
+
+type LayeredDiagramEdge = {
+  id: string;
+  from: string;
+  to: string;
+  kind: DiagramEdgeKind;
+};
+
+type LayeredDiagramModel = {
+  layers: DiagramLayerId[];
+  nodes: LayeredDiagramNode[];
+  edges: LayeredDiagramEdge[];
+};
+
+const layeredDiagramLayers: DiagramLayerId[] = [
+  "browser",
+  "api",
+  "application",
+  "data",
+  "response"
+];
+
+const layeredLayout = {
+  columnWidth: 200,
+  columnGap: 14,
+  nodeHeight: 128,
+  nodeGap: 16,
+  startX: 18,
+  startY: 88
+} as const;
+
+function LayeredDiagramColumn({
+  connectedNodeIds,
+  hoveredNodeId,
+  layer,
+  nodes,
+  onHoverNode
 }: {
-  className: string;
-  fallbackLabel: string;
-  icon: LucideIcon;
-  layer: FlowLayer | undefined;
+  connectedNodeIds: Set<string>;
+  hoveredNodeId: string | null;
+  layer: DiagramLayerId;
+  nodes: LayeredDiagramNode[];
+  onHoverNode: (nodeId: string | null) => void;
 }): JSX.Element {
   const locale = useWorkspaceLocale();
-  const visualType = layer ? visualLayerType(layer) : "controller";
+  const heading = layeredLayerMeta(layer, locale);
+  const mainNodes = nodes.filter((node) => node.isMainPath);
+  const secondaryNodes = nodes.filter((node) => !node.isMainPath);
+  const Icon = heading.icon;
 
   return (
-    <article className={`diagram-node ${className}`}>
-      <span className="diagram-node__check">
-        <Check size={14} />
-      </span>
-      <span className={`diagram-node__icon diagram-node__icon--${visualType}`}>
-        <Icon size={24} />
-      </span>
-      <strong>{diagramTitle(layer, fallbackLabel, locale)}</strong>
-      <small>{layer?.label ?? fallbackLabel}</small>
-      {layer && isDecisionLayer(layer) ? (
-        <span className={layer.execution === "inferred" ? "inferred-chip" : "matched-chip"}>
-          {layer.execution === "inferred"
-            ? t(locale, "inferred")
-            : executionLabel(layer.execution, locale)}
+    <section className={`layered-column layered-column--${layer}`}>
+      <header className="layered-column__header">
+        <span>
+          <Icon size={22} />
         </span>
-      ) : null}
-      {layer?.type === "result" ? (
-        <span className={layer.execution === "blocked" ? "blocked-chip" : "matched-chip"}>
-          {layer.execution === "blocked" ? t(locale, "blocked") : t(locale, "matched")}
-        </span>
-      ) : null}
-      <span className="duration-mini">{Math.round(layer?.durationMs ?? 1)} ms</span>
+        <div>
+          <strong>{heading.title}</strong>
+          <small>{heading.subtitle}</small>
+        </div>
+      </header>
+      <div className="layered-column__stack">
+        {mainNodes.map((node) => (
+          <LayeredNodeCard
+            connected={connectedNodeIds.has(node.id)}
+            dimmed={Boolean(hoveredNodeId) && !connectedNodeIds.has(node.id)}
+            key={node.id}
+            node={node}
+            onHoverNode={onHoverNode}
+          />
+        ))}
+        {secondaryNodes.length > 0 ? (
+          <>
+            <div className="layered-column__divider">{t(locale, "knownButNotProven")}</div>
+            {secondaryNodes.map((node) => (
+              <LayeredNodeCard
+                connected={connectedNodeIds.has(node.id)}
+                dimmed={Boolean(hoveredNodeId) && !connectedNodeIds.has(node.id)}
+                key={node.id}
+                node={node}
+                onHoverNode={onHoverNode}
+              />
+            ))}
+          </>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function LayeredNodeCard({
+  connected,
+  dimmed,
+  node,
+  onHoverNode
+}: {
+  connected: boolean;
+  dimmed: boolean;
+  node: LayeredDiagramNode;
+  onHoverNode: (nodeId: string | null) => void;
+}): JSX.Element {
+  const locale = useWorkspaceLocale();
+  const Icon = layeredNodeIcon(node);
+
+  return (
+    <article
+      className={`layered-node layered-node--${node.layer} layered-node--${node.status} ${
+        node.isMainPath ? "is-main-path" : "is-secondary-path"
+      } ${connected ? "is-connected" : ""} ${dimmed ? "is-dimmed" : ""}`}
+      onBlur={() => onHoverNode(null)}
+      onFocus={() => onHoverNode(node.id)}
+      onMouseEnter={() => onHoverNode(node.id)}
+      onMouseLeave={() => onHoverNode(null)}
+      tabIndex={0}
+      title={node.detail}
+    >
+      <span className="layered-node__step">{node.step}</span>
+      <span className={`layered-node__icon layered-node__icon--${node.layer}`}>
+        <Icon size={20} />
+      </span>
+      <span className="layered-node__state">
+        {node.status === "not_proven" || node.status === "no_evidence" ? (
+          <Minus size={13} />
+        ) : (
+          <Check size={13} />
+        )}
+      </span>
+      <strong>{node.title}</strong>
+      <small>{node.subtitle}</small>
+      <div className="layered-node__meta">
+        <span>{node.durationMs !== undefined ? formatDuration(node.durationMs) : "—"}</span>
+        <em>{diagramNodeStatusLabel(node.status, locale)}</em>
+      </div>
     </article>
   );
 }
 
-function GhostNode({
-  className,
-  fallbackLabel,
-  icon: Icon,
-  layer
+function LayeredDiagramEdges({
+  connectedNodeIds,
+  edges,
+  hoveredNodeId,
+  nodes
 }: {
-  className: string;
-  fallbackLabel: string;
-  icon: LucideIcon;
-  layer: FlowLayer | undefined;
+  connectedNodeIds: Set<string>;
+  edges: LayeredDiagramEdge[];
+  hoveredNodeId: string | null;
+  nodes: LayeredDiagramNode[];
 }): JSX.Element {
-  const locale = useWorkspaceLocale();
+  const nodeMap = new Map(nodes.map((node) => [node.id, node]));
 
   return (
-    <article className={`ghost-node ${className}`}>
-      <span>
-        <Icon size={21} />
-      </span>
-      <strong>{fallbackLabel}</strong>
-      <small>{layer?.label ?? t(locale, "noScannedNode")}</small>
-      <small>{layer ? executionLabel(layer.execution, locale) : t(locale, "notProven")}</small>
-      <em>—</em>
-    </article>
-  );
-}
+    <svg className="layered-edges" viewBox="0 0 1060 610" aria-hidden="true">
+      <defs>
+        <filter id="layered-edge-glow" x="-20%" y="-80%" width="140%" height="260%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        {(["executed", "source_matched", "inferred", "not_proven", "blocked"] as const).map(
+          (kind) => (
+            <marker
+              id={`layered-edge-arrow-${kind}`}
+              key={kind}
+              markerHeight="10"
+              markerUnits="strokeWidth"
+              markerWidth="10"
+              orient="auto"
+              refX="8"
+              refY="3"
+            >
+              <path
+                className={`layered-edge-arrow layered-edge-arrow--${kind}`}
+                d="M0,0 L0,6 L8,3 z"
+              />
+            </marker>
+          )
+        )}
+      </defs>
+      {edges.map((edge) => {
+        const from = nodeMap.get(edge.from);
+        const to = nodeMap.get(edge.to);
 
-function Arrow({ className }: { className: string }): JSX.Element {
-  return (
-    <svg className={`diagram-arrow ${className}`} viewBox="0 0 118 24" aria-hidden="true">
-      <path d="M2 12H104" />
-      <path d="m97 5 12 7-12 7" />
+        if (!from || !to) {
+          return null;
+        }
+
+        const active =
+          !hoveredNodeId || connectedNodeIds.has(edge.from) || connectedNodeIds.has(edge.to);
+        const path = layeredEdgePath(from, to);
+
+        return (
+          <g className={active ? "is-active" : ""} key={edge.id}>
+            <path className={`layered-edge-halo layered-edge-halo--${edge.kind}`} d={path} />
+            <path
+              className={`layered-edge layered-edge--${edge.kind}`}
+              d={path}
+              filter={
+                edge.kind === "executed" || edge.kind === "blocked"
+                  ? "url(#layered-edge-glow)"
+                  : undefined
+              }
+              markerEnd={`url(#layered-edge-arrow-${edge.kind})`}
+            />
+          </g>
+        );
+      })}
     </svg>
   );
+}
+
+function buildLayeredDiagramModel(
+  record: FlowRecord,
+  locale: WorkspaceLocale,
+  options: { showAllSteps: boolean }
+): LayeredDiagramModel {
+  const sourceLayers = diagramLayers(record);
+  const visibleLayers = options.showAllSteps
+    ? sourceLayers
+    : sourceLayers.filter((layer) => !isUnprovenLayer(layer));
+  const nodes = assignLayeredNodePositions(
+    visibleLayers.map((layer, index) => toLayeredDiagramNode(layer, index + 1, record, locale))
+  );
+
+  return {
+    layers: layeredDiagramLayers,
+    nodes,
+    edges: buildLayeredDiagramEdges(nodes)
+  };
+}
+
+function toLayeredDiagramNode(
+  layer: FlowLayer,
+  step: number,
+  record: FlowRecord,
+  locale: WorkspaceLocale
+): LayeredDiagramNode {
+  const diagramLayer = diagramLayerForFlowLayer(layer);
+  const status = layeredDiagramNodeStatus(layer, record);
+
+  return {
+    id: layer.id,
+    sourceLayer: layer,
+    layer: diagramLayer,
+    kind: layer.type,
+    title: layeredDiagramTitle(layer, record, locale),
+    subtitle: layeredDiagramSubtitle(layer, record, locale),
+    detail: layeredDiagramDetail(layer, locale),
+    step,
+    status,
+    edgeKind: edgeKindForLayer(layer, status),
+    isMainPath: !isUnprovenLayer(layer),
+    evidenceKind: evidenceKindForLayer(layer),
+    slot: 0,
+    x: 0,
+    y: 0,
+    ...(layer.durationMs !== undefined ? { durationMs: layer.durationMs } : {})
+  };
+}
+
+function assignLayeredNodePositions(nodes: LayeredDiagramNode[]): LayeredDiagramNode[] {
+  const slotByLayer = new Map<DiagramLayerId, number>();
+  const secondarySlotByLayer = new Map<DiagramLayerId, number>();
+
+  return nodes.map((node) => {
+    const layerIndex = layeredDiagramLayers.indexOf(node.layer);
+    const key = node.isMainPath ? slotByLayer : secondarySlotByLayer;
+    const slot = key.get(node.layer) ?? 0;
+    const secondaryOffset = node.isMainPath ? 0 : 2.45;
+    const x =
+      layeredLayout.startX +
+      layerIndex * (layeredLayout.columnWidth + layeredLayout.columnGap) +
+      layeredLayout.columnWidth / 2;
+    const y =
+      layeredLayout.startY +
+      (slot + secondaryOffset) * (layeredLayout.nodeHeight + layeredLayout.nodeGap) +
+      layeredLayout.nodeHeight / 2;
+
+    key.set(node.layer, slot + 1);
+
+    return { ...node, slot, x, y };
+  });
+}
+
+function buildLayeredDiagramEdges(nodes: LayeredDiagramNode[]): LayeredDiagramEdge[] {
+  const mainNodes = nodes.filter((node) => node.isMainPath).sort(compareLayeredNodes);
+  const secondaryNodes = nodes.filter((node) => !node.isMainPath).sort(compareLayeredNodes);
+  const edges: LayeredDiagramEdge[] = [];
+
+  for (let index = 0; index < mainNodes.length - 1; index += 1) {
+    const from = mainNodes[index];
+    const to = mainNodes[index + 1];
+
+    if (!from || !to) {
+      continue;
+    }
+
+    edges.push({
+      id: `${from.id}->${to.id}`,
+      from: from.id,
+      to: to.id,
+      kind: edgeKindBetween(from, to)
+    });
+  }
+
+  const anchor =
+    mainNodes.find((node) => node.layer === "application" && node.kind !== "controller") ??
+    mainNodes.find((node) => node.layer === "application") ??
+    mainNodes.find((node) => node.layer === "api");
+
+  if (anchor) {
+    for (const node of secondaryNodes) {
+      edges.push({
+        id: `${anchor.id}->${node.id}`,
+        from: anchor.id,
+        to: node.id,
+        kind: "not_proven"
+      });
+    }
+  }
+
+  return edges;
+}
+
+function compareLayeredNodes(first: LayeredDiagramNode, second: LayeredDiagramNode): number {
+  const layerDelta =
+    layeredDiagramLayers.indexOf(first.layer) - layeredDiagramLayers.indexOf(second.layer);
+  if (layerDelta !== 0) return layerDelta;
+
+  return first.step - second.step;
+}
+
+function edgeKindBetween(from: LayeredDiagramNode, to: LayeredDiagramNode): DiagramEdgeKind {
+  if (from.status === "blocked" || to.status === "blocked" || to.status === "error") {
+    return "blocked";
+  }
+
+  if (from.status === "inferred" || to.status === "inferred") {
+    return "inferred";
+  }
+
+  if (from.evidenceKind === "source" || to.evidenceKind === "source") {
+    return "source_matched";
+  }
+
+  return "executed";
+}
+
+function edgeKindForLayer(layer: FlowLayer, status: DiagramNodeStatus): DiagramEdgeKind {
+  if (status === "blocked" || status === "error") return "blocked";
+  if (status === "inferred") return "inferred";
+  if (isUnprovenLayer(layer) || status === "no_evidence") return "not_proven";
+  if (isSourceMatchedLayer(layer)) return "source_matched";
+  return "executed";
+}
+
+function diagramLayerForFlowLayer(layer: FlowLayer): DiagramLayerId {
+  if (layer.type === "action" || layer.type === "page") return "browser";
+  if (layer.type === "api") return "api";
+  if (layer.type === "repository" || layer.type === "database" || layer.type === "cache") {
+    return "data";
+  }
+  if (layer.type === "result") return "response";
+  return "application";
+}
+
+function layeredDiagramNodeStatus(layer: FlowLayer, record: FlowRecord): DiagramNodeStatus {
+  if (layer.execution === "blocked") return "blocked";
+  if (layer.type === "result" && record.status !== undefined && record.status >= 500) {
+    return "error";
+  }
+  if (layer.type === "result" && record.status !== undefined && record.status < 400) {
+    return "success";
+  }
+  if (isUnprovenLayer(layer)) return "not_proven";
+  if (layer.execution === "unknown") return "no_evidence";
+  if (layer.execution === "inferred" || layer.evidenceLevel === "inferred") return "inferred";
+  if (layer.evidenceLevel === "browser_observed" || layer.evidenceLevel === "backend_observed") {
+    return "observed";
+  }
+  if (isSourceMatchedLayer(layer)) return "source_matched";
+  return "matched";
+}
+
+function evidenceKindForLayer(layer: FlowLayer): LayeredDiagramNode["evidenceKind"] {
+  if (layer.evidenceLevel === "browser_observed") return "browser";
+  if (layer.evidenceLevel === "backend_observed") return "backend";
+  if (layer.evidenceLevel === "inferred") return "inferred";
+  if (isUnprovenLayer(layer) || layer.execution === "unknown") return "none";
+  return "source";
+}
+
+function layeredDiagramTitle(
+  layer: FlowLayer,
+  record: FlowRecord,
+  locale: WorkspaceLocale
+): string {
+  if (layer.type === "action") return locale === "ko" ? "사용자 액션" : "User Action";
+  if (layer.type === "api") return locale === "ko" ? "HTTP 요청" : "HTTP Request";
+  if (layer.type === "result") return outcomeStatusText(record, locale);
+  return layerLabel(layer, locale);
+}
+
+function layeredDiagramSubtitle(
+  layer: FlowLayer,
+  record: FlowRecord,
+  locale: WorkspaceLocale
+): string {
+  if (layer.type === "action") {
+    return record.action?.label ?? layer.label;
+  }
+
+  if (layer.type === "api") {
+    return `${record.method} ${shortPath(record.path)}`;
+  }
+
+  if (layer.type === "result") {
+    return outcomeDescription(record, locale);
+  }
+
+  return layer.label;
+}
+
+function layeredDiagramDetail(layer: FlowLayer, locale: WorkspaceLocale): string {
+  const evidence = layer.evidence[0] ? ` · ${layer.evidence[0]}` : "";
+  return `${layerLabel(layer, locale)} · ${layer.label}${evidence}`;
+}
+
+function layeredLayerMeta(
+  layer: DiagramLayerId,
+  locale: WorkspaceLocale
+): { icon: LucideIcon; title: string; subtitle: string } {
+  const ko = locale === "ko";
+
+  if (layer === "browser") {
+    return {
+      icon: Monitor,
+      title: ko ? "브라우저" : "Browser",
+      subtitle: ko ? "사용자 상호작용" : "User interaction"
+    };
+  }
+
+  if (layer === "api") {
+    return {
+      icon: Globe2,
+      title: "API",
+      subtitle: ko ? "요청과 라우팅" : "Edge & routing"
+    };
+  }
+
+  if (layer === "application") {
+    return {
+      icon: Cuboid,
+      title: ko ? "애플리케이션" : "Application",
+      subtitle: ko ? "비즈니스 로직" : "Business logic"
+    };
+  }
+
+  if (layer === "data") {
+    return {
+      icon: Database,
+      title: ko ? "데이터" : "Data",
+      subtitle: ko ? "저장소 계층" : "Persistence layer"
+    };
+  }
+
+  return {
+    icon: Send,
+    title: ko ? "응답" : "Response",
+    subtitle: ko ? "클라이언트로 반환" : "Back to client"
+  };
+}
+
+function layeredNodeIcon(node: LayeredDiagramNode): LucideIcon {
+  if (node.kind === "action" || node.kind === "page") return MousePointerClick;
+  if (node.kind === "api") return Globe2;
+  if (node.kind === "auth" || node.kind === "decision") return Lock;
+  if (node.kind === "service") return Cuboid;
+  if (node.kind === "repository") return Box;
+  if (node.kind === "database" || node.kind === "cache") return Database;
+  if (node.kind === "result") return Send;
+  if (node.kind === "controller") return FileCode2;
+  return Circle;
+}
+
+function diagramNodeStatusLabel(status: DiagramNodeStatus, locale: WorkspaceLocale): string {
+  if (status === "observed") return t(locale, "observed");
+  if (status === "source_matched") return t(locale, "sourceMatched");
+  if (status === "inferred") return t(locale, "inferred");
+  if (status === "not_proven") return t(locale, "notProven");
+  if (status === "no_evidence") return t(locale, "noEvidence");
+  if (status === "success") return t(locale, "success").toLowerCase();
+  if (status === "blocked") return t(locale, "blocked");
+  if (status === "error") return t(locale, "error").toLowerCase();
+  return t(locale, "matched");
+}
+
+function connectedDiagramNodeIds(edges: LayeredDiagramEdge[], nodeId: string | null): Set<string> {
+  if (!nodeId) {
+    return new Set<string>();
+  }
+
+  const connected = new Set<string>([nodeId]);
+
+  for (const edge of edges) {
+    if (edge.from === nodeId) connected.add(edge.to);
+    if (edge.to === nodeId) connected.add(edge.from);
+  }
+
+  return connected;
+}
+
+function layeredEdgePath(from: LayeredDiagramNode, to: LayeredDiagramNode): string {
+  const fromX = from.layer === to.layer ? from.x : from.x + layeredLayout.columnWidth / 2 - 12;
+  const toX = from.layer === to.layer ? to.x : to.x - layeredLayout.columnWidth / 2 + 12;
+  const fromY = from.y;
+  const toY = to.y;
+
+  if (from.layer === to.layer) {
+    const midY = fromY + (toY - fromY) / 2;
+    return `M ${from.x} ${fromY + 58} C ${from.x} ${midY}, ${to.x} ${midY}, ${to.x} ${toY - 58}`;
+  }
+
+  const midX = fromX + (toX - fromX) / 2;
+
+  return `M ${fromX} ${fromY} C ${midX} ${fromY}, ${midX} ${toY}, ${toX} ${toY}`;
 }
 
 function FlowInspector({
@@ -1906,19 +2410,6 @@ function durationCaption(
   if (layer.evidenceLevel === "backend_observed") return t(locale, "observed");
 
   return `${t(locale, "estimate")} · ${Math.round((duration / Math.max(total, 1)) * 100)}%`;
-}
-
-function diagramTitle(
-  layer: FlowLayer | undefined,
-  fallback: string,
-  locale: WorkspaceLocale
-): string {
-  if (!layer) return fallback;
-  if (layer.type === "api") return "API";
-  if (layer.type === "controller") return locale === "ko" ? "컨트롤러" : "Controller";
-  if (isDecisionLayer(layer)) return locale === "ko" ? "인증 / 세션" : "Auth / Session";
-  if (layer.type === "result") return t(locale, "result");
-  return layerLabel(layer, locale);
 }
 
 function tabLabel(tab: WorkspaceTab, locale: WorkspaceLocale): string {
