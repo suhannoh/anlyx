@@ -609,7 +609,10 @@ function RequestContextPanel({
   const result = findFirstLayer(layers, ["result"]);
 
   return (
-    <section className="benefits-studio request-context-panel" aria-label={t(locale, "selectedRequestLabel")}>
+    <section
+      className="benefits-studio request-context-panel"
+      aria-label={t(locale, "selectedRequestLabel")}
+    >
       <div className="benefits-studio__main">
         <div className="benefits-studio__brand">
           <span>{record.method.slice(0, 2)}</span>
@@ -767,8 +770,7 @@ function TimingOverview({
         </div>
         {slowestLayer ? (
           <p>
-            {t(locale, "slowestShownSegment")}:{" "}
-            <strong>{layerLabel(slowestLayer, locale)}</strong>{" "}
+            {t(locale, "slowestShownSegment")}: <strong>{layerLabel(slowestLayer, locale)}</strong>{" "}
             <span>{Math.round(estimatedLayerDuration(slowestLayer, total))} ms</span>
           </p>
         ) : null}
@@ -1039,7 +1041,9 @@ function DiagramFlowView({ record }: { record: FlowRecord }): JSX.Element {
           <DiagramNode
             layer={decision}
             fallbackLabel={
-              record.status && record.status >= 400 ? t(locale, "authDecision") : t(locale, "backend")
+              record.status && record.status >= 400
+                ? t(locale, "authDecision")
+                : t(locale, "backend")
             }
             icon={Lock}
             className={`diagram-node--auth ${
@@ -1107,7 +1111,9 @@ function DiagramNode({
       <small>{layer?.label ?? fallbackLabel}</small>
       {layer && isDecisionLayer(layer) ? (
         <span className={layer.execution === "inferred" ? "inferred-chip" : "matched-chip"}>
-          {layer.execution === "inferred" ? t(locale, "inferred") : executionLabel(layer.execution, locale)}
+          {layer.execution === "inferred"
+            ? t(locale, "inferred")
+            : executionLabel(layer.execution, locale)}
         </span>
       ) : null}
       {layer?.type === "result" ? (
@@ -1870,7 +1876,8 @@ function evidenceCoverage(record: FlowRecord): {
 }
 
 function layerSubtitle(layer: FlowLayer, locale: WorkspaceLocale): string {
-  if (layer.type === "action") return locale === "ko" ? "사용자 클릭 캡처됨" : "user click captured";
+  if (layer.type === "action")
+    return locale === "ko" ? "사용자 클릭 캡처됨" : "user click captured";
   if (layer.type === "api") return t(locale, "browserSpan");
   if (isUnprovenLayer(layer)) return t(locale, "knownBySourceOnly");
   if (layer.evidenceLevel === "browser_observed") return t(locale, "browserObserved");

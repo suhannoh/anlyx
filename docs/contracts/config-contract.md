@@ -293,4 +293,4 @@ export default defineConfig({
 });
 ```
 
-In this example, Anlyx does not infer React Router source routes. The explicit `urls` provide page/storyboard coverage, while the injected overlay captures browser `fetch` and `XMLHttpRequest` calls caused by real user actions in the running React app.
+In this example, Anlyx does not infer React Router source routes. The explicit `urls` provide page/storyboard coverage, while the browser capture runtime observes `fetch` and `XMLHttpRequest` calls caused by real user actions in the running React app.

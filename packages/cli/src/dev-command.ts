@@ -329,14 +329,13 @@ export function createLocalFlowStore(): LocalFlowStore {
     pendingBackendSpans: new Map<string, BackendObservedSpan[]>(),
     pushFlow(record) {
       const pendingSpans = store.pendingBackendSpans.get(record.requestId) ?? [];
-      const nextRecord =
-        pendingSpans.length > 0 ? mergeBackendSpans(record, pendingSpans) : record;
+      const nextRecord = pendingSpans.length > 0 ? mergeBackendSpans(record, pendingSpans) : record;
 
       store.pendingBackendSpans.delete(record.requestId);
-      store.records = [nextRecord, ...store.records.filter((item) => item.id !== nextRecord.id)].slice(
-        0,
-        100
-      );
+      store.records = [
+        nextRecord,
+        ...store.records.filter((item) => item.id !== nextRecord.id)
+      ].slice(0, 100);
       for (const client of store.clients) {
         writeSseFlow(client, nextRecord);
       }
@@ -736,7 +735,9 @@ function isOptionalNumber(value: unknown): value is number | undefined {
 }
 
 function isOptionalStringArray(value: unknown): value is string[] | undefined {
-  return value === undefined || (Array.isArray(value) && value.every((item) => typeof item === "string"));
+  return (
+    value === undefined || (Array.isArray(value) && value.every((item) => typeof item === "string"))
+  );
 }
 
 function isOptionalBrowserActionEvent(value: unknown): value is BrowserActionEvent | undefined {

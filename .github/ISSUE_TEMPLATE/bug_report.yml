@@ -28,7 +28,7 @@ body:
       options:
         - Spring Boot + Next.js App Router
         - OpenAPI + manual frontend URLs
-        - Raw overlay script
+        - Raw capture script
         - Other
     validations:
       required: true

@@ -1408,7 +1408,7 @@ function RecentEventsList({
     <div className="recent-events">
       {events.slice(0, 5).map((event) => (
         <button
-          className={event.id === selectedEventId ? "is-selected" : ""}
+          className={`flow-event-card${event.id === selectedEventId ? " is-selected" : ""}`}
           key={event.id}
           type="button"
           onClick={() => onSelectEvent(event.id)}

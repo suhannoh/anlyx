@@ -22,7 +22,7 @@ body:
     attributes:
       label: Area
       options:
-        - Overlay / Flow Drawer
+        - Live Workspace / UI
         - Spring Boot adapter
         - Next.js adapter
         - OpenAPI / manual support

@@ -7,11 +7,12 @@ import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const demoDir = resolve(rootDir, "apps/demo");
 const requireFromCwd = createRequire(resolve(rootDir, "packages/capture/package.json"));
 const { chromium } = requireFromCwd("playwright");
 
 const port = 5179;
-const demoUrl = `http://127.0.0.1:${port}/docs/assets/readme/anlyx-demo.html`;
+const demoUrl = `http://127.0.0.1:${port}/demo`;
 const frameDir = resolve(rootDir, ".tmp/readme-demo-frames");
 const output = resolve(rootDir, "docs/assets/readme/anlyx-demo.gif");
 const posterOutput = resolve(rootDir, "docs/assets/readme/anlyx-demo.png");
@@ -51,7 +52,7 @@ const vite = spawn(
   process.execPath,
   [await findViteBin(), "--host", "127.0.0.1", "--port", String(port), "--strictPort"],
   {
-    cwd: rootDir,
+    cwd: demoDir,
     stdio: ["ignore", "ignore", "inherit"]
   }
 );
@@ -90,9 +91,8 @@ try {
     deviceScaleFactor: 1
   });
 
-  await page.goto(demoUrl);
-  await page.waitForLoadState("networkidle");
-  await page.waitForSelector(".react-flow__node");
+  await page.goto(demoUrl, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector(".live-workspace");
   await page.waitForTimeout(500);
   await page.screenshot({
     path: posterOutput,
@@ -113,9 +113,13 @@ try {
 
   await capture(8);
 
-  for (const selector of ['[data-demo="search"]', '[data-demo="save"]', '[data-demo="admin"]']) {
+  for (const selector of [
+    '[data-anlyx-action="search"]',
+    '[data-anlyx-action="save"]',
+    '[data-anlyx-action="admin"]'
+  ]) {
     await page.click(selector);
-    await page.waitForSelector(".react-flow__node");
+    await page.waitForSelector(".flow-event-card");
     await page.waitForTimeout(260);
     await capture(10);
   }

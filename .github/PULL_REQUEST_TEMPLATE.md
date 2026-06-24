@@ -6,7 +6,7 @@
 
 - [ ] Documentation
 - [ ] CLI / configuration
-- [ ] Overlay / UI
+- [ ] Live Workspace / UI
 - [ ] Adapter / scanner
 - [ ] Tests / fixtures
 - [ ] Release / packaging
