@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { FlowRecord, ScanResult } from "@anlyx/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -100,6 +100,20 @@ describe("WorkspaceApp", () => {
     expect((await screen.findAllByText("/api/account/saved-benefit")).length).toBeGreaterThan(0);
     expect(screen.getByText("Matched backend flow")).toBeTruthy();
     expect(screen.getAllByText("SavedBenefitController").length).toBeGreaterThan(0);
+  });
+
+  it("clears streamed requests when the server starts a new page scope", async () => {
+    vi.stubGlobal("EventSource", MockEventSource);
+    render(<WorkspaceApp data={scanResult} />);
+
+    MockEventSource.instances[0]?.emit("flow", savedBenefitFlow);
+    expect((await screen.findAllByText("/api/account/saved-benefit")).length).toBeGreaterThan(0);
+
+    MockEventSource.instances[0]?.emit("reset", {});
+
+    await waitFor(() => {
+      expect(screen.getByText("Click your local app to stream the first browser request.")).toBeTruthy();
+    });
   });
 
   it("keeps a selected user-action request when a background request streams later", async () => {

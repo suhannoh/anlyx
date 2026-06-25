@@ -1,4 +1,4 @@
-import type { BrowserActionEvent, BrowserRequestEvent } from "@anlyx/core";
+import type { BrowserActionEvent, BrowserPageViewEvent, BrowserRequestEvent } from "@anlyx/core";
 
 export type CaptureRuntimeOptions = {
   runtimeBaseUrl?: string;
@@ -43,8 +43,11 @@ export function installAnlyxCaptureRuntime(options: CaptureRuntimeOptions = {}):
   const originalWindowFetch = window.fetch;
   const originalOpen = window.XMLHttpRequest?.prototype.open;
   const originalSend = window.XMLHttpRequest?.prototype.send;
+  const originalPushState = window.history.pushState;
+  const originalReplaceState = window.history.replaceState;
   const xhrMetadata = new WeakMap<XMLHttpRequest, RequestMetadata>();
   let latestAction: CapturedAction | undefined;
+  let latestPagePath = "";
 
   function observeClick(event: MouseEvent) {
     const target = event.target instanceof Element ? event.target : null;
@@ -66,7 +69,7 @@ export function installAnlyxCaptureRuntime(options: CaptureRuntimeOptions = {}):
     }
   }
 
-  function postEvent(event: BrowserRequestEvent) {
+  function postEvent(event: BrowserRequestEvent | BrowserPageViewEvent) {
     if (!originalFetch) {
       return;
     }
@@ -77,6 +80,24 @@ export function installAnlyxCaptureRuntime(options: CaptureRuntimeOptions = {}):
       keepalive: true,
       method: "POST"
     }).catch(() => {});
+  }
+
+  function observePageView() {
+    const normalized = normalizeUrl(window.location.href);
+
+    if (shouldIgnorePagePath(normalized.path) || normalized.path === latestPagePath) {
+      return;
+    }
+
+    latestPagePath = normalized.path;
+    postEvent({
+      id: `page-view:${now()}:${++eventSequence}`,
+      type: "page_view",
+      url: normalized.href,
+      path: normalized.path,
+      title: document.title,
+      observedAt: observedAt(now)
+    });
   }
 
   function buildEvent(metadata: RequestMetadata, status?: number): BrowserRequestEvent | undefined {
@@ -206,17 +227,50 @@ export function installAnlyxCaptureRuntime(options: CaptureRuntimeOptions = {}):
     return originalSend.call(this, body);
   }
 
+  function wrappedPushState(
+    this: History,
+    data: unknown,
+    unused: string,
+    url?: string | URL | null
+  ) {
+    const result = originalPushState.call(this, data, unused, url);
+    queuePageView();
+    return result;
+  }
+
+  function wrappedReplaceState(
+    this: History,
+    data: unknown,
+    unused: string,
+    url?: string | URL | null
+  ) {
+    const result = originalReplaceState.call(this, data, unused, url);
+    queuePageView();
+    return result;
+  }
+
+  function queuePageView() {
+    window.setTimeout(observePageView, 0);
+  }
+
   document.addEventListener("click", observeClick, true);
+  window.addEventListener("popstate", queuePageView);
   window.fetch = wrappedFetch as typeof fetch;
+  window.history.pushState = wrappedPushState as typeof window.history.pushState;
+  window.history.replaceState = wrappedReplaceState as typeof window.history.replaceState;
 
   window.XMLHttpRequest.prototype.open = wrappedOpen as typeof XMLHttpRequest.prototype.open;
   window.XMLHttpRequest.prototype.send = wrappedSend as typeof XMLHttpRequest.prototype.send;
 
   window.__ANLYX_CAPTURE_INSTALLED__ = true;
+  queuePageView();
 
   return () => {
     document.removeEventListener("click", observeClick, true);
+    window.removeEventListener("popstate", queuePageView);
     window.fetch = originalWindowFetch;
+    window.history.pushState = originalPushState;
+    window.history.replaceState = originalReplaceState;
 
     window.XMLHttpRequest.prototype.open = originalOpen;
     window.XMLHttpRequest.prototype.send = originalSend;
@@ -302,6 +356,19 @@ function shouldIgnoreUrl(
 
   return /\.(?:avif|css|eot|gif|ico|jpe?g|js|map|mjs|png|svg|ts|tsx|ttf|webp|woff2?)($|\?)/i.test(
     normalized.path
+  );
+}
+
+function shouldIgnorePagePath(path: string) {
+  return (
+    path.includes("/_anlyx") ||
+    path.startsWith("/@vite") ||
+    path.startsWith("/@react-refresh") ||
+    path.startsWith("/__vite") ||
+    path.startsWith("/node_modules/") ||
+    /\.(?:avif|css|eot|gif|ico|jpe?g|js|map|mjs|png|svg|ts|tsx|ttf|webp|woff2?)($|\?)/i.test(
+      path
+    )
   );
 }
 

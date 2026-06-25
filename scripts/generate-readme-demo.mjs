@@ -1,4 +1,4 @@
-import { access, mkdir, readdir, rm } from "node:fs/promises";
+import { access, readdir } from "node:fs/promises";
 import http from "node:http";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
@@ -13,8 +13,6 @@ const { chromium } = requireFromCwd("playwright");
 
 const port = 5179;
 const demoUrl = `http://127.0.0.1:${port}/demo`;
-const frameDir = resolve(rootDir, ".tmp/readme-demo-frames");
-const output = resolve(rootDir, "docs/assets/readme/anlyx-demo.gif");
 const posterOutput = resolve(rootDir, "docs/assets/readme/anlyx-demo.png");
 const findViteBin = async () => {
   const pnpmDir = resolve(rootDir, "node_modules/.pnpm");
@@ -25,9 +23,6 @@ const findViteBin = async () => {
   }
   return resolve(pnpmDir, viteEntry, "node_modules/vite/bin/vite.js");
 };
-
-await rm(frameDir, { recursive: true, force: true });
-await mkdir(frameDir, { recursive: true });
 
 const waitForServer = (url, timeoutMs = 10_000) =>
   new Promise((resolvePromise, reject) => {
@@ -99,58 +94,19 @@ try {
     fullPage: true
   });
 
-  let frame = 0;
-  const capture = async (count) => {
-    for (let i = 0; i < count; i += 1) {
-      await page.screenshot({
-        path: resolve(frameDir, `frame-${String(frame).padStart(3, "0")}.png`),
-        fullPage: true
-      });
-      frame += 1;
-      await page.waitForTimeout(130);
-    }
-  };
-
-  await capture(8);
-
-  for (const selector of [
-    '[data-anlyx-action="search"]',
-    '[data-anlyx-action="save"]',
-    '[data-anlyx-action="admin"]'
-  ]) {
+  for (const selector of ['[data-anlyx-action="search"]', '[data-anlyx-action="save"]']) {
     await page.click(selector);
     await page.waitForSelector(".flow-event-card");
     await page.waitForTimeout(260);
-    await capture(10);
   }
+
+  await page.screenshot({
+    path: posterOutput,
+    fullPage: true
+  });
 } finally {
   await browser.close();
   vite.kill();
 }
 
-const ffmpegArgs = [
-  "-y",
-  "-framerate",
-  "8",
-  "-i",
-  resolve(frameDir, "frame-%03d.png"),
-  "-vf",
-  "scale=1100:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3",
-  "-loop",
-  "0",
-  output
-];
-
-await new Promise((resolvePromise, reject) => {
-  const child = spawn("ffmpeg", ffmpegArgs, { stdio: "inherit" });
-  child.on("exit", (code) => {
-    if (code === 0) {
-      resolvePromise();
-      return;
-    }
-    reject(new Error(`ffmpeg exited with code ${code}`));
-  });
-});
-
-process.stdout.write(`Wrote ${output}\n`);
 process.stdout.write(`Wrote ${posterOutput}\n`);

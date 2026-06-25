@@ -43,12 +43,10 @@ export function createDefaultConfigTemplate(): string {
       segmentHeight: 900
     },
 
-    sampleParams: {
-      "/benefit/[brandSlug]/[benefitSlugWithId]": {
-        brandSlug: "starbucks",
-        benefitSlugWithId: "birthday-coupon-123"
-      }
-    }
+    // Add sampleParams when your App Router pages include dynamic segments.
+    // sampleParams: {
+    //   "/items/[id]": { id: "123" }
+    // }
   },
 
   server: {

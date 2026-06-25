@@ -45,6 +45,11 @@ function anlyxDemoServer() {
 
         if (pathname === "/__anlyx/events" && req.method === "POST") {
           const browserEvent = await readJsonBody<BrowserRequestEvent>(req);
+          if (!browserEvent.method || !(browserEvent.path ?? browserEvent.url)) {
+            res.statusCode = 204;
+            res.end();
+            return;
+          }
           const capture = browserRequestToDemoCapture(browserEvent);
           const liveEvent = toLiveEvent(capture);
           recentEvents.unshift(liveEvent);

@@ -279,6 +279,8 @@ type PageStoryboard = {
 };
 ```
 
+`ApiCall` MAY come from a source-derived frontend scan before browser capture, or from browser-observed capture. Source-derived API calls MUST NOT include `status` unless a browser observation later confirms one. Capture MUST merge browser-observed calls with source-derived calls by method and path instead of dropping source-derived server-rendered calls.
+
 JSON example:
 
 ```json
@@ -379,9 +381,9 @@ JSON example:
 
 ## Live Workspace Records
 
-Live Workspace records are derived product data for the local Anlyx runtime. They connect a browser-observed request event to the current `ScanResult` without changing `ScanResult` itself.
+Live Workspace records are derived product data for the local Anlyx runtime. They connect browser runtime events to the current `ScanResult` without changing `ScanResult` itself. A record can come from a browser-observed request, or from a browser page visit mapped to source-derived `PageStoryboard.apiCalls`.
 
-v0.1 Live Workspace records MUST NOT claim server runtime tracing. Browser request and response facts are live browser evidence. Controller, Service, Repository, Database, and similar backend layers are source-derived or inferred from scanned data unless a future runtime bridge explicitly proves them.
+v0.1 Live Workspace records MUST NOT claim production server tracing. Browser request and response facts are live browser evidence. Next.js Server Component fetch facts are development-only frontend server evidence. Controller, Service, Repository, Database, and similar backend layers are source-derived or inferred from scanned data unless a development-only backend bridge explicitly reports spans for the same correlated request.
 
 ### BrowserActionEvent
 
@@ -418,11 +420,52 @@ The browser runtime records `fetch` and `XMLHttpRequest` activity from the local
 
 For same-app API requests, the browser capture runtime SHOULD add `X-Anlyx-Request-Id` with the same value as `BrowserRequestEvent.id`. Development-only backend bridges use this header to report `BackendSpanEvent.requestId` for the same request. The capture runtime SHOULD avoid adding this header to non-API document, RSC, static asset, or Anlyx internal requests.
 
+For same-backend Next.js server fetches, the Next server runtime bridge SHOULD add `X-Anlyx-Request-Id` with the same value as `FrontendServerRequestEvent.id`. This lets a development-only backend bridge attach actual backend spans to a Server Component fetch that is not visible to the browser runtime.
+
+### BrowserPageViewEvent
+
+```ts
+type BrowserPageViewEvent = {
+  id: string;
+  type: "page_view";
+  url: string;
+  path?: string;
+  title?: string;
+  observedAt: string;
+};
+```
+
+The browser runtime records top-level page visits on install and client-side navigation. The local runtime MAY map a page view to the matching `PageStoryboard.route` and create one source-derived `FlowRecord` for each `PageStoryboard.apiCalls` entry.
+
+Page-view-derived records are useful for server-rendered frontend work, such as Next.js Server Components, where the browser sees the page navigation but does not directly observe the server-side API fetch. These records MUST use `source_derived` or `not_proven` evidence for page/API/backend layers, MUST NOT include browser-observed status or duration unless a later browser request observation confirms one, and MUST NOT claim the API request happened in the browser.
+
+### FrontendServerRequestEvent
+
+```ts
+type FrontendServerRequestEvent = {
+  id: string;
+  type: "frontend_server_request";
+  runtime: "next";
+  method: HttpMethod | string;
+  url: string;
+  path?: string;
+  status?: number;
+  durationMs?: number;
+  observedAt: string;
+  pagePath?: string;
+};
+```
+
+The Next.js server runtime bridge records `fetch` activity that runs in the local Next.js Node server, including Server Component fetches that the browser runtime cannot observe. These events are development-only local observations. They prove the frontend server made an API request and observed its response status/duration, but they do not prove backend Controller/Service/Repository/Database method execution unless a backend bridge also reports `BackendSpanEvent` data.
+
+The local runtime MAY replace or suppress a page-view-derived source-only record when a matching `FrontendServerRequestEvent` or `BrowserRequestEvent` exists for the same endpoint. This prevents a scanned placeholder from hiding a real local runtime observation.
+
 ### Evidence Levels
 
 ```ts
 type LiveEvidenceLevel =
   | "browser_observed"
+  | "frontend_server_observed"
   | "backend_observed"
   | "source_derived"
   | "inferred"
@@ -430,6 +473,7 @@ type LiveEvidenceLevel =
 ```
 
 - `browser_observed`: Captured directly from the local browser, such as action label, request method/path, status, and duration.
+- `frontend_server_observed`: Captured directly from the local Next.js server runtime, such as Server Component `fetch` method/path, status, and duration.
 - `backend_observed`: Captured by an explicit development-only backend runtime bridge for the same request correlation id. This level is allowed to represent server-side method timing, but only for spans actually reported by that bridge.
 - `source_derived`: Read from scanned project source or generated `ScanResult` data.
 - `inferred`: Best-effort analysis from scanned code, naming, confidence, status, or framework behavior.
@@ -486,8 +530,8 @@ type FlowLayer = {
 
 Layer execution values mean:
 
-- `executed`: Browser-observed action/API/result evidence exists. In v0.1 this MUST NOT be used for server-side layers.
-- `observed`: A future development-only backend runtime bridge explicitly reported this server-side span for the correlated request. This MUST NOT be inferred from source scanning alone.
+- `executed`: Browser-observed or frontend-server-observed action/API/result evidence exists. In v0.1 this MUST NOT be used for backend Controller/Service/Repository/Database layers unless a backend bridge reports spans.
+- `observed`: A development-only backend runtime bridge explicitly reported this server-side span for the correlated request. This MUST NOT be inferred from source scanning alone.
 - `scanned`: A backend/frontend layer appears in the matched `EndpointFlow.mainPath`, but execution is not runtime-proven.
 - `inferred`: A likely decision or framework behavior is inferred from status, confidence, or scanned context.
 - `blocked`: The browser-observed response status indicates the request stopped, such as 401, 403, or 409.
@@ -498,12 +542,13 @@ Layer rules:
 
 - Include an `action` layer when `BrowserRequestEvent.action` exists.
 - Always include an `api` layer.
+- Include a `page` layer before the `api` layer when a `FlowRecord` was derived from `BrowserPageViewEvent` and `PageStoryboard.apiCalls`.
 - Use matched `EndpointFlow.mainPath` nodes to derive controller, service, repository, database, and other source-derived layers.
 - Always include a `result` layer when building a FlowRecord.
-- For 401 and 403 responses, add an `auth` layer after the scanned controller when available, or after the API layer when no controller is known. This `auth` layer represents an inferred auth/policy stop from browser-observed status plus scanned path evidence, not a runtime server trace.
+- For 401 and 403 responses, add an `auth` layer immediately after the API layer by default. This represents common framework/security middleware stops, such as Spring Security, before controller execution. Downstream controller, service, repository, and database layers MUST be `not_proven` unless a backend runtime span explicitly proves they ran.
 - For 409 responses, add a `decision` layer near the scanned service decision point when available, or after the controller/API fallback. This `decision` layer represents an inferred business-rule stop, not a runtime server trace.
 - For 401, 403, and 409 responses, mark the result as `blocked` and mark downstream service, repository, or database layers as `not_proven` when they are after the likely decision point.
-- For 2xx responses, mark scanned downstream layers as `scanned` unless future runtime proof exists.
+- For 2xx responses, mark scanned downstream layers as `scanned` unless backend bridge span evidence exists.
 
 ### BackendObservedSpan
 
@@ -602,7 +647,7 @@ type FlowRecord = {
 };
 ```
 
-FlowRecord fields are intended to support the Live Workspace Recent events list, Summary, Timing, Diagram, and Evidence Inspector. `trigger = "user_action"` means the browser runtime attached a fresh click or activation context to the request. `trigger = "background"` means the request was still browser-observed, but no fresh user action was correlated; Workspace SHOULD keep it visible in Recent events without stealing the selected main flow from a user-action request. `matchState = "ambiguous"` MUST NOT choose an arbitrary endpoint. `matchState = "unmatched"` MUST keep the browser-observed API/result facts visible while leaving endpoint and flow fields unset.
+FlowRecord fields are intended to support the Live Workspace Recent events list, Summary, Timing, Diagram, and Evidence Inspector. `trigger = "user_action"` means the browser runtime attached a fresh click or activation context to the request. `trigger = "background"` means either the request was browser-observed without a fresh user action, or the record was source-derived from a page view and scanned frontend API call. Workspace SHOULD keep background records visible in Recent events without stealing the selected main flow from a user-action request. `matchState = "ambiguous"` MUST NOT choose an arbitrary endpoint. `matchState = "unmatched"` MUST keep the browser-observed or source-derived API/result facts visible while leaving endpoint and flow fields unset.
 
 ## Report Data
 

@@ -23,6 +23,26 @@ describe("Capture Adapter", () => {
     expect(pages[0]?.apiCalls[0]).not.toHaveProperty("endpointId");
   });
 
+  it("preserves source-discovered API calls when browser capture succeeds", async () => {
+    const sourcePage = page("/");
+    sourcePage.apiCalls = [
+      { method: "GET", path: "/api/public/home" },
+      { method: "GET", path: "/api/public/benefits", endpointId: "endpoint:get:/api/public/benefits" }
+    ];
+
+    const pages = await capturePages([sourcePage], baseOptions(), successDriver());
+
+    expect(pages[0]?.apiCalls).toEqual([
+      { method: "GET", path: "/api/public/home" },
+      {
+        method: "GET",
+        path: "/api/public/benefits",
+        endpointId: "endpoint:get:/api/public/benefits",
+        status: 200
+      }
+    ]);
+  });
+
   it("failed capture returns captureStatus failed with errorMessage", async () => {
     const pages = await capturePages([page("/admin/benefits")], baseOptions(), {
       async capturePage() {

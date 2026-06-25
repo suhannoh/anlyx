@@ -1133,7 +1133,7 @@ CLI
 - [ ] npx anlyx scan 실행 시 .anlyx/report-data.json이 생성된다.
 - [ ] npx anlyx dev 실행 시 localhost:4777에서 Anlyx runtime이 열린다.
 - [ ] Inject Mode에서 실제 프론트엔드는 frontend.baseUrl에서 그대로 열린다.
-- [ ] 개발 중인 실제 앱에서 `anlyx/next`의 `AnlyxDevOverlay`를 사용할 수 있다.
+- [ ] `npx anlyx dev`가 개발 중인 실제 앱 옆에서 capture/runtime helper를 제공한다.
 - [ ] standalone debug viewer는 localhost:4777/_anlyx/viewer에서 열린다.
 
 Spring Adapter

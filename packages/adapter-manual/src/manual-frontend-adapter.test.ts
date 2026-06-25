@@ -1,3 +1,7 @@
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { pageStoryboardSchema } from "@anlyx/core";
@@ -124,4 +128,61 @@ describe("Manual Frontend Adapter", () => {
       }
     ]);
   });
+
+  it("manual React route files can contribute source-derived API calls", async () => {
+    const sourceDir = await mkdtemp(join(tmpdir(), "anlyx-manual-react-"));
+
+    try {
+      await writeProjectFile(
+        sourceDir,
+        "pages/Home.tsx",
+        `
+        import { getPublicHome } from "@/lib/api";
+
+        export function Home() {
+          void getPublicHome();
+          return null;
+        }
+        `
+      );
+      await writeProjectFile(
+        sourceDir,
+        "lib/api.ts",
+        `
+        export function getJson<T>(path: string): Promise<T> {
+          return fetch(\`http://localhost:8080\${path}\`).then((response) => response.json());
+        }
+
+        export function getPublicHome() {
+          return getJson("/api/public/home");
+        }
+        `
+      );
+
+      const adapter = createManualFrontendAdapter({
+        baseUrl: "http://localhost:3000",
+        urls: ["/"],
+        sourceDir,
+        routeFiles: {
+          "/": ["pages/Home.tsx"]
+        }
+      });
+
+      const [page] = await adapter.scanPages();
+
+      expect(page?.apiCalls).toEqual([{ method: "GET", path: "/api/public/home" }]);
+    } finally {
+      await rm(sourceDir, { recursive: true, force: true });
+    }
+  });
 });
+
+async function writeProjectFile(
+  root: string,
+  relativePath: string,
+  content: string
+): Promise<void> {
+  const filePath = join(root, relativePath);
+  await mkdir(dirname(filePath), { recursive: true });
+  await writeFile(filePath, `${content.trim()}\n`);
+}

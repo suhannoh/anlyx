@@ -97,7 +97,7 @@ export async function capturePages(
       capturedPages.push({
         ...page,
         screenshots: driverResult.screenshots,
-        apiCalls: dedupeApiCalls(driverResult.apiCalls),
+        apiCalls: mergeApiCalls(page.apiCalls, driverResult.apiCalls),
         captureStatus: "success"
       });
     } catch (error) {
@@ -112,6 +112,36 @@ export async function capturePages(
   }
 
   return capturedPages;
+}
+
+function mergeApiCalls(sourceCalls: ApiCall[], observedCalls: ApiCall[]): ApiCall[] {
+  const merged = new Map<string, ApiCall>();
+
+  for (const apiCall of dedupeApiCalls(sourceCalls)) {
+    merged.set(apiCallKey(apiCall), apiCall);
+  }
+
+  for (const observedCall of dedupeApiCalls(observedCalls)) {
+    const key = apiCallKey(observedCall);
+    const sourceCall = merged.get(key);
+    const nextCall: ApiCall = {
+      ...sourceCall,
+      ...observedCall
+    };
+    const endpointId = sourceCall?.endpointId ?? observedCall.endpointId;
+
+    if (endpointId) {
+      nextCall.endpointId = endpointId;
+    }
+
+    merged.set(key, nextCall);
+  }
+
+  return Array.from(merged.values());
+}
+
+function apiCallKey(apiCall: ApiCall): string {
+  return `${apiCall.method}:${apiCall.path}`;
 }
 
 export function createCaptureAdapter(

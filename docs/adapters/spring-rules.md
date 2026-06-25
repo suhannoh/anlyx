@@ -51,6 +51,8 @@ Endpoint
 Rules:
 
 - Controller to Service calls SHOULD be inferred from direct method calls on injected fields or constructor parameters.
+- Controller handler methods MAY follow same-class helper/private method calls when searching for the primary persistence path.
+- Controller helper methods MAY produce a direct Controller → Repository → Database path when no Service layer owns the persistence call.
 - Service to Service calls SHOULD be followed while looking for the primary persistence path, within the configured main-flow depth limit.
 - Service helper calls that do not lead to Repository/Database SHOULD remain outside Main Flow and MAY appear as supporting calls.
 - Service to Repository calls SHOULD be inferred from direct repository method calls.
@@ -110,8 +112,20 @@ When the adapter cannot analyze a section, it MUST return an `unknown` node or w
 
 The Spring adapter remains a source scanner. A local development bridge MAY be installed separately while running `anlyx dev`, but bridge-reported spans are runtime input to the Live Workspace, not adapter scan output.
 
-- Browser capture MAY add `X-Anlyx-Request-Id` to same-app API requests so a local Spring bridge can correlate backend spans to the browser-observed request.
+- Browser capture and the Next server runtime bridge MAY add `X-Anlyx-Request-Id` to same-app or same-backend API requests so a local Spring bridge can correlate backend spans to the observed request.
 - A development bridge MAY POST `BackendSpanEvent` payloads to `/_anlyx/backend-spans`.
 - Bridge-reported spans MAY be shown as backend-observed timing in the Workspace.
 - Source-scanned nodes MUST remain `scanned`, `inferred`, or `not proven` unless a bridge explicitly reports the matching span.
 - The development bridge MUST be local/dev-only and MUST NOT be described as Java Agent runtime tracing or production tracing.
+
+### Spring Security Ordering
+
+Spring Security filters can reject a request before Spring MVC selects a controller. For protected routes such as `/api/account/**`, a `401` or `403` may therefore be a pre-controller security decision.
+
+Anlyx MUST NOT imply that a controller, service, repository, or database layer executed when the only evidence is a pre-controller security response. In that case:
+
+- the response/result MAY be shown as browser-observed or frontend-server-observed;
+- security/auth may be shown as inferred or source-derived when rules are available;
+- downstream controller/service/repository/database nodes MUST stay source-matched or not-proven unless the bridge reports matching backend spans.
+
+If a local Spring bridge is installed, configure local CORS to allow `X-Anlyx-Request-Id` from the local frontend origin so Anlyx can correlate browser or Next server events with backend spans. Do not allow this header broadly in production.

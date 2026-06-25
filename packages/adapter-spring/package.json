@@ -2,12 +2,21 @@
   "name": "@anlyx/adapter-spring",
   "version": "0.1.3",
   "description": "Spring Boot endpoint and flow scanner adapter for Anlyx.",
+  "author": "suhannoh",
   "license": "MIT",
+  "keywords": [
+    "anlyx",
+    "spring-boot",
+    "developer-tools",
+    "api-flow",
+    "java"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist",
+    "dist/**/*.d.ts",
+    "dist/**/*.js",
     "README.md",
     "LICENSE"
   ],
@@ -25,6 +34,9 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "exports": {
     ".": {

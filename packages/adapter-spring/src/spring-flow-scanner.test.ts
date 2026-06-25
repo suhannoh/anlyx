@@ -139,6 +139,36 @@ describe("Spring Boot Flow Scanner", () => {
     ]);
   });
 
+  it("mainPath follows same-controller helper methods to repository calls", async () => {
+    await writeBenefitFlow({
+      extraControllerFields: "private final BenefitRepository benefitRepository;",
+      controllerBody: `
+        @GetMapping("/home")
+        public BenefitDetailResponse home() {
+          return summarize();
+        }
+
+        private BenefitDetailResponse summarize() {
+          loadPublicBenefits();
+          return null;
+        }
+
+        private List<Benefit> loadPublicBenefits() {
+          return benefitRepository.findPublicCandidates();
+        }
+      `
+    });
+
+    const [flow] = await scanFlows();
+
+    expect(flow?.mainPath).toEqual([
+      "endpoint:GET:/api/public/benefits/home",
+      "controller:PublicBenefitController",
+      "repository:BenefitRepository",
+      "database:benefits"
+    ]);
+  });
+
   it("mainPath follows nested service calls before the repository", async () => {
     await writeBenefitFlow({
       extraServiceFields: "private final BenefitLookupService benefitLookupService;",
@@ -360,6 +390,102 @@ describe("Spring Boot Flow Scanner", () => {
         expect.objectContaining({ id: "utility:PublicVisibilityPolicy", type: "utility" })
       ])
     });
+  });
+
+  it("controller sub flow captures supporting service and repository calls", async () => {
+    await writeBenefitFlow({
+      extraControllerFields: `
+        private final PageViewAnalyticsService analyticsService;
+        private final SavedBenefitRepository savedBenefitRepository;
+        private final ExternalRankingMetricService externalRankingMetricService;
+        private Duration publicBenefitsCacheTtl;
+      `,
+      controllerBody: `
+        @GetMapping("/ranking")
+        public RankingResponse ranking(
+          @RequestParam(name = "period", defaultValue = "weekly") String period,
+          @RequestParam(name = "category", defaultValue = "all") String category
+        ) {
+          List<Benefit> benefits = publicBenefits();
+          analyticsService.recentCounts("BENEFIT", List.of("1"));
+          savedBenefitRepository.countDistinctUsersByBenefitIdsSince(List.of(1L), null);
+          externalRankingMetricService.recentMetrics(List.of("1"), 7);
+          return null;
+        }
+
+        private List<Benefit> publicBenefits() {
+          if (publicBenefitsCacheTtl == null || publicBenefitsCacheTtl.isZero()) {
+            return loadPublicBenefits();
+          }
+          return loadPublicBenefits();
+        }
+
+        private List<Benefit> loadPublicBenefits() {
+          return benefitRepository.findPublicCandidates();
+        }
+      `,
+      extraControllerRepositoryField: "private final BenefitRepository benefitRepository;"
+    });
+    await writeJavaFile(
+      "PageViewAnalyticsService.java",
+      `
+        @Service
+        class PageViewAnalyticsService {
+          public Map<String, Long> recentCounts(String type, List<String> keys) { return Map.of(); }
+        }
+      `
+    );
+    await writeJavaFile(
+      "SavedBenefitRepository.java",
+      `
+        @Repository
+        interface SavedBenefitRepository extends JpaRepository<SavedBenefit, Long> {
+        }
+      `
+    );
+    await writeJavaFile(
+      "ExternalRankingMetricService.java",
+      `
+        @Service
+        class ExternalRankingMetricService {
+          public Map<String, Long> recentMetrics(List<String> keys, int days) { return Map.of(); }
+        }
+      `
+    );
+    await writeJavaFile("SavedBenefit.java", "@Entity class SavedBenefit {}\n");
+
+    const [flow] = await scanFlows();
+
+    expect(flow?.mainPath).toEqual([
+      "endpoint:GET:/api/public/benefits/ranking",
+      "controller:PublicBenefitController",
+      "repository:BenefitRepository",
+      "database:benefits"
+    ]);
+    expect(flow?.subFlows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          parentNodeId: "controller:PublicBenefitController",
+          nodes: expect.arrayContaining([
+            expect.objectContaining({
+              id: "service:PageViewAnalyticsService",
+              type: "service"
+            }),
+            expect.objectContaining({
+              id: "repository:SavedBenefitRepository",
+              type: "repository"
+            }),
+            expect.objectContaining({
+              id: "service:ExternalRankingMetricService",
+              type: "service"
+            })
+          ])
+        })
+      ])
+    );
+    expect(flow?.subFlows.flatMap((subFlow) => subFlow.nodes)).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "unknown:helper:Duration" })])
+    );
   });
 
   it("sub flow is collapsed by default", async () => {
@@ -623,6 +749,7 @@ describe("Spring Boot Flow Scanner", () => {
       serviceFieldType?: string;
       serviceClassDeclaration?: string;
       extraControllerFields?: string;
+      extraControllerRepositoryField?: string;
       controllerBody?: string;
       extraServiceFields?: string;
       serviceBody?: string;
@@ -657,6 +784,7 @@ describe("Spring Boot Flow Scanner", () => {
         class PublicBenefitController {
           private final ${serviceFieldType} publicBenefitService;
           ${options.extraControllerFields ?? ""}
+          ${options.extraControllerRepositoryField ?? ""}
 
           ${controllerBody}
         }

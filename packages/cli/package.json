@@ -2,12 +2,24 @@
   "name": "anlyx",
   "version": "0.1.3",
   "description": "CLI for Anlyx, action-first backend flow maps for Spring Boot and Next.js local apps.",
+  "author": "suhannoh",
   "license": "MIT",
+  "keywords": [
+    "anlyx",
+    "cli",
+    "developer-tools",
+    "spring-boot",
+    "nextjs",
+    "api-flow",
+    "local-development",
+    "observability"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist",
+    "dist/**/*.d.ts",
+    "dist/**/*.js",
     "README.md",
     "LICENSE"
   ],
@@ -26,6 +38,9 @@
   "bin": {
     "anlyx": "./dist/index.js"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -34,6 +49,14 @@
     "./next": {
       "types": "./dist/next.d.ts",
       "default": "./dist/next.js"
+    },
+    "./next-server": {
+      "types": "./dist/next-server.d.ts",
+      "default": "./dist/next-server.js"
+    },
+    "./next-server/register": {
+      "types": "./dist/next-server-register.d.ts",
+      "default": "./dist/next-server-register.js"
     }
   },
   "dependencies": {

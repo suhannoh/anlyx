@@ -154,8 +154,41 @@ function buildEndpointFlow(
     maxMainPathLength: maxMainDepth + 1
   });
   const { serviceStep, persistencePath } = servicePath;
+  const excludedControllerSupportNodeIds = new Set([
+    controllerNode.id,
+    ...(serviceStep ? [serviceStep.node.id] : []),
+    ...persistencePath.map((step) => step.node.id)
+  ]);
+  const controllerSubFlow = buildControllerSubFlow(
+    controller,
+    controllerMethod,
+    controllerNode.id,
+    index,
+    excludedControllerSupportNodeIds
+  );
+
+  if (controllerSubFlow.nodes.length > 0) {
+    subFlows.push(controllerSubFlow);
+  }
+
+  if (!serviceStep && persistencePath.length === 0) {
+    return { endpointId: endpoint.id, nodes, edges, mainPath, subFlows };
+  }
 
   if (!serviceStep) {
+    const repositoryStep = addMainSteps(controllerNode, persistencePath, nodes, edges, mainPath);
+
+    if (mainPath.length > maxMainDepth + 1 || repositoryStep.node.type !== "repository") {
+      return { endpointId: endpoint.id, nodes, edges, mainPath, subFlows };
+    }
+
+    const repositoryClass = getClassFromNode(repositoryStep.node, index);
+    const databaseStep = repositoryClass
+      ? createDatabaseStep(repositoryClass, index)
+      : createUnknownStep("database", "repository", "unknown");
+
+    addMainStep(repositoryStep.node, databaseStep, nodes, edges, mainPath);
+
     return { endpointId: endpoint.id, nodes, edges, mainPath, subFlows };
   }
 
@@ -215,7 +248,8 @@ function findControllerServicePath(options: {
     return { persistencePath: [] };
   }
 
-  const calls = readFieldCalls(options.method.body);
+  const expandedBody = expandLocalMethodBodies(options.ownerClass, options.method);
+  const calls = readFieldCalls(expandedBody);
   let fallbackStep: MainStep | undefined;
 
   for (const call of calls) {
@@ -223,6 +257,25 @@ function findControllerServicePath(options: {
 
     if (!field) {
       continue;
+    }
+
+    const repositoryStep = hasRoomForRepositoryAndDatabase(
+      options.currentMainLength,
+      options.maxMainPathLength
+    )
+      ? resolveCallStep({
+          field,
+          methodName: call.methodName,
+          index: options.index,
+          expectedKind: "repository",
+          unknownKind: "repository",
+          nodeType: "repository",
+          edgeKind: "main"
+        })
+      : undefined;
+
+    if (repositoryStep) {
+      return { persistencePath: [repositoryStep] };
     }
 
     const serviceStep = resolveCallStep({
@@ -275,9 +328,54 @@ function findControllerServicePath(options: {
     }
   }
 
+  if (
+    !fallbackStep &&
+    hasRoomForRepositoryAndDatabase(options.currentMainLength, options.maxMainPathLength)
+  ) {
+    const repositoryStep = findFirstRepositoryStepFromCalls({
+      calls,
+      ownerClass: options.ownerClass,
+      index: options.index
+    });
+
+    if (repositoryStep) {
+      return { persistencePath: [repositoryStep] };
+    }
+  }
+
   return fallbackStep
     ? { serviceStep: fallbackStep, persistencePath: [] }
     : { persistencePath: [] };
+}
+
+function findFirstRepositoryStepFromCalls(options: {
+  calls: Array<{ fieldName: string; methodName: string }>;
+  ownerClass: JavaClass;
+  index: Map<string, JavaClass>;
+}): MainStep | undefined {
+  for (const call of options.calls) {
+    const field = options.ownerClass.fields.find((candidate) => candidate.name === call.fieldName);
+
+    if (!field) {
+      continue;
+    }
+
+    const repositoryStep = resolveCallStep({
+      field,
+      methodName: call.methodName,
+      index: options.index,
+      expectedKind: "repository",
+      unknownKind: "repository",
+      nodeType: "repository",
+      edgeKind: "main"
+    });
+
+    if (repositoryStep) {
+      return repositoryStep;
+    }
+  }
+
+  return undefined;
 }
 
 function findPersistencePath(options: {
@@ -494,6 +592,89 @@ function buildServiceSubFlow(
   };
 }
 
+function buildControllerSubFlow(
+  controllerClass: JavaClass,
+  controllerMethod: JavaMethod | undefined,
+  parentNodeId: string,
+  index: Map<string, JavaClass>,
+  excludedNodeIds: Set<string>
+): SubFlow {
+  const nodes: FlowNode[] = [];
+  const edges: FlowEdge[] = [];
+
+  if (!controllerMethod) {
+    return {
+      id: `subflow:${parentNodeId}:support`,
+      parentNodeId,
+      nodes,
+      edges,
+      collapsedByDefault: true
+    };
+  }
+
+  const calls = readFieldCalls(expandLocalMethodBodies(controllerClass, controllerMethod));
+  const addedEdgeIds = new Set<string>();
+
+  for (const call of calls) {
+    const field = controllerClass.fields.find((candidate) => candidate.name === call.fieldName);
+
+    if (!field) {
+      continue;
+    }
+
+    const resolved = resolveAnyType(field.type, index);
+    const node =
+      resolved.status === "resolved"
+        ? createSubFlowNode(resolved.javaClass, call.methodName, resolved.confidence)
+        : createUnknownNode("helper", field.type, resolved.confidence);
+
+    if (excludedNodeIds.has(node.id) || !isActionableSupportNode(node)) {
+      continue;
+    }
+
+    addUniqueNode(nodes, node);
+    const edgeId = `edge:${parentNodeId}->${node.id}`;
+
+    if (addedEdgeIds.has(edgeId)) {
+      continue;
+    }
+
+    addedEdgeIds.add(edgeId);
+    edges.push({
+      id: edgeId,
+      from: parentNodeId,
+      to: node.id,
+      kind: "sub",
+      confidence: node.confidence,
+      evidence: [
+        {
+          label: "Detected controller support call",
+          detail: `${controllerClass.className}#${controllerMethod.name} -> ${node.label}`,
+          source: "spring-flow-scanner",
+          confidence: node.confidence
+        }
+      ]
+    });
+  }
+
+  return {
+    id: `subflow:${parentNodeId}:support`,
+    parentNodeId,
+    nodes,
+    edges,
+    collapsedByDefault: true
+  };
+}
+
+function isActionableSupportNode(node: FlowNode): boolean {
+  if (node.type !== "unknown") {
+    return true;
+  }
+
+  const label = node.label.toLowerCase();
+  return /\b(?:service|repository|mapper|validator|policy|client|gateway|adapter)\b/.test(label);
+}
+
 function createDatabaseStep(repositoryClass: JavaClass, index: Map<string, JavaClass>): MainStep {
   const entityName = repositoryClass.repositoryEntity;
 
@@ -668,15 +849,25 @@ function readFields(body: string): JavaField[] {
 function readMethods(body: string, fullContent: string, bodyStartIndex: number): JavaMethod[] {
   const methods: JavaMethod[] = [];
   const methodPattern =
-    /(?:public|protected|private)\s+(?:static\s+)?(?:[\w.$<>, ?]+?)\s+([A-Za-z_]\w*)\s*\([^)]*\)\s*\{/g;
+    /(?:public|protected|private)\s+(?:static\s+)?(?:[\s\w.$<>, ?[\]]+?)\s+([A-Za-z_]\w*)\s*\(/g;
   let methodMatch: RegExpExecArray | null;
 
   while ((methodMatch = methodPattern.exec(body))) {
     const name = methodMatch[1];
-    const openBraceIndex = body.indexOf("{", methodPattern.lastIndex - 1);
+    const openParenIndex = body.indexOf("(", methodPattern.lastIndex - 1);
+    const closeParenIndex = openParenIndex >= 0 ? findMatchingParen(body, openParenIndex) : -1;
+    const openBraceIndex =
+      closeParenIndex >= 0 ? indexOfNextNonWhitespace(body, closeParenIndex + 1) : -1;
     const closeBraceIndex = openBraceIndex >= 0 ? findMatchingBrace(body, openBraceIndex) : -1;
 
-    if (!name || openBraceIndex < 0 || closeBraceIndex < 0) {
+    if (
+      !name ||
+      openParenIndex < 0 ||
+      closeParenIndex < 0 ||
+      openBraceIndex < 0 ||
+      body[openBraceIndex] !== "{" ||
+      closeBraceIndex < 0
+    ) {
       continue;
     }
 
@@ -759,6 +950,34 @@ function findMethod(javaClass: JavaClass, methodName: string | undefined): JavaM
   return javaClass.methods.find((method) => method.name === methodName);
 }
 
+function expandLocalMethodBodies(
+  javaClass: JavaClass,
+  method: JavaMethod,
+  visited: Set<string> = new Set([method.name])
+): string {
+  let expandedBody = method.body;
+
+  for (const methodName of readLocalMethodCalls(method.body, javaClass)) {
+    if (visited.has(methodName)) {
+      continue;
+    }
+
+    const localMethod = findMethod(javaClass, methodName);
+
+    if (!localMethod) {
+      continue;
+    }
+
+    visited.add(methodName);
+    expandedBody = expandedBody.replace(
+      new RegExp(String.raw`\b${escapeRegExp(methodName)}\s*\(`, "g"),
+      `${methodName}();\n${expandLocalMethodBodies(javaClass, localMethod, visited)}\n${methodName}(`
+    );
+  }
+
+  return expandedBody;
+}
+
 function readFieldCalls(body: string): Array<{ fieldName: string; methodName: string }> {
   const calls: Array<{ fieldName: string; methodName: string }> = [];
   const callPattern = /\b([a-zA-Z_]\w*)\s*\.\s*([a-zA-Z_]\w*)\s*\(/g;
@@ -774,6 +993,30 @@ function readFieldCalls(body: string): Array<{ fieldName: string; methodName: st
   }
 
   return calls;
+}
+
+function readLocalMethodCalls(body: string, javaClass: JavaClass): string[] {
+  const methodNames = new Set<string>();
+  const callPattern = /(?:\bthis\s*\.\s*)?\b([a-zA-Z_]\w*)\s*\(/g;
+  let callMatch: RegExpExecArray | null;
+
+  while ((callMatch = callPattern.exec(body))) {
+    const methodName = callMatch[1];
+    const previousCharacter = body[callMatch.index - 1];
+
+    if (
+      !methodName ||
+      previousCharacter === "." ||
+      /^[A-Z]/.test(methodName) ||
+      !findMethod(javaClass, methodName)
+    ) {
+      continue;
+    }
+
+    methodNames.add(methodName);
+  }
+
+  return Array.from(methodNames);
 }
 
 function createEndpointNode(endpoint: Endpoint): FlowNode {
@@ -858,6 +1101,10 @@ function classifySubFlowNodeType(javaClass: JavaClass): FlowNode["type"] {
 
   if (javaClass.className.includes("Validator")) {
     return "validator";
+  }
+
+  if (javaClass.kind === "repository") {
+    return "repository";
   }
 
   if (javaClass.kind === "service") {
@@ -1047,6 +1294,10 @@ function toSnakeCase(value: string): string {
     .toLowerCase();
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function findMatchingBrace(value: string, openBraceIndex: number): number {
   let depth = 0;
 
@@ -1060,6 +1311,36 @@ function findMatchingBrace(value: string, openBraceIndex: number): number {
     }
 
     if (depth === 0) {
+      return index;
+    }
+  }
+
+  return -1;
+}
+
+function findMatchingParen(value: string, openParenIndex: number): number {
+  let depth = 0;
+
+  for (let index = openParenIndex; index < value.length; index += 1) {
+    if (value[index] === "(") {
+      depth += 1;
+    }
+
+    if (value[index] === ")") {
+      depth -= 1;
+    }
+
+    if (depth === 0) {
+      return index;
+    }
+  }
+
+  return -1;
+}
+
+function indexOfNextNonWhitespace(value: string, startIndex: number): number {
+  for (let index = startIndex; index < value.length; index += 1) {
+    if (!/\s/.test(value[index] ?? "")) {
       return index;
     }
   }

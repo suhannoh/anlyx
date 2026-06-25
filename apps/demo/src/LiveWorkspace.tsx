@@ -1,6 +1,17 @@
 import "./live-workspace.css";
 
 import {
+  BaseEdge,
+  Handle,
+  Position,
+  ReactFlow,
+  getSmoothStepPath,
+  type Edge,
+  type EdgeProps,
+  type Node,
+  type NodeProps
+} from "@xyflow/react";
+import {
   BarChart3,
   Box,
   Check,
@@ -23,7 +34,7 @@ import {
   Workflow,
   Zap
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import logoSrc from "../../../docs/assets/brand/anlyx-logo-transparent.png";
 import { createAnlyxEventSource, installAnlyxDemoRuntime } from "./anlyxLiveRuntime";
@@ -1102,22 +1113,14 @@ function DiagramFlowView({
   flow: FlowRecord;
   locale: WorkspaceLocale;
 }): JSX.Element {
-  const [zoomPercent, setZoomPercent] = useState(100);
-  const node = (id: string): FlowNode => {
-    const found = flow.nodes.find((item) => item.id === id);
+  const [zoom, setZoom] = useState(0.82);
+  const nodeTypes = useMemo(() => ({ anlyxNode: DemoLayeredFlowNode }), []);
+  const edgeTypes = useMemo(() => ({ anlyxSmooth: DemoLayeredSmoothEdge }), []);
+  const model = useMemo(() => buildDemoReactFlowDiagram(flow, locale), [flow, locale]);
 
-    if (!found) {
-      throw new Error(`Demo flow node was not found: ${id}`);
-    }
-
-    return found;
-  };
-  const downstreamProven = ["service", "repository", "database"].some((id) => node(id).proven);
-  const downstreamClass = downstreamProven ? "is-proven" : "";
-  const setFitView = () => setZoomPercent(92);
-  const resetView = () => setZoomPercent(100);
-  const zoomOut = () => setZoomPercent((current) => Math.max(76, current - 12));
-  const zoomIn = () => setZoomPercent((current) => Math.min(136, current + 12));
+  useEffect(() => {
+    setZoom(0.82);
+  }, [flow.id]);
 
   return (
     <section className="diagram-canvas-card">
@@ -1137,148 +1140,578 @@ function DiagramFlowView({
           </span>
         </div>
         <div className="diagram-controls">
-          <button type="button" onClick={setFitView}>
+          <button type="button" onClick={() => setZoom(0.82)}>
             <Gauge size={16} />
             {t(locale, "diagram.fitView")}
           </button>
-          <button type="button" onClick={resetView}>
+          <button type="button" onClick={() => setZoom(1)}>
             <RotateCw size={16} />
             {t(locale, "diagram.reset")}
           </button>
           <div>
-            <button aria-label="Zoom out diagram" type="button" onClick={zoomOut}>
+            <button
+              aria-label="Zoom out diagram"
+              type="button"
+              onClick={() => setZoom((value) => Math.max(0.72, value - 0.1))}
+            >
               <Minus size={16} />
             </button>
-            <span>{zoomPercent}%</span>
-            <button aria-label="Zoom in diagram" type="button" onClick={zoomIn}>
+            <span>{Math.round(zoom * 100)}%</span>
+            <button
+              aria-label="Zoom in diagram"
+              type="button"
+              onClick={() => setZoom((value) => Math.min(1.2, value + 0.1))}
+            >
               <Plus size={16} />
             </button>
           </div>
         </div>
       </div>
-      <div className="diagram-canvas">
+      <div
+        className="diagram-canvas diagram-canvas--layered"
+        style={
+          {
+            "--diagram-stage-height": `${Math.ceil(model.canvasHeight * zoom + 72)}px`
+          } as CSSProperties
+        }
+      >
         <div
-          className="diagram-graph"
-          style={{ "--diagram-scale": zoomPercent / 100 } as CSSProperties}
+          className={`layered-diagram layered-diagram--react-flow ${
+            zoom === 0.82 ? "layered-diagram--fit" : ""
+          }`}
+          style={
+            {
+              "--layered-column-height": `${model.canvasHeight - 50}px`,
+              transform: `scale(${zoom})`
+            } as CSSProperties
+          }
         >
-          <DiagramNode node={node("api")} icon={Network} className="diagram-node--api" />
-          <Arrow className="arrow-api-controller" />
-          <DiagramNode
-            node={node("controller")}
-            icon={BarChart3}
-            className="diagram-node--controller"
+          {model.layers.map((layer) => (
+            <LayeredDiagramColumnBackdrop
+              hasSecondaryNodes={model.nodes.some(
+                (node) => node.data.node.layer === layer && !node.data.node.isMainPath
+              )}
+              key={layer}
+              layer={layer}
+              locale={locale}
+            />
+          ))}
+          <ReactFlow
+            className="layered-react-flow"
+            edgeTypes={edgeTypes}
+            edges={model.edges}
+            fitView={false}
+            maxZoom={1}
+            minZoom={1}
+            nodes={model.nodes}
+            nodesConnectable={false}
+            nodesDraggable={false}
+            nodeTypes={nodeTypes}
+            panOnDrag={false}
+            preventScrolling={false}
+            proOptions={{ hideAttribution: true }}
+            zoomOnDoubleClick={false}
+            zoomOnPinch={false}
+            zoomOnScroll={false}
           />
-          <Arrow className="arrow-controller-auth" />
-          <DiagramNode node={node("auth")} icon={Lock} className="diagram-node--auth" />
-          <Arrow className="arrow-auth-result" />
-          <DiagramNode node={node("result")} icon={Shield} className="diagram-node--result" />
-          <BranchLines proven={downstreamProven} />
-          <GhostNode
-            node={node("service")}
-            className={`ghost-service ${downstreamClass}`}
-            icon={Box}
-          />
-          <GhostNode
-            node={node("repository")}
-            className={`ghost-repository ${downstreamClass}`}
-            icon={Database}
-          />
-          <GhostNode
-            node={node("database")}
-            className={`ghost-database ${downstreamClass}`}
-            icon={Database}
-          />
-          <p className="diagram-caption">
-            {downstreamProven
-              ? t(locale, "diagram.captionMatched")
-              : t(locale, "diagram.captionNotProven")}
-          </p>
         </div>
+      </div>
+      <div className="layered-diagram-status">
+        <span>
+          <i className="status-dot status-dot--success" />
+          {locale === "ko" ? "성공" : "Success"}
+        </span>
+        <span>
+          <i className="status-dot status-dot--warning" />
+          {locale === "ko" ? "주의" : "Warning"}
+        </span>
+        <span>
+          <i className="status-dot status-dot--error" />
+          {locale === "ko" ? "오류" : "Error"}
+        </span>
+        <span>
+          <i className="dashed-line" />
+          {locale === "ko" ? "미확인" : "not proven"}
+        </span>
+        <strong>
+          {t(locale, "timing.totalDuration")}: {flow.totalDurationMs} ms
+        </strong>
       </div>
     </section>
   );
 }
 
-function DiagramNode({
-  node,
-  icon: Icon,
-  className
+type DiagramLayerId = "browser" | "api" | "application" | "data" | "response";
+type DemoDiagramNodeStatus =
+  | "observed"
+  | "matched"
+  | "source_matched"
+  | "inferred"
+  | "not_proven"
+  | "success"
+  | "blocked";
+type DemoDiagramEdgeKind = "executed" | "source_matched" | "inferred" | "not_proven" | "blocked";
+
+type DemoLayeredDiagramNode = {
+  id: string;
+  sourceNode: FlowNode;
+  layer: DiagramLayerId;
+  kind: FlowLayer;
+  title: string;
+  subtitle: string;
+  durationMs?: number;
+  status: DemoDiagramNodeStatus;
+  edgeKind: DemoDiagramEdgeKind;
+  isMainPath: boolean;
+  slot: number;
+  x: number;
+  y: number;
+};
+
+type DemoLayeredDiagramEdge = {
+  id: string;
+  from: string;
+  to: string;
+  kind: DemoDiagramEdgeKind;
+};
+
+type DemoReactFlowNodeData = {
+  node: DemoLayeredDiagramNode;
+};
+
+type DemoReactFlowEdgeData = {
+  kind: DemoDiagramEdgeKind;
+};
+
+type DemoReactFlowNode = Node<DemoReactFlowNodeData, "anlyxNode">;
+type DemoReactFlowEdge = Edge<DemoReactFlowEdgeData, "anlyxSmooth">;
+
+type DemoReactFlowDiagramModel = {
+  layers: DiagramLayerId[];
+  nodes: DemoReactFlowNode[];
+  edges: DemoReactFlowEdge[];
+  canvasHeight: number;
+};
+
+const layeredDiagramLayers: DiagramLayerId[] = [
+  "browser",
+  "api",
+  "application",
+  "data",
+  "response"
+];
+
+const layeredLayout = {
+  canvasHeight: 610,
+  columnWidth: 220,
+  nodeWidth: 180,
+  nodeHeight: 148,
+  mainStartY: 98,
+  mainGap: 172,
+  secondaryStartY: 430,
+  secondaryGap: 158,
+  layerX: {
+    browser: 0,
+    api: 260,
+    application: 520,
+    data: 860,
+    response: 1120
+  } satisfies Record<DiagramLayerId, number>
+} as const;
+
+function LayeredDiagramColumnBackdrop({
+  hasSecondaryNodes,
+  layer,
+  locale
 }: {
-  node: FlowNode;
-  icon: LucideIcon;
-  className: string;
+  hasSecondaryNodes: boolean;
+  layer: DiagramLayerId;
+  locale: WorkspaceLocale;
 }): JSX.Element {
-  return (
-    <article className={`diagram-node diagram-node--${node.status} ${className}`}>
-      <span className="diagram-node__check">
-        <Check size={14} />
-      </span>
-      <span className={`diagram-node__icon diagram-node__icon--${node.layer}`}>
-        <Icon size={24} />
-      </span>
-      <strong>{diagramTitle(node)}</strong>
-      <small>{diagramSubtitle(node)}</small>
-      <span className={`diagram-status diagram-status--${node.status}`}>
-        {diagramStatusLabel(node)}
-      </span>
-      <span className="duration-mini">{node.durationMs ?? 1} ms</span>
-    </article>
-  );
-}
+  const heading = layeredLayerMeta(layer, locale);
+  const Icon = heading.icon;
 
-function GhostNode({
-  node,
-  className,
-  icon: Icon
-}: {
-  node: FlowNode;
-  className: string;
-  icon: LucideIcon;
-}): JSX.Element {
   return (
-    <article className={`ghost-node ${className}`}>
-      {node.proven ? (
-        <span className="diagram-node__check">
-          <Check size={14} />
-        </span>
-      ) : null}
-      <span className={`ghost-node__icon ghost-node__icon--${node.layer}`}>
-        <Icon size={21} />
-      </span>
-      <strong>{diagramTitle(node)}</strong>
-      <small>{node.title}</small>
-      <small>{node.subtitle}</small>
-      <em>{node.proven ? "Matched" : "Not proven"}</em>
-    </article>
-  );
-}
-
-function Arrow({ className }: { className: string }): JSX.Element {
-  return (
-    <svg className={`diagram-arrow ${className}`} viewBox="0 0 118 24" aria-hidden="true">
-      <path d="M2 12H104" />
-      <path d="m97 5 12 7-12 7" />
-    </svg>
-  );
-}
-
-function BranchLines({ proven }: { proven: boolean }): JSX.Element {
-  return (
-    <svg
-      aria-hidden="true"
-      className={`branch-lines ${proven ? "is-proven" : ""}`}
-      viewBox="-12 0 476 116"
+    <section
+      className={`layered-column layered-column--${layer}`}
+      style={{ left: layeredLayout.layerX[layer] }}
     >
-      <path className="branch-line" d="M226 0V42" />
-      <path className="branch-line" d="M0 42H452" />
-      <path className="branch-line" d="M0 42V96" />
-      <path className="branch-line" d="M226 42V96" />
-      <path className="branch-line" d="M452 42V96" />
-      <path className="branch-arrow" d="m-7 88 7 8 7-8" />
-      <path className="branch-arrow" d="m219 88 7 8 7-8" />
-      <path className="branch-arrow" d="m445 88 7 8 7-8" />
-    </svg>
+      <header className="layered-column__header">
+        <span>
+          <Icon size={22} />
+        </span>
+        <div>
+          <strong>{heading.title}</strong>
+          <small>{heading.subtitle}</small>
+        </div>
+      </header>
+      {hasSecondaryNodes ? (
+        <div className="layered-column__divider layered-column__divider--absolute">
+          {locale === "ko" ? "알려졌지만 미확인" : "Known but not proven"}
+        </div>
+      ) : null}
+    </section>
   );
+}
+
+function DemoLayeredFlowNode({ data }: NodeProps<DemoReactFlowNode>): JSX.Element {
+  return <LayeredNodeCard node={data.node} />;
+}
+
+function LayeredNodeCard({ node }: { node: DemoLayeredDiagramNode }): JSX.Element {
+  const Icon = layeredNodeIcon(node);
+
+  return (
+    <article
+      className={`layered-node layered-node--${node.layer} layered-node--${node.status} ${
+        node.isMainPath ? "is-main-path" : "is-secondary-path"
+      } ${node.kind === "action" ? "is-entry-point" : ""}`}
+      title={`${node.title} · ${node.subtitle}`}
+    >
+      <Handle className="anlyx-flow-handle" id="left" position={Position.Left} type="target" />
+      <Handle className="anlyx-flow-handle" id="right" position={Position.Right} type="source" />
+      <Handle className="anlyx-flow-handle" id="top" position={Position.Top} type="target" />
+      <Handle className="anlyx-flow-handle" id="top" position={Position.Top} type="source" />
+      <Handle className="anlyx-flow-handle" id="bottom" position={Position.Bottom} type="source" />
+      <Handle className="anlyx-flow-handle" id="bottom" position={Position.Bottom} type="target" />
+      {node.kind === "action" ? <span className="layered-node__entry" aria-hidden="true" /> : null}
+      <span className={`layered-node__icon layered-node__icon--${node.layer}`}>
+        <Icon size={20} />
+      </span>
+      <span className="layered-node__state">
+        {node.status === "not_proven" ? <Minus size={13} /> : <Check size={13} />}
+      </span>
+      <strong>{node.title}</strong>
+      <small>{node.subtitle}</small>
+      <div className="layered-node__meta">
+        <span>{node.durationMs !== undefined ? `${node.durationMs} ms` : "—"}</span>
+        <em>{demoDiagramNodeStatusLabel(node.status)}</em>
+      </div>
+    </article>
+  );
+}
+
+function DemoLayeredSmoothEdge({
+  data,
+  sourcePosition,
+  sourceX,
+  sourceY,
+  targetPosition,
+  targetX,
+  targetY
+}: EdgeProps<DemoReactFlowEdge>): JSX.Element {
+  const [path] = getSmoothStepPath({
+    borderRadius: 18,
+    offset: 26,
+    sourcePosition,
+    sourceX,
+    sourceY,
+    targetPosition,
+    targetX,
+    targetY
+  });
+  const kind = data?.kind ?? "executed";
+
+  return (
+    <>
+      <path className={`anlyx-flow-edge-halo anlyx-flow-edge-halo--${kind}`} d={path} />
+      <BaseEdge className={`anlyx-flow-edge anlyx-flow-edge--${kind}`} path={path} />
+    </>
+  );
+}
+
+function buildDemoReactFlowDiagram(
+  flow: FlowRecord,
+  locale: WorkspaceLocale
+): DemoReactFlowDiagramModel {
+  const diagramNodes = assignLayeredNodePositions(
+    diagramNodesForFlow(flow).map((node) => toLayeredDiagramNode(node, flow, locale))
+  );
+  const diagramEdges = buildLayeredDiagramEdges(diagramNodes);
+
+  return {
+    layers: layeredDiagramLayers,
+    canvasHeight: diagramCanvasHeight(diagramNodes),
+    nodes: diagramNodes.map((node) => ({
+      id: node.id,
+      type: "anlyxNode",
+      position: { x: node.x, y: node.y },
+      data: { node },
+      draggable: false,
+      selectable: false
+    })),
+    edges: diagramEdges.map((edge) => {
+      const from = diagramNodes.find((node) => node.id === edge.from);
+      const to = diagramNodes.find((node) => node.id === edge.to);
+      const handles = from && to ? reactFlowHandlesForEdge(from, to) : {};
+
+      return {
+        id: edge.id,
+        source: edge.from,
+        target: edge.to,
+        type: "anlyxSmooth",
+        data: { kind: edge.kind },
+        focusable: false,
+        selectable: false,
+        ...handles
+      };
+    })
+  };
+}
+
+function diagramNodesForFlow(flow: FlowRecord): FlowNode[] {
+  const order: FlowLayer[] =
+    flow.outcome === "success"
+      ? ["action", "api", "controller", "auth", "service", "repository", "database", "result"]
+      : ["action", "api", "controller", "auth", "result", "service", "repository", "database"];
+
+  return order
+    .map((layer) => flow.nodes.find((node) => node.layer === layer))
+    .filter((node): node is FlowNode => Boolean(node));
+}
+
+function diagramCanvasHeight(nodes: DemoLayeredDiagramNode[]): number {
+  return Math.max(
+    layeredLayout.canvasHeight,
+    ...nodes.map((node) => node.y + layeredLayout.nodeHeight + 110)
+  );
+}
+
+function assignLayeredNodePositions(nodes: DemoLayeredDiagramNode[]): DemoLayeredDiagramNode[] {
+  const mainSlotByLayer = new Map<DiagramLayerId, number>();
+  const secondarySlotByLayer = new Map<DiagramLayerId, number>();
+
+  return nodes.map((node) => {
+    const slotMap = node.isMainPath ? mainSlotByLayer : secondarySlotByLayer;
+    const slot = slotMap.get(node.layer) ?? 0;
+    const y = node.isMainPath
+      ? layeredLayout.mainStartY + slot * layeredLayout.mainGap
+      : layeredLayout.secondaryStartY + slot * layeredLayout.secondaryGap;
+
+    slotMap.set(node.layer, slot + 1);
+
+    return {
+      ...node,
+      slot,
+      x:
+        layeredLayout.layerX[node.layer] +
+        (layeredLayout.columnWidth - layeredLayout.nodeWidth) / 2,
+      y
+    };
+  });
+}
+
+function toLayeredDiagramNode(
+  node: FlowNode,
+  flow: FlowRecord,
+  locale: WorkspaceLocale
+): DemoLayeredDiagramNode {
+  const status = layeredDiagramNodeStatus(node, flow);
+
+  return {
+    id: node.id,
+    sourceNode: node,
+    layer: diagramLayerForFlowLayer(node.layer),
+    kind: node.layer,
+    title: layeredDiagramTitle(node, flow, locale),
+    subtitle: layeredDiagramSubtitle(node, flow, locale),
+    status,
+    edgeKind: edgeKindForNode(node, status),
+    isMainPath: node.proven,
+    slot: 0,
+    x: 0,
+    y: 0,
+    ...(node.durationMs !== undefined ? { durationMs: node.durationMs } : {})
+  };
+}
+
+function buildLayeredDiagramEdges(nodes: DemoLayeredDiagramNode[]): DemoLayeredDiagramEdge[] {
+  const mainNodes = nodes.filter((node) => node.isMainPath).sort(compareLayeredNodes);
+  const secondaryNodes = nodes.filter((node) => !node.isMainPath).sort(compareLayeredNodes);
+  const edges: DemoLayeredDiagramEdge[] = [];
+
+  for (let index = 0; index < mainNodes.length - 1; index += 1) {
+    const from = mainNodes[index];
+    const to = mainNodes[index + 1];
+
+    if (from && to) {
+      edges.push({
+        id: `${from.id}->${to.id}`,
+        from: from.id,
+        to: to.id,
+        kind: edgeKindBetween(from, to)
+      });
+    }
+  }
+
+  const anchor =
+    mainNodes.find((node) => node.layer === "application" && node.kind !== "controller") ??
+    mainNodes.find((node) => node.layer === "application") ??
+    mainNodes.find((node) => node.layer === "api");
+
+  if (anchor) {
+    for (const node of secondaryNodes) {
+      edges.push({
+        id: `${anchor.id}->${node.id}`,
+        from: anchor.id,
+        to: node.id,
+        kind: "not_proven"
+      });
+    }
+  }
+
+  return edges;
+}
+
+function compareLayeredNodes(
+  first: DemoLayeredDiagramNode,
+  second: DemoLayeredDiagramNode
+): number {
+  const layerDelta =
+    layeredDiagramLayers.indexOf(first.layer) - layeredDiagramLayers.indexOf(second.layer);
+  if (layerDelta !== 0) return layerDelta;
+
+  return flowLayerOrder(first.kind) - flowLayerOrder(second.kind);
+}
+
+function flowLayerOrder(layer: FlowLayer): number {
+  return timingRows.findIndex((row) => row.id === layer);
+}
+
+function reactFlowHandlesForEdge(
+  from: DemoLayeredDiagramNode,
+  to: DemoLayeredDiagramNode
+): Pick<DemoReactFlowEdge, "sourceHandle" | "targetHandle"> {
+  if (from.layer === to.layer) {
+    return to.y > from.y
+      ? { sourceHandle: "bottom", targetHandle: "top" }
+      : { sourceHandle: "top", targetHandle: "bottom" };
+  }
+
+  return { sourceHandle: "right", targetHandle: "left" };
+}
+
+function edgeKindBetween(
+  from: DemoLayeredDiagramNode,
+  to: DemoLayeredDiagramNode
+): DemoDiagramEdgeKind {
+  if (from.status === "blocked" || to.status === "blocked") return "blocked";
+  if (from.status === "inferred" || to.status === "inferred") return "inferred";
+  if (from.status === "source_matched" || to.status === "source_matched") return "source_matched";
+  return "executed";
+}
+
+function edgeKindForNode(node: FlowNode, status: DemoDiagramNodeStatus): DemoDiagramEdgeKind {
+  if (status === "blocked") return "blocked";
+  if (status === "inferred") return "inferred";
+  if (!node.proven || status === "not_proven") return "not_proven";
+  if (node.layer !== "action" && node.layer !== "api" && node.layer !== "result") {
+    return "source_matched";
+  }
+  return "executed";
+}
+
+function diagramLayerForFlowLayer(layer: FlowLayer): DiagramLayerId {
+  if (layer === "action") return "browser";
+  if (layer === "api") return "api";
+  if (layer === "repository" || layer === "database") return "data";
+  if (layer === "result") return "response";
+  return "application";
+}
+
+function layeredDiagramNodeStatus(node: FlowNode, flow: FlowRecord): DemoDiagramNodeStatus {
+  if (!node.proven || node.status === "not-proven") return "not_proven";
+  if (node.status === "blocked") return "blocked";
+  if (node.status === "inferred") return "inferred";
+  if (node.layer === "result" && flow.outcome === "success") return "success";
+  if (node.layer === "action" || node.layer === "api") return "observed";
+  if (node.layer !== "result") return "source_matched";
+  return "matched";
+}
+
+function layeredDiagramTitle(node: FlowNode, flow: FlowRecord, locale: WorkspaceLocale): string {
+  if (node.layer === "action") return locale === "ko" ? "사용자 액션" : "User Action";
+  if (node.layer === "api") return locale === "ko" ? "HTTP 요청" : "HTTP Request";
+  if (node.layer === "result") return flow.outcome === "success" ? "OK" : flow.outcomeLabel;
+  return diagramTitle(node);
+}
+
+function layeredDiagramSubtitle(
+  node: FlowNode,
+  flow: FlowRecord,
+  _locale: WorkspaceLocale
+): string {
+  if (node.layer === "action") return flow.sourceAction ?? node.title;
+  if (node.layer === "api") return `${flow.method} ${flow.shortPath}`;
+  if (node.layer === "result") return node.subtitle ?? flow.outcomeLabel;
+  return node.title;
+}
+
+function layeredLayerMeta(
+  layer: DiagramLayerId,
+  locale: WorkspaceLocale
+): { icon: LucideIcon; title: string; subtitle: string } {
+  const ko = locale === "ko";
+
+  if (layer === "browser") {
+    return {
+      icon: MousePointerClick,
+      title: ko ? "브라우저" : "Browser",
+      subtitle: ko ? "사용자 상호작용" : "User interaction"
+    };
+  }
+
+  if (layer === "api") {
+    return {
+      icon: Network,
+      title: "API",
+      subtitle: ko ? "요청과 라우팅" : "Edge & routing"
+    };
+  }
+
+  if (layer === "application") {
+    return {
+      icon: Workflow,
+      title: ko ? "애플리케이션" : "Application",
+      subtitle: ko ? "비즈니스 로직" : "Business logic"
+    };
+  }
+
+  if (layer === "data") {
+    return {
+      icon: Database,
+      title: ko ? "데이터" : "Data",
+      subtitle: ko ? "저장소 계층" : "Persistence layer"
+    };
+  }
+
+  return {
+    icon: Flag,
+    title: ko ? "응답" : "Response",
+    subtitle: ko ? "클라이언트로 반환" : "Back to client"
+  };
+}
+
+function layeredNodeIcon(node: DemoLayeredDiagramNode): LucideIcon {
+  if (node.kind === "action") return MousePointerClick;
+  if (node.kind === "api") return Network;
+  if (node.kind === "auth") return Lock;
+  if (node.kind === "service") return Layers3;
+  if (node.kind === "repository") return Box;
+  if (node.kind === "database") return Database;
+  if (node.kind === "result") return Flag;
+  if (node.kind === "controller") return FileCode2;
+  return Circle;
+}
+
+function demoDiagramNodeStatusLabel(status: DemoDiagramNodeStatus): string {
+  if (status === "observed") return "observed";
+  if (status === "source_matched") return "source matched";
+  if (status === "inferred") return "inferred";
+  if (status === "not_proven") return "not proven";
+  if (status === "success") return "success";
+  if (status === "blocked") return "blocked";
+  return "matched";
 }
 
 function FlowInspectorPanel({
@@ -1431,44 +1864,12 @@ function SummaryFlowView({
   flow: FlowRecord;
   locale: WorkspaceLocale;
 }): JSX.Element {
-  const provenNodes = ["action", "api", "controller", "auth", "result"]
-    .map((id) => flow.nodes.find((node) => node.id === id))
-    .filter((node): node is FlowNode => Boolean(node));
-  const downstreamNodes = ["service", "repository", "database"]
-    .map((id) => flow.nodes.find((node) => node.id === id))
-    .filter((node): node is FlowNode => Boolean(node));
-  const blocked = flow.outcome !== "success";
-  const requestSubject =
-    flow.sourceAction && flow.sourceAction !== "path" ? flow.sourceAction : "This request";
-  const verdict = blocked
-    ? locale === "ko"
-      ? `${requestSubject} 요청은 하위 실행이 확인되기 전에 차단됐습니다.`
-      : `${requestSubject} was blocked before downstream execution was proven.`
-    : locale === "ko"
-      ? `${requestSubject} 요청은 스캔된 백엔드 경로와 매칭됐습니다.`
-      : `${requestSubject} completed with a matched backend path.`;
+  const orderedNodes = diagramNodesForFlow(flow);
+  const provenNodes = orderedNodes.filter((node) => node.proven);
+  const downstreamNodes = orderedNodes.filter((node) => !node.proven);
 
   return (
     <section className="summary-view">
-      <div className={`summary-verdict summary-verdict--${flow.outcome}`}>
-        <div>
-          <span className="summary-eyebrow">{t(locale, "summary.verdict")}</span>
-          <h2>{verdict}</h2>
-          <p>
-            {locale === "ko"
-              ? `${flow.method} ${flow.shortPath} 요청은 ${flow.outcomeLabel} 응답을 반환했습니다. Anlyx는 브라우저에서 관찰한 요청과 스캔된 백엔드 경로를 함께 보여줍니다.`
-              : `${flow.method} ${flow.shortPath} returned ${flow.outcomeLabel}. Anlyx combines the browser-observed request with the scanned backend path.`}
-          </p>
-        </div>
-        <div className="summary-result-card">
-          <span>{flow.statusCode}</span>
-          <strong>{blocked ? t(locale, "status.blocked") : t(locale, "status.completed")}</strong>
-          <small>
-            {flow.totalDurationMs} ms {t(locale, "summary.total")}
-          </small>
-        </div>
-      </div>
-
       <SummaryPathSection
         badge={layerCountLabel(provenNodes.length, locale)}
         locale={locale}
@@ -1822,7 +2223,7 @@ const translations = {
     "status.completed": "Completed",
     "summary.verdict": "Request verdict",
     "summary.total": "total",
-    "summary.provenPath": "Proven / inferred path",
+    "summary.provenPath": "Observed / source-matched path",
     "summary.downstreamPath": "Possible downstream path",
     "summary.notProvenExecuted": "not proven executed",
     "summary.note":
@@ -1886,7 +2287,7 @@ const translations = {
     "status.completed": "완료",
     "summary.verdict": "요청 판정",
     "summary.total": "전체",
-    "summary.provenPath": "확인 / 추론된 경로",
+    "summary.provenPath": "관측 / 소스 매칭 경로",
     "summary.downstreamPath": "가능한 하위 경로",
     "summary.notProvenExecuted": "실행 미확인",
     "summary.note":

@@ -2,12 +2,20 @@
   "name": "@anlyx/adapter-manual",
   "version": "0.1.3",
   "description": "Manual frontend URL adapter for Anlyx Basic Support projects.",
+  "author": "suhannoh",
   "license": "MIT",
+  "keywords": [
+    "anlyx",
+    "manual-adapter",
+    "developer-tools",
+    "api-flow"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist",
+    "dist/**/*.d.ts",
+    "dist/**/*.js",
     "README.md",
     "LICENSE"
   ],
@@ -25,6 +33,9 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "exports": {
     ".": {

@@ -76,14 +76,14 @@ Live Workspace SHOULD use a dense, polished local developer-tool layout:
 - Connector arrows should read like a flowchart, with blue primary-path connectors, amber auth/result connectors, purple inferred emphasis, and muted gray inactive connectors
 - Evidence and metadata should be sectioned and scannable instead of always-open large prose panels
 - Unmatched requests and true failures should render actionable diagnostic cards with a short cause and next checks, not only a status sentence
-- Framework server-side fetches, such as Next.js Server Component data loading, MUST be labeled as scanned or inferred until a real server runtime bridge reports them. They MUST NOT be presented as browser-live requests.
+- Framework server-side fetches, such as Next.js Server Component data loading, MUST be labeled as `frontend_server_observed` only when the development-only Next server bridge reports them. Without that bridge, they remain source-derived or inferred. They MUST NOT be presented as browser-live requests.
 
 Live Workspace MUST NOT:
 
 - Require the developer to pick endpoints from a list before using the app
 - Mutate app requests, responses, local storage, cookies, or application state
 - Hide failed, pending, unknown, or unmatched analysis states
-- Claim runtime server tracing; collected events are browser-observed local development events only
+- Claim production runtime server tracing; collected events are local development observations and scanned/source-derived evidence only
 - Require Next.js for browser capture; React SPA projects must still work through explicit manual URLs and browser-observed API events
 
 ## Recent Events

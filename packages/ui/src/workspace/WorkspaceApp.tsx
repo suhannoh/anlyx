@@ -63,6 +63,8 @@ type TranslationKey =
   | "requestEvidenceSummary"
   | "mappedEvidence"
   | "mappedEvidenceWithRuntime"
+  | "sourceMappedEvidence"
+  | "nextServerMappedEvidence"
   | "controllerPending"
   | "flowTiming"
   | "totalDuration"
@@ -124,6 +126,9 @@ type TranslationKey =
   | "noRequestSelected"
   | "emptyWorkspaceCopy"
   | "requestProcessing"
+  | "responseNotObserved"
+  | "timingNotObserved"
+  | "timingNotObservedCopy"
   | "application"
   | "authDecisionLegend"
   | "result"
@@ -142,13 +147,21 @@ type TranslationKey =
   | "knownButNotProven"
   | "browserSpan"
   | "browserObserved"
+  | "nextServerObserved"
+  | "backendObserved"
   | "devRuntimeSpan"
   | "sourceDerivedEstimate"
+  | "sourceLayoutEstimate"
   | "responseMarker"
   | "estimate"
   | "browser"
   | "source"
-  | "backendCoverage";
+  | "backendCoverage"
+  | "eventAction"
+  | "eventAuto"
+  | "eventSource"
+  | "eventServer"
+  | "sourceDerived";
 
 const WorkspaceLocaleContext = createContext<WorkspaceLocale>("en");
 
@@ -167,15 +180,19 @@ const translations: Record<WorkspaceLocale, Record<TranslationKey, string>> = {
     liveWorkspace: "Live workspace",
     captureConnected: "Capture connected",
     waitingForCapture: "Waiting for capture",
-    matchedSubtitle: "Browser request first, scanned backend path follows.",
+    matchedSubtitle: "Observed request first, scanned backend path follows.",
     readyPrefix: "is ready. Use your local app and Anlyx will stream requests here.",
     readySuffix: "",
     selectedRequest: "Selected request",
     selectedRequestLabel: "Selected request",
     requestEvidenceSummary: "Request evidence summary",
-    mappedEvidence: "Browser-observed request mapped to scanned backend evidence.",
+    mappedEvidence: "Observed request mapped to scanned backend evidence.",
     mappedEvidenceWithRuntime:
-      "Browser-observed request mapped to scanned backend evidence and development runtime spans.",
+      "Observed request mapped to scanned backend evidence and development backend spans.",
+    sourceMappedEvidence:
+      "Scanned page source referenced this API. Browser response status and duration were not observed.",
+    nextServerMappedEvidence:
+      "Next.js server runtime observed this API response and mapped it to scanned backend evidence.",
     controllerPending: "Controller pending",
     flowTiming: "Flow timing",
     totalDuration: "Total duration",
@@ -196,11 +213,11 @@ const translations: Record<WorkspaceLocale, Record<TranslationKey, string>> = {
     blocked: "blocked",
     flowSummary: "Flow summary",
     observedSourceMatchedPath: "Observed / source-matched path",
-    summaryMatchedCopy: "Browser-observed request first, then scanned backend evidence.",
+    summaryMatchedCopy: "Observed request first, then scanned backend evidence.",
     layers: "layers",
     knownDownstreamPath: "Known downstream path",
     summaryNote:
-      "Anlyx maps this browser-observed request to scanned backend evidence. Source-matched rows are not a production runtime trace; muted rows were not proven executed.",
+      "Anlyx maps the observed request to scanned backend evidence. Backend-observed rows are local dev spans; source-matched rows are not production runtime traces.",
     flowDiagram: "Flow diagram",
     observedSourceMatchedLegend: "Observed / source-matched path",
     knownDownstreamLegend: "Known downstream (not proven)",
@@ -239,6 +256,10 @@ const translations: Record<WorkspaceLocale, Record<TranslationKey, string>> = {
     noRequestSelected: "No request selected yet",
     emptyWorkspaceCopy: "has scanned endpoints. Open your local app and click an API action.",
     requestProcessing: "Request/Processing",
+    responseNotObserved: "Response not observed",
+    timingNotObserved: "Timing not observed",
+    timingNotObservedCopy:
+      "No browser or Next server response duration was captured for this request. Backend rows below are source-derived evidence, not measured runtime spans.",
     application: "Application",
     authDecisionLegend: "Auth / Decision",
     result: "Result",
@@ -257,13 +278,21 @@ const translations: Record<WorkspaceLocale, Record<TranslationKey, string>> = {
     knownButNotProven: "Known but not proven",
     browserSpan: "browser span",
     browserObserved: "browser observed",
+    nextServerObserved: "Next server observed",
+    backendObserved: "backend observed",
     devRuntimeSpan: "dev runtime span",
     sourceDerivedEstimate: "source-derived estimate",
+    sourceLayoutEstimate: "code scan estimate",
     responseMarker: "response marker",
     estimate: "estimate",
     browser: "Browser",
     source: "Source",
-    backendCoverage: "Backend"
+    backendCoverage: "Backend",
+    eventAction: "Action",
+    eventAuto: "Auto",
+    eventSource: "Source",
+    eventServer: "Server",
+    sourceDerived: "Source-derived"
   },
   ko: {
     appLabel: "Anlyx 라이브 워크스페이스",
@@ -279,15 +308,19 @@ const translations: Record<WorkspaceLocale, Record<TranslationKey, string>> = {
     liveWorkspace: "라이브 워크스페이스",
     captureConnected: "캡처 연결됨",
     waitingForCapture: "캡처 대기 중",
-    matchedSubtitle: "브라우저 요청을 먼저 보고, 스캔된 백엔드 경로를 이어서 보여줍니다.",
+    matchedSubtitle: "관찰된 요청을 먼저 보고, 스캔된 백엔드 경로를 이어서 보여줍니다.",
     readyPrefix: "준비되었습니다. 로컬 앱을 사용하면 Anlyx가 요청을 이곳으로 스트리밍합니다.",
     readySuffix: "",
     selectedRequest: "선택된 요청",
     selectedRequestLabel: "선택된 요청",
     requestEvidenceSummary: "요청 근거 요약",
-    mappedEvidence: "브라우저에서 관찰된 요청을 스캔된 백엔드 근거와 매칭했습니다.",
+    mappedEvidence: "관찰된 요청을 스캔된 백엔드 근거와 매칭했습니다.",
     mappedEvidenceWithRuntime:
-      "브라우저에서 관찰된 요청을 스캔된 백엔드 근거와 개발용 런타임 span에 매칭했습니다.",
+      "관찰된 요청을 스캔된 백엔드 근거와 개발용 백엔드 span에 매칭했습니다.",
+    sourceMappedEvidence:
+      "스캔된 페이지 소스에서 이 API 호출을 찾았습니다. 브라우저 응답 상태와 시간은 관측되지 않았습니다.",
+    nextServerMappedEvidence:
+      "Next.js 서버 런타임에서 이 API 응답을 관찰했고 스캔된 백엔드 근거와 매칭했습니다.",
     controllerPending: "컨트롤러 확인 대기",
     flowTiming: "흐름 타이밍",
     totalDuration: "전체 소요 시간",
@@ -308,11 +341,11 @@ const translations: Record<WorkspaceLocale, Record<TranslationKey, string>> = {
     blocked: "차단됨",
     flowSummary: "흐름 요약",
     observedSourceMatchedPath: "관찰 / 소스 매칭 경로",
-    summaryMatchedCopy: "브라우저 요청을 먼저 보여주고, 이어서 스캔된 백엔드 근거를 보여줍니다.",
+    summaryMatchedCopy: "관찰된 요청을 먼저 보여주고, 이어서 스캔된 백엔드 근거를 보여줍니다.",
     layers: "개 레이어",
     knownDownstreamPath: "알려진 하위 경로",
     summaryNote:
-      "Anlyx는 브라우저에서 관찰된 요청을 스캔된 백엔드 근거와 연결합니다. 소스 매칭 행은 운영 런타임 트레이스가 아니며, 흐리게 표시된 행은 실제 실행이 확인되지 않았습니다.",
+      "Anlyx는 관찰된 요청을 스캔된 백엔드 근거와 연결합니다. 백엔드 관찰 행은 로컬 개발용 span이고, 소스 매칭 행은 운영 런타임 트레이스가 아닙니다.",
     flowDiagram: "흐름 다이어그램",
     observedSourceMatchedLegend: "관찰 / 소스 매칭 경로",
     knownDownstreamLegend: "알려진 하위 경로(실행 미확인)",
@@ -351,6 +384,10 @@ const translations: Record<WorkspaceLocale, Record<TranslationKey, string>> = {
     noRequestSelected: "아직 선택된 요청이 없습니다",
     emptyWorkspaceCopy: "개의 엔드포인트가 스캔되어 있습니다. 로컬 앱에서 API 액션을 클릭하세요.",
     requestProcessing: "요청/처리",
+    responseNotObserved: "응답 미관측",
+    timingNotObserved: "타이밍 미관측",
+    timingNotObservedCopy:
+      "이 요청의 브라우저 또는 Next 서버 응답 시간이 캡처되지 않았습니다. 아래 백엔드 행은 실제 측정값이 아니라 소스 스캔 근거입니다.",
     application: "애플리케이션",
     authDecisionLegend: "인증 / 결정",
     result: "결과",
@@ -369,13 +406,21 @@ const translations: Record<WorkspaceLocale, Record<TranslationKey, string>> = {
     knownButNotProven: "알려졌지만 실행 미확인",
     browserSpan: "브라우저 구간",
     browserObserved: "브라우저 관찰",
+    nextServerObserved: "Next 서버 관찰",
+    backendObserved: "백엔드 관찰",
     devRuntimeSpan: "개발 런타임 구간",
     sourceDerivedEstimate: "소스 기반 추정",
+    sourceLayoutEstimate: "코드 스캔 추정",
     responseMarker: "응답 지점",
     estimate: "추정",
     browser: "브라우저",
     source: "소스",
-    backendCoverage: "백엔드"
+    backendCoverage: "백엔드",
+    eventAction: "액션",
+    eventAuto: "자동",
+    eventSource: "소스",
+    eventServer: "서버",
+    sourceDerived: "소스 기반"
   }
 };
 
@@ -440,6 +485,10 @@ export function WorkspaceApp({
     }
 
     const source = new EventSource(streamUrl);
+    const handleReset = () => {
+      setRecords([]);
+      setSelectedId(undefined);
+    };
     const handleFlow = (event: MessageEvent<string>) => {
       const record = parseFlowRecord(event.data);
 
@@ -453,9 +502,11 @@ export function WorkspaceApp({
       );
     };
 
+    source.addEventListener("reset", handleReset);
     source.addEventListener("flow", handleFlow);
 
     return () => {
+      source.removeEventListener("reset", handleReset);
       source.removeEventListener("flow", handleFlow);
       source.close();
     };
@@ -658,13 +709,13 @@ function RequestContextPanel({
         </div>
         <div className="benefits-studio__copy">
           <h2>{shortPath(record.path)}</h2>
-          <p>{t(locale, backendCount > 0 ? "mappedEvidenceWithRuntime" : "mappedEvidence")}</p>
+          <p>{requestEvidenceCopy(record, backendCount, locale)}</p>
         </div>
       </div>
       <div className="request-context-actions" aria-label={t(locale, "requestEvidenceSummary")}>
         <span>
           <Check size={14} />
-          {record.status ?? t(locale, "pending")} {outcomeStatusText(record, locale)}
+          {outcomePillText(record, locale)}
         </span>
         <span>
           <Clock3 size={14} />
@@ -680,6 +731,47 @@ function RequestContextPanel({
         </span>
       </div>
     </section>
+  );
+}
+
+function requestEvidenceCopy(
+  record: FlowRecord,
+  backendCount: number,
+  locale: WorkspaceLocale
+): string {
+  if (isSourceOnlyRecord(record)) {
+    return t(locale, "sourceMappedEvidence");
+  }
+
+  if (backendCount > 0) {
+    return t(locale, "mappedEvidenceWithRuntime");
+  }
+
+  if (hasFrontendServerEvidence(record)) {
+    return t(locale, "nextServerMappedEvidence");
+  }
+
+  return t(locale, "mappedEvidence");
+}
+
+function hasFrontendServerEvidence(record: FlowRecord): boolean {
+  return record.layers.some((layer) => layer.evidenceLevel === "frontend_server_observed");
+}
+
+function isSourceOnlyRecord(record: FlowRecord): boolean {
+  const hasObservedBrowserResponse =
+    record.status !== undefined || record.duration !== undefined || record.durationMs !== undefined;
+  const hasBrowserEvidence = record.layers.some(
+    (layer) => layer.evidenceLevel === "browser_observed"
+  );
+  const hasFrontendServerObservedEvidence = hasFrontendServerEvidence(record);
+  const hasSourceEvidence = record.layers.some((layer) => layer.evidenceLevel === "source_derived");
+
+  return (
+    hasSourceEvidence &&
+    !hasBrowserEvidence &&
+    !hasFrontendServerObservedEvidence &&
+    !hasObservedBrowserResponse
   );
 }
 
@@ -700,11 +792,17 @@ function TimingWaterfallView({ record }: { record: FlowRecord }): JSX.Element {
   const [showIdleTime, setShowIdleTime] = useState(false);
   const [timelineZoom, setTimelineZoom] = useState(1);
   const [focusSlowest, setFocusSlowest] = useState(false);
+  const observedDuration = record.durationMs ?? record.duration;
+
+  if (observedDuration === undefined || observedDuration <= 0) {
+    return <TimingUnobservedView record={record} />;
+  }
+
   const rows = timingLayers(record);
-  const total = Math.max(record.durationMs ?? record.duration ?? 1, 1);
+  const total = Math.max(observedDuration, 1);
   const ticks = timelineTicks(total);
   const slowestLayer = rows
-    .filter((layer) => !isUnprovenLayer(layer) && layer.type !== "api" && layer.type !== "result")
+    .filter((layer) => isRuntimeObservedLayer(layer) && layer.type !== "api" && layer.type !== "result")
     .sort((a, b) => estimatedLayerDuration(b, total) - estimatedLayerDuration(a, total))[0];
 
   return (
@@ -780,6 +878,48 @@ function TimingWaterfallView({ record }: { record: FlowRecord }): JSX.Element {
         ))}
       </div>
       <DurationLegend />
+    </section>
+  );
+}
+
+function TimingUnobservedView({ record }: { record: FlowRecord }): JSX.Element {
+  const locale = useWorkspaceLocale();
+  const rows = orderedLayers(record).filter((layer) => layer.type !== "page");
+
+  return (
+    <section className="waterfall-card timing-unobserved-card" aria-label={t(locale, "flowTiming")}>
+      <div className="waterfall-toolbar">
+        <div className="duration-chip duration-chip--muted">
+          {t(locale, "totalDuration")}&nbsp; <strong>{t(locale, "timingNotObserved")}</strong>
+        </div>
+      </div>
+      <div className="timing-unobserved">
+        <div>
+          <strong>{t(locale, "responseNotObserved")}</strong>
+          <p>{t(locale, "timingNotObservedCopy")}</p>
+        </div>
+        <div className="timing-unobserved__rows">
+          {rows.map((layer) => {
+            const Icon = layerIcons[layer.type] ?? Circle;
+            const visualType = visualLayerType(layer);
+
+            return (
+              <div key={layer.id}>
+                <span className={`layer-icon layer-icon--${visualType}`}>
+                  <Icon size={18} />
+                </span>
+                <div>
+                  <strong>{layer.label}</strong>
+                  <small>{layerSubtitle(layer, locale)}</small>
+                </div>
+                <em>
+                  {isSourceMatchedLayer(layer) ? t(locale, "sourceMatched") : layer.execution}
+                </em>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </section>
   );
 }
@@ -999,13 +1139,13 @@ function SummaryPathRow({ index, layer }: { index: number; layer: FlowLayer }): 
 
 function DiagramFlowView({ record }: { record: FlowRecord }): JSX.Element {
   const locale = useWorkspaceLocale();
-  const [zoom, setZoom] = useState(0.92);
+  const [zoom, setZoom] = useState(0.82);
   const nodeTypes = useMemo(() => ({ anlyxNode: AnlyxFlowNode }), []);
   const edgeTypes = useMemo(() => ({ anlyxSmooth: AnlyxSmoothEdge }), []);
   const model = useMemo(() => buildReactFlowDiagram(record, locale), [record, locale]);
 
   useEffect(() => {
-    setZoom(0.92);
+    setZoom(0.82);
   }, [record.id]);
 
   return (
@@ -1026,7 +1166,7 @@ function DiagramFlowView({ record }: { record: FlowRecord }): JSX.Element {
           </span>
         </div>
         <div className="diagram-controls">
-          <button type="button" onClick={() => setZoom(0.92)}>
+          <button type="button" onClick={() => setZoom(0.82)}>
             <Gauge size={16} />
             {t(locale, "fitView")}
           </button>
@@ -1038,7 +1178,7 @@ function DiagramFlowView({ record }: { record: FlowRecord }): JSX.Element {
             <button
               type="button"
               aria-label={t(locale, "zoomOut")}
-              onClick={() => setZoom((value) => Math.max(0.8, value - 0.1))}
+              onClick={() => setZoom((value) => Math.max(0.72, value - 0.1))}
             >
               <Minus size={16} />
             </button>
@@ -1053,12 +1193,24 @@ function DiagramFlowView({ record }: { record: FlowRecord }): JSX.Element {
           </div>
         </div>
       </div>
-      <div className="diagram-canvas diagram-canvas--layered">
+      <div
+        className="diagram-canvas diagram-canvas--layered"
+        style={
+          {
+            "--diagram-stage-height": `${Math.ceil(model.canvasHeight * zoom + 72)}px`
+          } as CSSProperties
+        }
+      >
         <div
           className={`layered-diagram layered-diagram--react-flow ${
-            zoom === 0.92 ? "layered-diagram--fit" : ""
+            zoom === 0.82 ? "layered-diagram--fit" : ""
           }`}
-          style={{ transform: `translateX(-50%) scale(${zoom})` }}
+          style={
+            {
+              "--layered-column-height": `${model.canvasHeight - 50}px`,
+              transform: `scale(${zoom})`
+            } as CSSProperties
+          }
         >
           {model.layers.map((layer) => (
             <LayeredDiagramColumnBackdrop
@@ -1157,6 +1309,7 @@ type ReactFlowDiagramModel = {
   layers: DiagramLayerId[];
   nodes: AnlyxReactFlowNode[];
   edges: AnlyxReactFlowEdge[];
+  canvasHeight: number;
 };
 
 const layeredDiagramLayers: DiagramLayerId[] = [
@@ -1173,10 +1326,10 @@ const layeredLayout = {
   columnWidth: 220,
   nodeWidth: 180,
   nodeHeight: 128,
-  mainStartY: 120,
-  mainGap: 170,
-  secondaryStartY: 470,
-  secondaryGap: 148,
+  mainStartY: 98,
+  mainGap: 146,
+  secondaryStartY: 430,
+  secondaryGap: 138,
   layerX: {
     browser: 0,
     api: 260,
@@ -1297,7 +1450,7 @@ function LayeredNodeCard({ node }: { node: LayeredDiagramNode }): JSX.Element {
       <small>{node.subtitle}</small>
       <div className="layered-node__meta">
         <span>{node.durationMs !== undefined ? formatDuration(node.durationMs) : "—"}</span>
-        <em>{diagramNodeStatusLabel(node.status, locale)}</em>
+        <em>{diagramNodeEvidenceLabel(node, locale)}</em>
       </div>
     </article>
   );
@@ -1342,6 +1495,7 @@ function buildReactFlowDiagram(record: FlowRecord, locale: WorkspaceLocale): Rea
 
   return {
     layers: layeredDiagramLayers,
+    canvasHeight: diagramCanvasHeight(diagramNodes),
     nodes: diagramNodes.map((node) => ({
       id: node.id,
       type: "anlyxNode",
@@ -1367,6 +1521,15 @@ function buildReactFlowDiagram(record: FlowRecord, locale: WorkspaceLocale): Rea
       };
     })
   };
+}
+
+function diagramCanvasHeight(nodes: LayeredDiagramNode[]): number {
+  const lowestNodeBottom = Math.max(
+    layeredLayout.canvasHeight,
+    ...nodes.map((node) => node.y + layeredLayout.nodeHeight + 110)
+  );
+
+  return lowestNodeBottom;
 }
 
 function reactFlowHandlesForEdge(
@@ -1532,7 +1695,11 @@ function layeredDiagramNodeStatus(layer: FlowLayer, record: FlowRecord): Diagram
   if (isUnprovenLayer(layer)) return "not_proven";
   if (layer.execution === "unknown") return "no_evidence";
   if (layer.execution === "inferred" || layer.evidenceLevel === "inferred") return "inferred";
-  if (layer.evidenceLevel === "browser_observed" || layer.evidenceLevel === "backend_observed") {
+  if (
+    layer.evidenceLevel === "browser_observed" ||
+    layer.evidenceLevel === "frontend_server_observed" ||
+    layer.evidenceLevel === "backend_observed"
+  ) {
     return "observed";
   }
   if (isSourceMatchedLayer(layer)) return "source_matched";
@@ -1541,6 +1708,7 @@ function layeredDiagramNodeStatus(layer: FlowLayer, record: FlowRecord): Diagram
 
 function evidenceKindForLayer(layer: FlowLayer): LayeredDiagramNode["evidenceKind"] {
   if (layer.evidenceLevel === "browser_observed") return "browser";
+  if (layer.evidenceLevel === "frontend_server_observed") return "backend";
   if (layer.evidenceLevel === "backend_observed") return "backend";
   if (layer.evidenceLevel === "inferred") return "inferred";
   if (isUnprovenLayer(layer) || layer.execution === "unknown") return "none";
@@ -1652,6 +1820,14 @@ function diagramNodeStatusLabel(status: DiagramNodeStatus, locale: WorkspaceLoca
   return t(locale, "matched");
 }
 
+function diagramNodeEvidenceLabel(node: LayeredDiagramNode, locale: WorkspaceLocale): string {
+  if (node.sourceLayer) {
+    return evidenceLevelLabel(node.sourceLayer, locale);
+  }
+
+  return diagramNodeStatusLabel(node.status, locale);
+}
+
 function FlowInspector({
   onSelect,
   record,
@@ -1695,7 +1871,7 @@ function FlowInspector({
           </InspectorSection>
           <InspectorSection title={t(locale, "outcome")}>
             <span className={`outcome-pill outcome-pill--${outcomeTone(record)}`}>
-              {record.status ?? "—"}&nbsp;&nbsp;{outcomeStatusText(record, locale)}
+              {outcomePillText(record, locale)}
             </span>
             <p>
               <strong>{outcomeLabel(record, locale)}</strong>
@@ -1768,23 +1944,65 @@ function RecentEventsList({
 
   return (
     <div className="recent-events" aria-label="Recent events">
-      {records.slice(0, 5).map((record) => (
-        <button
-          className={record.id === selectedId ? "is-selected" : ""}
-          key={record.id}
-          type="button"
-          onClick={() => onSelect(record.id)}
-        >
-          <span>{record.method}</span>
-          <strong>{shortPath(record.path)}</strong>
-          <small>
-            {record.status ?? "pending"} · {Math.round(record.durationMs ?? record.duration ?? 0)}{" "}
-            ms
-          </small>
-        </button>
-      ))}
+      {records.slice(0, 5).map((record) => {
+        const kind = recentEventKind(record);
+
+        return (
+          <button
+            className={`${record.id === selectedId ? "is-selected" : ""} is-${kind}`}
+            key={record.id}
+            type="button"
+            onClick={() => onSelect(record.id)}
+          >
+            <span className="recent-events__method">{record.method}</span>
+            <strong>{shortPath(record.path)}</strong>
+            <em className={`recent-events__kind recent-events__kind--${kind}`}>
+              {recentEventKindLabel(kind, locale)}
+            </em>
+            <small>{recentEventMeta(record, locale)}</small>
+          </button>
+        );
+      })}
     </div>
   );
+}
+
+function recentEventKind(record: FlowRecord): "action" | "auto" | "source" | "server" {
+  if (hasFrontendServerEvidence(record)) {
+    return "server";
+  }
+
+  if (isSourceOnlyRecord(record)) {
+    return "source";
+  }
+
+  return record.trigger === "user_action" ? "action" : "auto";
+}
+
+function recentEventKindLabel(
+  kind: "action" | "auto" | "source" | "server",
+  locale: WorkspaceLocale
+): string {
+  if (kind === "action") return t(locale, "eventAction");
+  if (kind === "server") return t(locale, "eventServer");
+  if (kind === "source") return t(locale, "eventSource");
+  return t(locale, "eventAuto");
+}
+
+function recentEventMeta(record: FlowRecord, locale: WorkspaceLocale): string {
+  if (hasFrontendServerEvidence(record)) {
+    return `${t(locale, "eventServer")} · ${record.status ?? t(locale, "responseNotObserved")} · ${formatDuration(
+      record.durationMs ?? record.duration
+    )}`;
+  }
+
+  if (isSourceOnlyRecord(record)) {
+    return `${t(locale, "sourceDerived")} · ${t(locale, "responseNotObserved")}`;
+  }
+
+  return `${record.status ?? t(locale, "responseNotObserved")} · ${formatDuration(
+    record.durationMs ?? record.duration
+  )}`;
 }
 
 function EmptyWorkspace({ data }: { data: ScanResult }): JSX.Element {
@@ -2130,19 +2348,31 @@ function isSourceMatchedLayer(layer: FlowLayer): boolean {
   return layer.execution === "scanned" || layer.evidenceLevel === "source_derived";
 }
 
+function isRuntimeObservedLayer(layer: FlowLayer): boolean {
+  return (
+    layer.evidenceLevel === "browser_observed" ||
+    layer.evidenceLevel === "frontend_server_observed" ||
+    layer.evidenceLevel === "backend_observed"
+  );
+}
+
+function evidenceLevelLabel(layer: FlowLayer, locale: WorkspaceLocale): string {
+  if (isUnprovenLayer(layer)) return t(locale, "notProven");
+  if (layer.execution === "blocked") return t(locale, "blocked");
+  if (layer.evidenceLevel === "browser_observed") return t(locale, "browserObserved");
+  if (layer.evidenceLevel === "frontend_server_observed") return t(locale, "nextServerObserved");
+  if (layer.evidenceLevel === "backend_observed") return t(locale, "backendObserved");
+  if (layer.evidenceLevel === "inferred") return t(locale, "inferred");
+  if (isSourceMatchedLayer(layer)) return t(locale, "sourceMatched");
+  return t(locale, "matched");
+}
+
 function isDecisionLayer(layer: FlowLayer): boolean {
   return layer.type === "auth" || layer.type === "decision";
 }
 
 function summaryStatusLabel(layer: FlowLayer, locale: WorkspaceLocale): string {
-  if (isUnprovenLayer(layer)) return t(locale, "notProven");
-  if (layer.execution === "blocked") return t(locale, "blocked");
-  if (layer.evidenceLevel === "browser_observed" || layer.evidenceLevel === "backend_observed") {
-    return t(locale, "observed");
-  }
-  if (layer.evidenceLevel === "inferred") return t(locale, "inferred");
-  if (isSourceMatchedLayer(layer)) return t(locale, "sourceMatched");
-  return t(locale, "matched");
+  return evidenceLevelLabel(layer, locale);
 }
 
 function summaryStatusTone(layer: FlowLayer): "matched" | "inferred" | "blocked" | "scanned" {
@@ -2253,7 +2483,7 @@ function hasBlockedOutcome(record: FlowRecord): boolean {
 }
 
 function outcomeLabel(record: FlowRecord, locale: WorkspaceLocale): string {
-  if (record.status === undefined) return t(locale, "pending");
+  if (record.status === undefined) return t(locale, "responseNotObserved");
   if (record.status >= 200 && record.status < 300) return t(locale, "ok");
   if (hasBlockedOutcome(record)) return t(locale, "blocked");
   if (record.status >= 500) return t(locale, "serverError");
@@ -2261,13 +2491,21 @@ function outcomeLabel(record: FlowRecord, locale: WorkspaceLocale): string {
 }
 
 function outcomeStatusText(record: FlowRecord, locale: WorkspaceLocale): string {
-  if (record.status === undefined) return t(locale, "pending");
+  if (record.status === undefined) return t(locale, "responseNotObserved");
   if (record.status >= 200 && record.status < 300) return t(locale, "ok");
   if (record.status === 401) return t(locale, "unauthorized");
   if (record.status === 403) return t(locale, "forbidden");
   if (record.status === 409) return t(locale, "conflict");
   if (record.status >= 500) return t(locale, "serverError");
   return locale === "ko" ? "관찰됨" : "Observed";
+}
+
+function outcomePillText(record: FlowRecord, locale: WorkspaceLocale): string {
+  if (record.status === undefined) {
+    return t(locale, "responseNotObserved");
+  }
+
+  return `${record.status} ${outcomeStatusText(record, locale)}`;
 }
 
 function outcomeTone(record: FlowRecord): "success" | "blocked" | "error" {
@@ -2278,9 +2516,33 @@ function outcomeTone(record: FlowRecord): "success" | "blocked" | "error" {
 
 function outcomeDescription(record: FlowRecord, locale: WorkspaceLocale): string {
   if (record.status !== undefined && record.status >= 200 && record.status < 300) {
+    if (record.backendSpans?.length) {
+      return locale === "ko"
+        ? "요청이 완료되었고 개발용 백엔드 bridge가 실제 서버 span을 보고했습니다."
+        : "Request completed and the development backend bridge reported real server spans.";
+    }
+
+    if (hasFrontendServerEvidence(record)) {
+      return locale === "ko"
+        ? "요청이 완료되었고 Next.js 서버 런타임에서 응답 시간과 상태를 관찰했습니다."
+        : "Request completed and the Next.js server runtime observed its status and duration.";
+    }
+
     return locale === "ko"
       ? "요청이 완료되었고 스캔된 백엔드 흐름과 매칭되었습니다."
       : "Request completed and matched scanned backend flow.";
+  }
+
+  if (record.status === undefined) {
+    if (hasFrontendServerEvidence(record)) {
+      return locale === "ko"
+        ? "Next.js 서버 런타임에서 요청은 관찰했지만 응답 상태는 받지 못했습니다."
+        : "Next.js server runtime observed the request, but response status was not reported.";
+    }
+
+    return locale === "ko"
+      ? "요청은 소스 근거와 매칭되었지만 브라우저 응답 상태와 시간은 관측되지 않았습니다."
+      : "The request was matched to source evidence, but browser response status and duration were not observed.";
   }
 
   if (record.status === 409) {
@@ -2296,8 +2558,16 @@ function outcomeDescription(record: FlowRecord, locale: WorkspaceLocale): string
   }
 
   return locale === "ko"
-    ? "브라우저에서 관찰된 요청과 소스 기반 백엔드 매칭입니다. 서버 런타임 트레이스는 아닙니다."
-    : "Browser-observed request with source-derived backend matching. This is not a server runtime trace.";
+    ? record.backendSpans?.length
+      ? "개발용 백엔드 bridge가 서버 내부 span을 보고했습니다. 소스 행은 여전히 스캔 근거이며 운영 APM 트레이스가 아닙니다."
+      : hasFrontendServerEvidence(record)
+        ? "Next.js 서버에서 관찰된 API 요청과 소스 기반 백엔드 매칭입니다. 백엔드 내부 레이어는 별도 런타임 span이 있을 때만 실측입니다."
+        : "브라우저에서 관찰된 요청과 소스 기반 백엔드 매칭입니다. 서버 런타임 트레이스는 아닙니다."
+    : record.backendSpans?.length
+      ? "The development backend bridge reported server-side spans. Source rows still come from scanned evidence and this is not production APM tracing."
+      : hasFrontendServerEvidence(record)
+        ? "Next.js server-observed API request with source-derived backend matching. Backend layers are measured only when runtime spans are present."
+        : "Browser-observed request with source-derived backend matching. This is not a server runtime trace.";
 }
 
 function flowNote(record: FlowRecord, locale: WorkspaceLocale): string {
@@ -2320,12 +2590,28 @@ function flowNote(record: FlowRecord, locale: WorkspaceLocale): string {
   }
 
   return locale === "ko"
-    ? "브라우저 행은 페이지에서 관찰된 내용입니다. 소스 행은 스캔된 백엔드 근거이며 운영 런타임 트레이스가 아닙니다."
-    : "Browser rows are observed in the page. Source rows come from scanned backend evidence and are not a production runtime trace.";
+    ? hasFrontendServerEvidence(record)
+      ? "Next 서버 행은 로컬 Next.js 런타임에서 관찰된 내용입니다. 소스 행은 스캔된 백엔드 근거이며 운영 런타임 트레이스가 아닙니다."
+      : "브라우저 행은 페이지에서 관찰된 내용입니다. 소스 행은 스캔된 백엔드 근거이며 운영 런타임 트레이스가 아닙니다."
+    : hasFrontendServerEvidence(record)
+      ? "Next server rows are observed in the local Next.js runtime. Source rows come from scanned backend evidence and are not a production runtime trace."
+      : "Browser rows are observed in the page. Source rows come from scanned backend evidence and are not a production runtime trace.";
 }
 
 function confidenceDescription(record: FlowRecord, locale: WorkspaceLocale): string {
   if (record.confidence === "high") {
+    if (record.backendSpans?.length) {
+      return locale === "ko"
+        ? "요청, 엔드포인트, 소스 근거가 매칭되었고 개발용 백엔드 span도 들어왔습니다."
+        : "Request, endpoint, source evidence, and development backend spans matched.";
+    }
+
+    if (hasFrontendServerEvidence(record)) {
+      return locale === "ko"
+        ? "Next 서버 요청, 엔드포인트, 컨트롤러, 소스 근거가 매칭되었습니다."
+        : "Next server request, endpoint, controller, and source evidence matched.";
+    }
+
     return locale === "ko"
       ? "브라우저 요청, 엔드포인트, 컨트롤러, 소스 근거가 모두 매칭되었습니다."
       : "Browser request, endpoint, controller, and source evidence all matched.";
@@ -2352,6 +2638,8 @@ function evidenceCoverage(record: FlowRecord): {
     (coverage, layer) => {
       if (layer.evidenceLevel === "browser_observed") {
         coverage.browser += 1;
+      } else if (layer.evidenceLevel === "frontend_server_observed") {
+        coverage.backend += 1;
       } else if (layer.evidenceLevel === "backend_observed") {
         coverage.backend += 1;
       } else if (isUnprovenLayer(layer)) {
@@ -2369,12 +2657,18 @@ function evidenceCoverage(record: FlowRecord): {
 function layerSubtitle(layer: FlowLayer, locale: WorkspaceLocale): string {
   if (layer.type === "action")
     return locale === "ko" ? "사용자 클릭 캡처됨" : "user click captured";
+  if (layer.type === "api" && layer.evidenceLevel === "frontend_server_observed") {
+    return locale === "ko" ? "Next 서버 fetch 구간" : "Next server fetch span";
+  }
   if (layer.type === "api") return t(locale, "browserSpan");
   if (isUnprovenLayer(layer)) return t(locale, "knownBySourceOnly");
   if (layer.evidenceLevel === "browser_observed") return t(locale, "browserObserved");
+  if (layer.evidenceLevel === "frontend_server_observed") {
+    return locale === "ko" ? "Next 서버 관찰" : "Next server observed";
+  }
   if (layer.evidenceLevel === "backend_observed") return t(locale, "devRuntimeSpan");
   if (isSourceMatchedLayer(layer) || layer.evidenceLevel === "inferred") {
-    return t(locale, "sourceDerivedEstimate");
+    return t(locale, "sourceLayoutEstimate");
   }
   return executionLabel(layer.execution, locale);
 }
@@ -2386,10 +2680,13 @@ function durationCaption(
   locale: WorkspaceLocale
 ): string {
   if (layer.type === "result") return t(locale, "responseMarker");
+  if (layer.evidenceLevel === "frontend_server_observed") {
+    return locale === "ko" ? "Next 서버 구간" : "Next server span";
+  }
   if (layer.type === "action" || layer.type === "api") return t(locale, "browserSpan");
   if (layer.evidenceLevel === "backend_observed") return t(locale, "observed");
 
-  return `${t(locale, "estimate")} · ${Math.round((duration / Math.max(total, 1)) * 100)}%`;
+  return `${t(locale, "sourceLayoutEstimate")} · ${Math.round((duration / Math.max(total, 1)) * 100)}%`;
 }
 
 function tabLabel(tab: WorkspaceTab, locale: WorkspaceLocale): string {
@@ -2427,6 +2724,9 @@ function translateEvidence(value: string, locale: WorkspaceLocale): string {
   if (locale === "en") return value;
 
   const normalized = value.toLowerCase();
+  if (normalized.includes("frontend_server_observed") || normalized.includes("next.js server")) {
+    return "Next.js 서버 런타임에서 API 요청/응답을 관찰했습니다";
+  }
   if (normalized.includes("click") || normalized.includes("browser-observed request")) {
     return "브라우저에서 사용자 액션을 관찰했습니다";
   }
@@ -2473,7 +2773,7 @@ function formatDateTime(value: string | undefined): string {
 }
 
 function formatDuration(value: number | undefined): string {
-  return `${Math.round(value ?? 0)} ms`;
+  return value === undefined ? "—" : `${Math.round(value)} ms`;
 }
 
 function capitalize(value: string): string {

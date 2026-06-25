@@ -60,6 +60,7 @@ Rules:
 - Next.js App Router pages MUST be represented as route templates.
 - Manual frontend URLs MUST be represented as explicit page routes.
 - `scanPages` MUST NOT capture screenshots. Capture is handled by `CaptureAdapter`.
+- `scanPages` MAY include source-derived API calls when a Deep Support frontend adapter can find them statically.
 - Dynamic routes without `sampleParams` MUST be returned with `captureStatus = "pending"`.
 - The Core scan pipeline MUST consume `FrontendAdapter.scanPages()` results regardless of frontend type.
 
@@ -76,6 +77,7 @@ Rules:
 
 - Capture MUST preserve page IDs.
 - Capture MUST add screenshot segments and observed API calls.
+- Capture MUST preserve existing source-derived `apiCalls` and merge browser-observed calls by method and path when both are available.
 - Capture failures MUST return `captureStatus = "failed"` and `errorMessage`.
 - Capture MUST NOT silently drop failed pages.
 
@@ -127,12 +129,16 @@ Input:
 
 Output:
 
-- `PageStoryboard[]` with route, file path, pending status, and empty screenshot/API arrays before capture
+- `PageStoryboard[]` with route, file path, pending status, empty screenshot arrays, and source-derived API calls when detected
 
 Limits:
 
 - MUST collect actual page files only.
 - MUST NOT collect components, hooks, utility files, stories, tests, or API routes as pages.
+- MAY statically inspect the page file and used local named imports to find `fetch`, common `axios` calls, `navigator.sendBeacon`, and simple API helper wrappers.
+- MUST NOT claim source-derived API calls are browser-observed requests.
+- MUST leave `apiCalls` empty when no source API call can be determined.
+- MUST prefer an unknown or missing API call over inventing a path from arbitrary computed values.
 
 ## ManualFrontendAdapter
 
@@ -141,26 +147,29 @@ Input:
 - `frontend.type = "manual"`
 - `baseUrl`
 - `urls`
+- Optional `sourceDir`
+- Optional `routeFiles`
 - Optional viewport and capture settings
 
 Output:
 
-- `PageStoryboard[]` created from `frontend.urls`
+- `PageStoryboard[]` created from `frontend.urls`, optionally enriched with source-derived API calls from `routeFiles`
 
 Rules:
 
 - Each manual URL MUST become one `PageStoryboard`.
 - `route` MUST use the configured URL path.
-- `filePath` MUST remain omitted unless a later explicit mapping is added.
-- `screenshots` and `apiCalls` MUST start as empty arrays before capture.
+- `filePath` MUST remain omitted.
+- `screenshots` MUST start as an empty array before capture.
+- `apiCalls` MUST start as an empty array unless `sourceDir` and `routeFiles` explicitly map the route to React source files.
 - `captureStatus` SHOULD start as `pending` before capture.
 - Manual URL pages MAY be passed to `CaptureAdapter`.
 - OpenAPI-only backend plus manual frontend is the official v0.1 Basic Support path.
-- Spring Boot plus a React SPA frontend, such as Vite, CRA, or a custom React Router app, MAY use ManualFrontendAdapter in v0.1. The adapter provides explicit page URLs only; browser-observed capture requests remain the live interaction signal.
+- Spring Boot plus a React SPA frontend, such as Vite, CRA, or a custom React Router app, MAY use ManualFrontendAdapter in v0.1. The adapter provides explicit page URLs, optional source-derived API calls for configured route files, and browser-observed capture requests as the live interaction signal.
 
 Limits:
 
-- MUST NOT infer frontend source files.
+- MUST NOT infer frontend source files without explicit `routeFiles`.
 - MUST NOT provide React Router or general SPA route discovery.
 
 ## CaptureAdapter

@@ -66,6 +66,8 @@ export const manualFrontendConfigSchema = z
     type: z.literal("manual"),
     baseUrl: z.string(),
     urls: z.array(z.string()),
+    sourceDir: z.string().optional(),
+    routeFiles: z.record(z.string(), z.array(z.string())).optional(),
     viewport: viewportConfigSchema.optional(),
     capture: captureConfigSchema.optional()
   })

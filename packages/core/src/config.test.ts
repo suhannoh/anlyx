@@ -48,6 +48,31 @@ describe("Anlyx config schema", () => {
     expect(parseConfig(openApiManualConfig)).toEqual(openApiManualConfig);
   });
 
+  it("valid manual React source mapping config passes", () => {
+    const config = {
+      ...openApiManualConfig,
+      frontend: {
+        type: "manual",
+        baseUrl: "http://localhost:3000",
+        urls: ["/", "/ranking"],
+        sourceDir: "./frontend/src",
+        routeFiles: {
+          "/": ["pages/Home.tsx", "lib/api.ts"],
+          "/ranking": ["pages/Ranking.tsx", "lib/api.ts"]
+        }
+      }
+    } as const;
+
+    expect(parseConfig(config)).toEqual(config);
+    expect(normalizeConfig(config).frontend).toMatchObject({
+      type: "manual",
+      sourceDir: "./frontend/src",
+      routeFiles: {
+        "/": ["pages/Home.tsx", "lib/api.ts"]
+      }
+    });
+  });
+
   it("missing required spring sourceDir fails", () => {
     const config = {
       ...springNextConfig,

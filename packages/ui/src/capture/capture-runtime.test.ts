@@ -27,8 +27,13 @@ function createFetchMock(posts: PostedRequest[] = []) {
   });
 }
 
-function postedEvent(posts: PostedRequest[], index = 0) {
-  return JSON.parse(String(posts[index]?.init?.body));
+function postedEvents(posts: PostedRequest[], type?: string) {
+  const events = posts.map((post) => JSON.parse(String(post.init?.body)));
+  return type ? events.filter((event) => event.type === type) : events;
+}
+
+function postedRequestEvent(posts: PostedRequest[], index = 0) {
+  return postedEvents(posts, "request")[index];
 }
 
 function headersObject(headers: HeadersInit | undefined): Record<string, string> {
@@ -48,6 +53,7 @@ describe("capture runtime", () => {
     vi.useFakeTimers();
     vi.setSystemTime(fixedNow);
     document.body.innerHTML = "";
+    window.history.replaceState(null, "", "/");
     delete window.__ANLYX_RUNTIME_BASE_URL__;
     delete window.__ANLYX_CAPTURE_INSTALLED__;
   });
@@ -65,6 +71,24 @@ describe("capture runtime", () => {
     vi.restoreAllMocks();
   });
 
+  it("posts a page_view event on install", async () => {
+    const posts: PostedRequest[] = [];
+    window.fetch = createFetchMock(posts) as typeof fetch;
+    window.history.replaceState(null, "", "/benefits");
+
+    uninstallers.push(installAnlyxCaptureRuntime({ now: () => fixedNow }));
+    await vi.runAllTimersAsync();
+
+    expect(postedEvents(posts, "page_view")).toEqual([
+      expect.objectContaining({
+        type: "page_view",
+        url: "http://localhost:3000/benefits",
+        path: "/benefits",
+        observedAt: "2025-01-01T00:00:00.000Z"
+      })
+    ]);
+  });
+
   it("attaches click context to the next fetch event", async () => {
     const posts: PostedRequest[] = [];
     window.fetch = createFetchMock(posts) as typeof fetch;
@@ -79,7 +103,7 @@ describe("capture runtime", () => {
     await window.fetch("/api/public/benefits");
     await vi.runAllTimersAsync();
 
-    expect(postedEvent(posts)).toMatchObject({
+    expect(postedRequestEvent(posts)).toMatchObject({
       type: "request",
       method: "GET",
       path: "/api/public/benefits",
@@ -107,8 +131,8 @@ describe("capture runtime", () => {
     await window.fetch("/api/session/ping");
     await vi.runAllTimersAsync();
 
-    expect(postedEvent(posts, 0).action).toMatchObject({ label: "Save perk" });
-    expect(postedEvent(posts, 1).action).toBeUndefined();
+    expect(postedRequestEvent(posts, 0).action).toMatchObject({ label: "Save perk" });
+    expect(postedRequestEvent(posts, 1).action).toBeUndefined();
   });
 
   it("keeps click context for the next API request when a Next.js RSC request happens first", async () => {
@@ -125,8 +149,8 @@ describe("capture runtime", () => {
     await window.fetch("/api/public/benefits/123");
     await vi.runAllTimersAsync();
 
-    expect(posts).toHaveLength(1);
-    expect(postedEvent(posts)).toMatchObject({
+    expect(postedEvents(posts, "request")).toHaveLength(1);
+    expect(postedRequestEvent(posts)).toMatchObject({
       path: "/api/public/benefits/123",
       action: {
         label: "Open benefit",
@@ -149,8 +173,8 @@ describe("capture runtime", () => {
     await window.fetch("/api/public/benefits/123");
     await vi.runAllTimersAsync();
 
-    expect(postedEvent(posts, 0).action).toBeUndefined();
-    expect(postedEvent(posts, 1).action).toMatchObject({ label: "Open page" });
+    expect(postedRequestEvent(posts, 0).action).toBeUndefined();
+    expect(postedRequestEvent(posts, 1).action).toMatchObject({ label: "Open page" });
   });
 
   it("does not attach stale click context to later background requests", async () => {
@@ -173,7 +197,7 @@ describe("capture runtime", () => {
     await window.fetch("/api/public/benefits/123");
     await vi.runAllTimersAsync();
 
-    expect(postedEvent(posts).action).toBeUndefined();
+    expect(postedRequestEvent(posts).action).toBeUndefined();
   });
 
   it("posts one fetch request event to /_anlyx/events and returns the original response", async () => {
@@ -185,9 +209,9 @@ describe("capture runtime", () => {
     await vi.runAllTimersAsync();
 
     expect(response.status).toBe(201);
-    expect(posts).toHaveLength(1);
+    expect(postedEvents(posts, "request")).toHaveLength(1);
     expect(posts[0]?.url).toBe("http://localhost:4777/_anlyx/events");
-    expect(postedEvent(posts)).toMatchObject({
+    expect(postedRequestEvent(posts)).toMatchObject({
       type: "request",
       method: "GET",
       url: "http://localhost:3000/api/public/benefits",
@@ -221,7 +245,7 @@ describe("capture runtime", () => {
     });
     await vi.runAllTimersAsync();
 
-    const requestId = postedEvent(posts).id;
+    const requestId = postedRequestEvent(posts).id;
     expect(headersObject(apiCalls[0]?.init?.headers)).toMatchObject({
       accept: "application/json",
       "x-anlyx-request-id": requestId
@@ -247,7 +271,7 @@ describe("capture runtime", () => {
     await window.fetch("/benefit/coffee");
     await vi.runAllTimersAsync();
 
-    expect(posts).toHaveLength(1);
+    expect(postedEvents(posts, "request")).toHaveLength(1);
     expect(headersObject(pageCalls[0]?.init?.headers)).not.toHaveProperty("x-anlyx-request-id");
   });
 
@@ -269,15 +293,15 @@ describe("capture runtime", () => {
     await expect(window.fetch("/api/public/benefits")).rejects.toThrow(error);
     await vi.runAllTimersAsync();
 
-    expect(posts).toHaveLength(1);
-    expect(postedEvent(posts)).toMatchObject({
+    expect(postedEvents(posts, "request")).toHaveLength(1);
+    expect(postedRequestEvent(posts)).toMatchObject({
       type: "request",
       method: "GET",
       path: "/api/public/benefits",
       durationMs: 0,
       observedAt: "2025-01-01T00:00:00.000Z"
     });
-    expect(postedEvent(posts).status).toBeUndefined();
+    expect(postedRequestEvent(posts).status).toBeUndefined();
   });
 
   it("posts one XHR request event after loadend", async () => {
@@ -307,8 +331,8 @@ describe("capture runtime", () => {
     xhr.send();
     await vi.runAllTimersAsync();
 
-    expect(posts).toHaveLength(1);
-    expect(postedEvent(posts)).toMatchObject({
+    expect(postedEvents(posts, "request")).toHaveLength(1);
+    expect(postedRequestEvent(posts)).toMatchObject({
       type: "request",
       method: "POST",
       url: "http://localhost:3000/api/account/saved-benefit",
@@ -350,7 +374,7 @@ describe("capture runtime", () => {
     xhr.send();
     await vi.runAllTimersAsync();
 
-    expect(requestHeaders.get("x-anlyx-request-id")).toBe(postedEvent(posts).id);
+    expect(requestHeaders.get("x-anlyx-request-id")).toBe(postedRequestEvent(posts).id);
   });
 
   it("ignores internal, Vite, static, favicon, and ingest paths", async () => {

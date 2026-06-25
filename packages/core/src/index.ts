@@ -39,7 +39,9 @@ export type {
   BrowserActionEvent,
   BackendObservedSpan,
   BackendSpanEvent,
+  BrowserPageViewEvent,
   BrowserRequestEvent,
+  FrontendServerRequestEvent,
   FlowLayer,
   FlowLayerExecution,
   FlowLayerType,
@@ -92,6 +94,8 @@ export { aggregateReportData, matchApiCallToEndpoint } from "./report-aggregatio
 
 export {
   buildFlowRecordFromBrowserEvent,
+  buildFlowRecordFromFrontendServerEvent,
+  buildFlowRecordsFromPageViewEvent,
   mergeBackendSpansIntoFlowRecord,
   normalizeBrowserEventPath
 } from "./live-flow.js";

@@ -174,7 +174,12 @@ function createFrontendAdapter(
     }) as NextFrontendAdapter;
   }
 
-  return dependencies.createManualFrontendAdapter(config.frontend) as ManualFrontendAdapter;
+  return dependencies.createManualFrontendAdapter({
+    baseUrl: config.frontend.baseUrl,
+    urls: config.frontend.urls,
+    ...(config.frontend.sourceDir ? { sourceDir: resolve(cwd, config.frontend.sourceDir) } : {}),
+    ...(config.frontend.routeFiles ? { routeFiles: config.frontend.routeFiles } : {})
+  }) as ManualFrontendAdapter;
 }
 
 function createCapture(

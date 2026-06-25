@@ -7,13 +7,17 @@ import { fileURLToPath } from "node:url";
 
 import {
   buildFlowRecordFromBrowserEvent,
+  buildFlowRecordFromFrontendServerEvent,
+  buildFlowRecordsFromPageViewEvent,
   mergeBackendSpansIntoFlowRecord,
   scanResultSchema,
   type BackendObservedSpan,
   type BackendSpanEvent,
   type BrowserActionEvent,
+  type BrowserPageViewEvent,
   type BrowserRequestEvent,
   type FlowRecord,
+  type FrontendServerRequestEvent,
   type NormalizedAnlyxConfig,
   type ScanResult
 } from "@anlyx/core";
@@ -57,6 +61,8 @@ export type DevCommandDependencies = {
 export type LocalUiServerOptions = {
   port: number;
   reportData: ScanResult;
+  reportDataPath?: string;
+  readReportData?: (path: string) => Promise<ScanResult>;
   viewerRoot: string;
   frontendBaseUrl: string;
   mode: "inject" | "overlay" | "viewer";
@@ -70,6 +76,7 @@ export type LocalUiServer = {
 export type StartFrontendDevServerOptions = {
   command: string;
   cwd: string;
+  env?: NodeJS.ProcessEnv;
 };
 
 export type FrontendDevServerProcess = {
@@ -82,6 +89,7 @@ export type LocalFlowStore = {
   records: FlowRecord[];
   clients: Set<ServerResponse>;
   pendingBackendSpans: Map<string, BackendObservedSpan[]>;
+  beginPageScope(options?: { preserveRecords?: FlowRecord[] }): void;
   pushFlow(record: FlowRecord): void;
   pushBackendSpans(requestId: string, spans: BackendObservedSpan[]): FlowRecord | undefined;
 };
@@ -89,6 +97,8 @@ export type LocalFlowStore = {
 export type AnlyxRuntimeMiddlewareOptions = LocalUiServerOptions & {
   flowStore: LocalFlowStore;
 };
+
+const MAX_RUNTIME_EVENT_BODY_BYTES = 64 * 1024;
 
 const activeLocalUiServers = new Set<LocalUiServer>();
 
@@ -108,15 +118,18 @@ export async function runDevCommand(options: DevCommandOptions = {}): Promise<De
     ...(options.configPath ? { configPath: options.configPath } : {}),
     ...(options.outputDir ? { outputDir: options.outputDir } : {})
   });
+  const port = options.port ?? getConfiguredPort(config);
   const frontendStarted = await ensureFrontendDevServer({
     cwd,
     config,
+    port,
     dependencies
   });
-  const port = options.port ?? getConfiguredPort(config);
   const server = await dependencies.createLocalUiServer({
     port,
     reportData,
+    reportDataPath,
+    readReportData: dependencies.readReportData,
     viewerRoot: getViewerRoot(),
     frontendBaseUrl: config.frontend.baseUrl,
     mode: config.server.mode
@@ -192,6 +205,7 @@ async function ensureReportData(options: {
 async function ensureFrontendDevServer(options: {
   cwd: string;
   config: NormalizedAnlyxConfig;
+  port: number;
   dependencies: RequiredDevCommandDependencies;
 }): Promise<boolean> {
   const command = options.config.dev?.command;
@@ -204,9 +218,11 @@ async function ensureFrontendDevServer(options: {
     return false;
   }
 
+  const env = getFrontendDevServerEnv(options.config, options.port);
   options.dependencies.startFrontendDevServer({
     command,
-    cwd: options.cwd
+    cwd: options.cwd,
+    ...(env ? { env } : {})
   });
 
   return true;
@@ -309,6 +325,7 @@ export function startFrontendDevServer(
 ): FrontendDevServerProcess {
   const child = spawn(options.command, {
     cwd: options.cwd,
+    env: options.env ?? process.env,
     shell: true,
     stdio: "inherit"
   });
@@ -322,19 +339,67 @@ export function startFrontendDevServer(
   };
 }
 
+function getFrontendDevServerEnv(
+  config: NormalizedAnlyxConfig,
+  port: number
+): NodeJS.ProcessEnv | undefined {
+  if (config.frontend.type !== "next") {
+    return undefined;
+  }
+
+  const runtimeUrl = `http://127.0.0.1:${port}`;
+  const preload = "--import anlyx/next-server/register";
+  const nodeOptions = [preload, process.env.NODE_OPTIONS ?? ""].filter(Boolean).join(" ");
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    ANLYX_RUNTIME_URL: runtimeUrl,
+    NODE_OPTIONS: nodeOptions
+  };
+
+  if (config.backend.type === "spring" && config.backend.baseUrl) {
+    env.ANLYX_BACKEND_BASE_URL = config.backend.baseUrl;
+  }
+
+  return env;
+}
+
 export function createLocalFlowStore(): LocalFlowStore {
   const store: LocalFlowStore = {
     records: [],
     clients: new Set<ServerResponse>(),
     pendingBackendSpans: new Map<string, BackendObservedSpan[]>(),
+    beginPageScope(options = {}) {
+      store.records = options.preserveRecords ?? [];
+      store.pendingBackendSpans.clear();
+      for (const client of store.clients) {
+        writeSseReset(client);
+      }
+      for (const record of store.records) {
+        for (const client of store.clients) {
+          writeSseFlow(client, record);
+        }
+      }
+    },
     pushFlow(record) {
       const pendingSpans = store.pendingBackendSpans.get(record.requestId) ?? [];
       const nextRecord = pendingSpans.length > 0 ? mergeBackendSpans(record, pendingSpans) : record;
 
       store.pendingBackendSpans.delete(record.requestId);
+      const shouldSkipSourceOnly = isSourceOnlyFlowRecord(nextRecord)
+        ? store.records.some((item) => isObservedFlowRecord(item) && recordsDescribeSameEndpoint(item, nextRecord))
+        : false;
+
+      if (shouldSkipSourceOnly) {
+        return;
+      }
+
       store.records = [
         nextRecord,
-        ...store.records.filter((item) => item.id !== nextRecord.id)
+        ...store.records.filter(
+          (item) =>
+            item.id !== nextRecord.id &&
+            !(isObservedFlowRecord(nextRecord) && isSourceOnlyFlowRecord(item) && recordsDescribeSameEndpoint(nextRecord, item))
+        )
       ].slice(0, 100);
       for (const client of store.clients) {
         writeSseFlow(client, nextRecord);
@@ -388,6 +453,30 @@ function mergeUniqueBackendSpans(
   return [...byId.values()].sort((a, b) => a.startOffsetMs - b.startOffsetMs);
 }
 
+function isObservedFlowRecord(record: FlowRecord): boolean {
+  return record.layers.some(
+    (layer) =>
+      layer.evidenceLevel === "browser_observed" ||
+      layer.evidenceLevel === "frontend_server_observed" ||
+      layer.evidenceLevel === "backend_observed"
+  );
+}
+
+function isSourceOnlyFlowRecord(record: FlowRecord): boolean {
+  return (
+    record.layers.some((layer) => layer.evidenceLevel === "source_derived") &&
+    !isObservedFlowRecord(record)
+  );
+}
+
+function recordsDescribeSameEndpoint(left: FlowRecord, right: FlowRecord): boolean {
+  if (left.endpointId && right.endpointId) {
+    return left.endpointId === right.endpointId;
+  }
+
+  return left.method === right.method && left.path === right.path;
+}
+
 function createAnlyxDevPlugin(options: LocalUiServerOptions) {
   const flowStore = createLocalFlowStore();
 
@@ -416,8 +505,14 @@ export function createAnlyxRuntimeMiddleware(options: AnlyxRuntimeMiddlewareOpti
     const requestUrl = request.url ?? "/";
 
     if (request.method === "OPTIONS" && isAnlyxPath(requestUrl)) {
+      if (!isAllowedRuntimeOrigin(request, options)) {
+        response.statusCode = 403;
+        response.end();
+        return;
+      }
+
       response.statusCode = 204;
-      setCorsHeaders(response);
+      setCorsHeaders(request, response, options);
       response.end();
       return;
     }
@@ -433,18 +528,18 @@ export function createAnlyxRuntimeMiddleware(options: AnlyxRuntimeMiddlewareOpti
     }
 
     if (request.method === "GET" && requestUrl === "/_anlyx/events/stream") {
-      handleFlowEventStream(request, response, options.flowStore);
+      handleFlowEventStream(request, response, options);
       return;
     }
 
     if (request.method === "GET" && isReportDataPath(requestUrl)) {
-      sendJson(response, options.reportData);
+      sendJson(request, response, options, await resolveRuntimeReportData(options));
       return;
     }
 
     if (request.method === "GET" && requestUrl === "/_anlyx/overlay.js") {
       response.statusCode = 200;
-      setCorsHeaders(response);
+      setCorsHeaders(request, response, options);
       response.setHeader("content-type", "application/javascript; charset=utf-8");
       response.end(getOverlayClientScript());
       return;
@@ -452,7 +547,9 @@ export function createAnlyxRuntimeMiddleware(options: AnlyxRuntimeMiddlewareOpti
 
     if (request.method === "GET" && requestUrl === "/_anlyx/capture.js") {
       await sendRuntimeAsset(
+        request,
         response,
+        options,
         join(options.viewerRoot, "../overlay/capture.js"),
         "application/javascript; charset=utf-8"
       );
@@ -461,7 +558,7 @@ export function createAnlyxRuntimeMiddleware(options: AnlyxRuntimeMiddlewareOpti
 
     if (request.method === "GET" && requestUrl === "/_anlyx/spring-bridge.java") {
       response.statusCode = 200;
-      setCorsHeaders(response);
+      setCorsHeaders(request, response, options);
       response.setHeader("content-type", "text/plain; charset=utf-8");
       response.end(getSpringBridgeSource(`http://127.0.0.1:${options.port}`));
       return;
@@ -506,10 +603,19 @@ async function handleBrowserEventPost(
   response: ServerResponse,
   options: AnlyxRuntimeMiddlewareOptions
 ): Promise<void> {
-  const body = await readRequestBody(request);
+  if (!isAllowedRuntimeOrigin(request, options)) {
+    sendAcceptedJson(request, response, options, 403, { accepted: false, error: "Forbidden origin." });
+    return;
+  }
+
+  const body = await readRuntimeEventBody(request, response, options);
+
+  if (body === false) {
+    return;
+  }
 
   if (!body) {
-    sendAcceptedJson(response, 400, { accepted: false, error: "Missing JSON body." });
+    sendAcceptedJson(request, response, options, 400, { accepted: false, error: "Missing JSON body." });
     return;
   }
 
@@ -518,18 +624,63 @@ async function handleBrowserEventPost(
   try {
     parsed = JSON.parse(body.toString("utf8"));
   } catch {
-    sendAcceptedJson(response, 400, { accepted: false, error: "Invalid JSON body." });
+    sendAcceptedJson(request, response, options, 400, { accepted: false, error: "Invalid JSON body." });
+    return;
+  }
+
+  if (isBrowserPageViewEvent(parsed)) {
+    const reportData = await resolveRuntimeReportData(options);
+    const records = buildFlowRecordsFromPageViewEvent(parsed, reportData);
+    const preserveRecords = options.flowStore.records.filter((record) =>
+      records.some((sourceRecord) => isObservedFlowRecord(record) && recordsDescribeSameEndpoint(record, sourceRecord))
+    );
+
+    options.flowStore.beginPageScope({ preserveRecords });
+
+    records.forEach((record) => options.flowStore.pushFlow(record));
+    sendAcceptedJson(request, response, options, 202, {
+      accepted: true,
+      ...(records.length > 0
+        ? { id: records[0]!.id, ids: records.map((record) => record.id) }
+        : { pending: true })
+    });
+    return;
+  }
+
+  if (isFrontendServerRequestEvent(parsed)) {
+    const reportData = await resolveRuntimeReportData(options);
+    const record = buildFlowRecordFromFrontendServerEvent(parsed, reportData);
+    options.flowStore.pushFlow(record);
+    sendAcceptedJson(request, response, options, 202, { accepted: true, id: record.id });
     return;
   }
 
   if (!isBrowserRequestEvent(parsed)) {
-    sendAcceptedJson(response, 400, { accepted: false, error: "Invalid browser request event." });
+    sendAcceptedJson(request, response, options, 400, {
+      accepted: false,
+      error: "Invalid browser request event."
+    });
     return;
   }
 
-  const record = buildFlowRecordFromBrowserEvent(parsed, options.reportData);
+  const reportData = await resolveRuntimeReportData(options);
+  const record = buildFlowRecordFromBrowserEvent(parsed, reportData);
   options.flowStore.pushFlow(record);
-  sendAcceptedJson(response, 202, { accepted: true, id: record.id });
+  sendAcceptedJson(request, response, options, 202, { accepted: true, id: record.id });
+}
+
+async function resolveRuntimeReportData(
+  options: Pick<AnlyxRuntimeMiddlewareOptions, "reportData" | "reportDataPath" | "readReportData">
+): Promise<ScanResult> {
+  if (!options.reportDataPath || !options.readReportData) {
+    return options.reportData;
+  }
+
+  try {
+    return await options.readReportData(options.reportDataPath);
+  } catch {
+    return options.reportData;
+  }
 }
 
 async function handleBackendSpanPost(
@@ -537,10 +688,19 @@ async function handleBackendSpanPost(
   response: ServerResponse,
   options: AnlyxRuntimeMiddlewareOptions
 ): Promise<void> {
-  const body = await readRequestBody(request);
+  if (!isAllowedRuntimeOrigin(request, options)) {
+    sendAcceptedJson(request, response, options, 403, { accepted: false, error: "Forbidden origin." });
+    return;
+  }
+
+  const body = await readRuntimeEventBody(request, response, options);
+
+  if (body === false) {
+    return;
+  }
 
   if (!body) {
-    sendAcceptedJson(response, 400, { accepted: false, error: "Missing JSON body." });
+    sendAcceptedJson(request, response, options, 400, { accepted: false, error: "Missing JSON body." });
     return;
   }
 
@@ -549,17 +709,17 @@ async function handleBackendSpanPost(
   try {
     parsed = JSON.parse(body.toString("utf8"));
   } catch {
-    sendAcceptedJson(response, 400, { accepted: false, error: "Invalid JSON body." });
+    sendAcceptedJson(request, response, options, 400, { accepted: false, error: "Invalid JSON body." });
     return;
   }
 
   if (!isBackendSpanEvent(parsed)) {
-    sendAcceptedJson(response, 400, { accepted: false, error: "Invalid backend span event." });
+    sendAcceptedJson(request, response, options, 400, { accepted: false, error: "Invalid backend span event." });
     return;
   }
 
   const updatedRecord = options.flowStore.pushBackendSpans(parsed.requestId, parsed.spans);
-  sendAcceptedJson(response, 202, {
+  sendAcceptedJson(request, response, options, 202, {
     accepted: true,
     ...(updatedRecord ? { id: updatedRecord.id } : { pending: true })
   });
@@ -568,12 +728,11 @@ async function handleBackendSpanPost(
 function handleFlowEventStream(
   request: IncomingMessage,
   response: ServerResponse,
-  flowStore: LocalFlowStore
+  options: AnlyxRuntimeMiddlewareOptions
 ) {
+  const flowStore = options.flowStore;
+  setCorsHeaders(request, response, options);
   response.writeHead(200, {
-    "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET, POST, OPTIONS",
-    "access-control-allow-headers": "content-type",
     "cache-control": "no-cache, no-transform",
     connection: "keep-alive",
     "content-type": "text/event-stream; charset=utf-8",
@@ -604,47 +763,127 @@ function writeSseFlow(response: ServerResponse, record: FlowRecord) {
   response.write(`event: flow\ndata: ${JSON.stringify(record)}\n\n`);
 }
 
+function writeSseReset(response: ServerResponse) {
+  response.write("event: reset\ndata: {}\n\n");
+}
+
 function sendAcceptedJson(
+  request: IncomingMessage,
   response: ServerResponse,
+  options: AnlyxRuntimeMiddlewareOptions,
   statusCode: number,
-  value: { accepted: boolean; id?: string; pending?: boolean; error?: string }
+  value: { accepted: boolean; id?: string; ids?: string[]; pending?: boolean; error?: string }
 ) {
   response.statusCode = statusCode;
-  setCorsHeaders(response);
+  setCorsHeaders(request, response, options);
   response.setHeader("content-type", "application/json; charset=utf-8");
   response.end(JSON.stringify(value));
 }
 
-function sendJson(response: ServerResponse, value: unknown) {
+function sendJson(
+  request: IncomingMessage,
+  response: ServerResponse,
+  options: AnlyxRuntimeMiddlewareOptions,
+  value: unknown
+) {
   response.statusCode = 200;
-  setCorsHeaders(response);
+  setCorsHeaders(request, response, options);
   response.setHeader("content-type", "application/json; charset=utf-8");
   response.end(JSON.stringify(value));
 }
 
 async function sendRuntimeAsset(
+  request: IncomingMessage,
   response: ServerResponse,
+  options: AnlyxRuntimeMiddlewareOptions,
   path: string,
   contentType: string
 ): Promise<void> {
   try {
     const content = await readFile(path);
     response.statusCode = 200;
-    setCorsHeaders(response);
+    setCorsHeaders(request, response, options);
     response.setHeader("content-type", contentType);
     response.end(content);
   } catch {
     response.statusCode = 404;
-    setCorsHeaders(response);
+    setCorsHeaders(request, response, options);
     response.setHeader("content-type", "text/plain; charset=utf-8");
     response.end("Anlyx runtime asset not found.");
   }
 }
 
-function setCorsHeaders(response: ServerResponse) {
-  response.setHeader("access-control-allow-origin", "*");
+function setCorsHeaders(
+  request: IncomingMessage,
+  response: ServerResponse,
+  options: Pick<AnlyxRuntimeMiddlewareOptions, "frontendBaseUrl" | "port">
+) {
+  const origin = request.headers.origin;
+
+  if (origin && isAllowedRuntimeOrigin(request, options)) {
+    response.setHeader("access-control-allow-origin", origin);
+    response.setHeader("vary", "origin");
+  } else if (!origin) {
+    response.setHeader("access-control-allow-origin", "*");
+  }
+
   response.setHeader("access-control-allow-methods", "GET, POST, OPTIONS");
-  response.setHeader("access-control-allow-headers", "content-type");
+  response.setHeader("access-control-allow-headers", "content-type, x-anlyx-request-id");
+}
+
+function isAllowedRuntimeOrigin(
+  request: IncomingMessage,
+  options: Pick<AnlyxRuntimeMiddlewareOptions, "frontendBaseUrl" | "port">
+): boolean {
+  const origin = request.headers.origin;
+
+  if (!origin) {
+    return true;
+  }
+
+  return allowedRuntimeOrigins(options).has(origin);
+}
+
+function allowedRuntimeOrigins(options: Pick<AnlyxRuntimeMiddlewareOptions, "frontendBaseUrl" | "port">) {
+  const origins = new Set([`http://localhost:${options.port}`, `http://127.0.0.1:${options.port}`]);
+
+  try {
+    origins.add(new URL(options.frontendBaseUrl).origin);
+  } catch {
+    // Config loading validates frontendBaseUrl; this keeps the runtime defensive for tests.
+  }
+
+  return origins;
+}
+
+async function readRuntimeEventBody(
+  request: IncomingMessage,
+  response: ServerResponse,
+  options: AnlyxRuntimeMiddlewareOptions
+): Promise<Buffer | undefined | false> {
+  try {
+    return await readRequestBody(request, MAX_RUNTIME_EVENT_BODY_BYTES);
+  } catch (error) {
+    const message = error instanceof RequestBodyTooLargeError ? "Event body too large." : "Could not read request body.";
+    sendAcceptedJson(request, response, options, 413, { accepted: false, error: message });
+    return false;
+  }
+}
+
+function isBrowserPageViewEvent(value: unknown): value is BrowserPageViewEvent {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const event = value as Partial<BrowserPageViewEvent>;
+  return (
+    typeof event.id === "string" &&
+    event.type === "page_view" &&
+    typeof event.url === "string" &&
+    typeof event.observedAt === "string" &&
+    isOptionalString(event.path) &&
+    isOptionalString(event.title)
+  );
 }
 
 function isBrowserRequestEvent(value: unknown): value is BrowserRequestEvent {
@@ -663,6 +902,26 @@ function isBrowserRequestEvent(value: unknown): value is BrowserRequestEvent {
     isOptionalNumber(event.status) &&
     isOptionalNumber(event.durationMs) &&
     isOptionalBrowserActionEvent(event.action)
+  );
+}
+
+function isFrontendServerRequestEvent(value: unknown): value is FrontendServerRequestEvent {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const event = value as Partial<FrontendServerRequestEvent>;
+  return (
+    typeof event.id === "string" &&
+    event.type === "frontend_server_request" &&
+    event.runtime === "next" &&
+    typeof event.method === "string" &&
+    typeof event.url === "string" &&
+    typeof event.observedAt === "string" &&
+    isOptionalString(event.path) &&
+    isOptionalString(event.pagePath) &&
+    isOptionalNumber(event.status) &&
+    isOptionalNumber(event.durationMs)
   );
 }
 
@@ -1335,14 +1594,35 @@ function shouldOmitProxyResponseHeader(key: string): boolean {
   );
 }
 
-function readRequestBody(request: IncomingMessage): Promise<Buffer | undefined> {
+class RequestBodyTooLargeError extends Error {}
+
+function readRequestBody(request: IncomingMessage, maxBytes?: number): Promise<Buffer | undefined> {
   return new Promise((resolveBody, reject) => {
     const chunks: Buffer[] = [];
+    let totalBytes = 0;
+    let rejected = false;
 
     request.on("data", (chunk: Buffer | string) => {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      if (rejected) {
+        return;
+      }
+
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      totalBytes += buffer.byteLength;
+
+      if (maxBytes !== undefined && totalBytes > maxBytes) {
+        rejected = true;
+        reject(new RequestBodyTooLargeError("Request body too large."));
+        return;
+      }
+
+      chunks.push(buffer);
     });
     request.on("end", () => {
+      if (rejected) {
+        return;
+      }
+
       resolveBody(chunks.length > 0 ? Buffer.concat(chunks) : undefined);
     });
     request.on("error", reject);

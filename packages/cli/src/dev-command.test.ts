@@ -4,7 +4,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EventEmitter } from "node:events";
 
-import type { BrowserRequestEvent, NormalizedAnlyxConfig, ScanResult } from "@anlyx/core";
+import type {
+  BrowserPageViewEvent,
+  BrowserRequestEvent,
+  FrontendServerRequestEvent,
+  NormalizedAnlyxConfig,
+  ScanResult
+} from "@anlyx/core";
 import { describe, expect, it } from "vitest";
 
 import { getHelpText, runCli } from "./index.js";
@@ -43,6 +49,14 @@ const scanResult: ScanResult = {
       framework: "spring",
       supportLevel: "deep",
       confidence: "high"
+    },
+    {
+      id: "endpoint:get:/api/public/home",
+      method: "GET",
+      path: "/api/public/home",
+      framework: "spring",
+      supportLevel: "deep",
+      confidence: "high"
     }
   ],
   flows: [
@@ -59,6 +73,62 @@ const scanResult: ScanResult = {
       edges: [],
       mainPath: ["endpoint:get:/api/public/benefits/{id}"],
       subFlows: []
+    },
+    {
+      endpointId: "endpoint:get:/api/public/home",
+      nodes: [
+        {
+          id: "endpoint:get:/api/public/home",
+          type: "endpoint",
+          label: "GET /api/public/home",
+          confidence: "high"
+        },
+        {
+          id: "controller:PublicViewController#home",
+          type: "controller",
+          label: "PublicViewController#home",
+          confidence: "high"
+        },
+        {
+          id: "repository:BenefitRepository#findPublicCandidates",
+          type: "repository",
+          label: "BenefitRepository#findPublicCandidates",
+          confidence: "medium"
+        },
+        {
+          id: "database:benefit",
+          type: "database",
+          label: "benefit",
+          confidence: "medium"
+        }
+      ],
+      edges: [
+        {
+          id: "home-edge-1",
+          from: "endpoint:get:/api/public/home",
+          to: "controller:PublicViewController#home",
+          kind: "main"
+        },
+        {
+          id: "home-edge-2",
+          from: "controller:PublicViewController#home",
+          to: "repository:BenefitRepository#findPublicCandidates",
+          kind: "main"
+        },
+        {
+          id: "home-edge-3",
+          from: "repository:BenefitRepository#findPublicCandidates",
+          to: "database:benefit",
+          kind: "db"
+        }
+      ],
+      mainPath: [
+        "endpoint:get:/api/public/home",
+        "controller:PublicViewController#home",
+        "repository:BenefitRepository#findPublicCandidates",
+        "database:benefit"
+      ],
+      subFlows: []
     }
   ],
   warnings: [],
@@ -67,7 +137,7 @@ const scanResult: ScanResult = {
       id: "page:manual:root",
       route: "/",
       screenshots: [],
-      apiCalls: [],
+      apiCalls: [{ method: "GET", path: "/api/public/home" }],
       captureStatus: "pending"
     }
   ]
@@ -126,6 +196,140 @@ describe("dev command", () => {
     expect(response.statusCode).toBe(202);
     expect(response.getHeader("content-type")).toContain("application/json");
     expect(JSON.parse(response.body)).toEqual({ accepted: true, id: "flow:evt_saved_1" });
+  });
+
+  it("uses the latest report-data file when matching live browser events", async () => {
+    await withTempDir(async (dir) => {
+      const staleScanResult: ScanResult = {
+        ...scanResult,
+        flows: [
+          {
+            endpointId: "endpoint:get:/api/public/home",
+            nodes: [
+              {
+                id: "endpoint:get:/api/public/home",
+                type: "endpoint",
+                label: "GET /api/public/home"
+              },
+              {
+                id: "controller:PublicViewController#home",
+                type: "controller",
+                label: "PublicViewController#home"
+              }
+            ],
+            edges: [
+              {
+                id: "stale-home-edge-1",
+                from: "endpoint:get:/api/public/home",
+                to: "controller:PublicViewController#home",
+                kind: "main"
+              }
+            ],
+            mainPath: ["endpoint:get:/api/public/home", "controller:PublicViewController#home"],
+            subFlows: []
+          }
+        ]
+      };
+
+      await writeReportData(dir, scanResult);
+
+      const flowStore = createLocalFlowStore();
+      const { request, response } = createRuntimeHarness({
+        method: "POST",
+        url: "/_anlyx/events",
+        body: JSON.stringify(
+          createBrowserEvent({
+            id: "evt_home_latest",
+            method: "GET",
+            url: "http://localhost:8080/api/public/home",
+            path: "/api/public/home",
+            status: undefined,
+            durationMs: undefined
+          })
+        )
+      });
+
+      await handleRuntimeRequest(request, response, flowStore, undefined, {
+        reportData: staleScanResult,
+        reportDataPath: join(dir, ".anlyx", "report-data.json"),
+        readReportData
+      });
+
+      expect(response.statusCode).toBe(202);
+      expect(flowStore.records[0]?.layers.map((layer) => layer.type)).toEqual([
+        "api",
+        "controller",
+        "repository",
+        "database",
+        "result"
+      ]);
+    });
+  });
+
+  it("accepts page view events and publishes source-derived API flow records", async () => {
+    const flowStore = createLocalFlowStore();
+    const { request, response } = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/events",
+      body: JSON.stringify(createPageViewEvent())
+    });
+
+    await handleRuntimeRequest(request, response, flowStore);
+
+    expect(response.statusCode).toBe(202);
+    expect(JSON.parse(response.body)).toEqual({
+      accepted: true,
+      id: "flow:page_home_1:source:1",
+      ids: ["flow:page_home_1:source:1"]
+    });
+    expect(flowStore.records).toHaveLength(1);
+    expect(flowStore.records[0]).toMatchObject({
+      id: "flow:page_home_1:source:1",
+      method: "GET",
+      path: "/api/public/home",
+      matchState: "matched",
+      endpointId: "endpoint:get:/api/public/home"
+    });
+    expect(flowStore.records[0]?.layers.map((layer) => layer.type)).toEqual([
+      "page",
+      "api",
+      "controller",
+      "repository",
+      "database",
+      "result"
+    ]);
+  });
+
+  it("starts a fresh recent-request scope when a page view event arrives", async () => {
+    const flowStore = createLocalFlowStore();
+    const firstRequest = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/events",
+      body: JSON.stringify(createBrowserEvent({ id: "evt_home_request" }))
+    });
+    await handleRuntimeRequest(firstRequest.request, firstRequest.response, flowStore);
+    expect(flowStore.records.map((record) => record.id)).toContain("flow:evt_home_request");
+
+    const stream = createRuntimeHarness({
+      method: "GET",
+      url: "/_anlyx/events/stream"
+    });
+
+    try {
+      await handleRuntimeRequest(stream.request, stream.response, flowStore);
+      const pageView = createRuntimeHarness({
+        method: "POST",
+        url: "/_anlyx/events",
+        body: JSON.stringify(createPageViewEvent({ id: "page_ranking_1", path: "/ranking" }))
+      });
+
+      await handleRuntimeRequest(pageView.request, pageView.response, flowStore);
+
+      expect(flowStore.records.map((record) => record.id)).not.toContain("flow:evt_home_request");
+      expect(stream.response.body).toContain("event: reset");
+    } finally {
+      stream.request.emit("close");
+    }
   });
 
   it("streams retained flow records to EventSource clients", async () => {
@@ -303,6 +507,50 @@ describe("dev command", () => {
     expect(flowStore.clients.size).toBe(0);
   });
 
+  it("accepts Next server request events with observed response timing", async () => {
+    const flowStore = createLocalFlowStore();
+    const post = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/events",
+      body: JSON.stringify(createFrontendServerEvent())
+    });
+
+    await handleRuntimeRequest(post.request, post.response, flowStore);
+
+    expect(post.response.statusCode).toBe(202);
+    expect(flowStore.records[0]).toMatchObject({
+      id: "flow:next_home_1",
+      status: 200,
+      durationMs: 42
+    });
+    expect(flowStore.records[0]?.layers.find((layer) => layer.type === "api")?.evidenceLevel).toBe(
+      "frontend_server_observed"
+    );
+  });
+
+  it("preserves matching observed server requests when a page scope starts", async () => {
+    const flowStore = createLocalFlowStore();
+    const serverPost = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/events",
+      body: JSON.stringify(createFrontendServerEvent())
+    });
+
+    await handleRuntimeRequest(serverPost.request, serverPost.response, flowStore);
+
+    const pagePost = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/events",
+      body: JSON.stringify(createPageViewEvent())
+    });
+
+    await handleRuntimeRequest(pagePost.request, pagePost.response, flowStore);
+
+    expect(flowStore.records).toHaveLength(1);
+    expect(flowStore.records[0]?.id).toBe("flow:next_home_1");
+    expect(flowStore.records[0]?.durationMs).toBe(42);
+  });
+
   it("rejects invalid browser event JSON", async () => {
     const { request, response } = createRuntimeHarness({
       method: "POST",
@@ -427,7 +675,21 @@ describe("dev command", () => {
 
     expect(response.statusCode).toBe(204);
     expect(response.getHeader("access-control-allow-methods")).toBe("GET, POST, OPTIONS");
-    expect(response.getHeader("access-control-allow-headers")).toBe("content-type");
+    expect(response.getHeader("access-control-allow-headers")).toBe("content-type, x-anlyx-request-id");
+  });
+
+  it("rejects runtime event posts from non-local configured origins", async () => {
+    const { request, response } = createRuntimeHarness({
+      method: "POST",
+      url: "/_anlyx/events",
+      origin: "https://example.com",
+      body: JSON.stringify(createBrowserEvent())
+    });
+
+    await handleRuntimeRequest(request, response);
+
+    expect(response.statusCode).toBe(403);
+    expect(JSON.parse(response.body)).toEqual({ accepted: false, error: "Forbidden origin." });
   });
 
   it("reads valid report-data.json", async () => {
@@ -610,7 +872,7 @@ describe("dev command", () => {
   it("starts configured frontend dev command when frontend is not reachable", async () => {
     await withTempDir(async (dir) => {
       await writeReportData(dir, scanResult);
-      const commands: Array<{ command: string; cwd: string }> = [];
+      const commands: Array<{ command: string; cwd: string; env?: NodeJS.ProcessEnv }> = [];
 
       const result = await runDevCommand({
         cwd: dir,
@@ -625,15 +887,55 @@ describe("dev command", () => {
           async isFrontendReachable() {
             return false;
           },
-          startFrontendDevServer({ command, cwd }) {
-            commands.push({ command, cwd });
+          startFrontendDevServer({ command, cwd, env }) {
+            commands.push({ command, cwd, env });
             return { stop: () => undefined };
           }
         })
       });
 
-      expect(commands).toEqual([{ command: "npm run dev", cwd: dir }]);
+      expect(commands).toHaveLength(1);
+      expect(commands[0]).toMatchObject({ command: "npm run dev", cwd: dir });
+      expect(commands[0]?.env?.ANLYX_RUNTIME_URL).toBe("http://127.0.0.1:4777");
+      expect(commands[0]?.env?.NODE_OPTIONS).toContain("--import anlyx/next-server/register");
       expect(result.frontendStarted).toBe(true);
+    });
+  });
+
+  it("does not preload the Next server bridge for manual frontend projects", async () => {
+    await withTempDir(async (dir) => {
+      await writeReportData(dir, scanResult);
+      const commands: Array<{ command: string; cwd: string; env?: NodeJS.ProcessEnv }> = [];
+
+      await runDevCommand({
+        cwd: dir,
+        open: false,
+        dependencies: fakeDependencies({
+          config: {
+            ...config,
+            frontend: {
+              type: "manual",
+              sourceDir: "./frontend",
+              baseUrl: "http://localhost:3000",
+              urls: ["/"],
+              viewport: { width: 1440, height: 900 },
+              capture: { mode: "segments", segmentHeight: 900 }
+            },
+            dev: {
+              command: "npm run dev"
+            }
+          },
+          async isFrontendReachable() {
+            return false;
+          },
+          startFrontendDevServer({ command, cwd, env }) {
+            commands.push({ command, cwd, env });
+            return { stop: () => undefined };
+          }
+        })
+      });
+
+      expect(commands).toEqual([{ command: "npm run dev", cwd: dir, env: undefined }]);
     });
   });
 
@@ -898,6 +1200,34 @@ function createBrowserEvent(overrides: Partial<BrowserRequestEvent> = {}): Brows
   };
 }
 
+function createPageViewEvent(overrides: Partial<BrowserPageViewEvent> = {}): BrowserPageViewEvent {
+  return {
+    id: "page_home_1",
+    type: "page_view",
+    url: "http://localhost:3000/",
+    path: "/",
+    observedAt: "2026-06-24T00:00:01.000Z",
+    ...overrides
+  };
+}
+
+function createFrontendServerEvent(
+  overrides: Partial<FrontendServerRequestEvent> = {}
+): FrontendServerRequestEvent {
+  return {
+    id: "next_home_1",
+    type: "frontend_server_request",
+    runtime: "next",
+    method: "GET",
+    url: "http://localhost:8080/api/public/home",
+    path: "/api/public/home",
+    status: 200,
+    durationMs: 42,
+    observedAt: "2026-06-24T00:00:00.500Z",
+    ...overrides
+  };
+}
+
 function createBackendSpanEvent(requestId: string) {
   return {
     type: "backend_spans",
@@ -930,13 +1260,14 @@ function createBackendSpanEvent(requestId: string) {
   };
 }
 
-function createRuntimeHarness(options: { method: string; url: string; body?: string }): {
+function createRuntimeHarness(options: { method: string; url: string; body?: string; origin?: string }): {
   request: FakeRequest;
   response: FakeResponse;
 } {
   const request = new EventEmitter() as FakeRequest;
   request.method = options.method;
   request.url = options.url;
+  request.headers = options.origin ? { origin: options.origin } : {};
 
   const headers: Record<string, string | number | readonly string[]> = {};
   const response = Object.assign(new EventEmitter(), {
@@ -988,7 +1319,8 @@ function handleRuntimeRequest(
   request: FakeRequest,
   response: FakeResponse,
   flowStore = createLocalFlowStore(),
-  viewerRoot = join(process.cwd(), "packages/ui/dist/viewer")
+  viewerRoot = join(process.cwd(), "packages/ui/dist/viewer"),
+  options: Partial<Parameters<typeof createAnlyxRuntimeMiddleware>[0]> = {}
 ): Promise<void> {
   const middleware = createAnlyxRuntimeMiddleware({
     port: 4777,
@@ -996,7 +1328,8 @@ function handleRuntimeRequest(
     viewerRoot,
     frontendBaseUrl: "http://localhost:3000",
     mode: "inject",
-    flowStore
+    flowStore,
+    ...options
   });
 
   return middleware(request, response, () => undefined);

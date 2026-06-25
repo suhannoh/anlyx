@@ -5,7 +5,7 @@
 <h3 align="center">Click the real app. See the backend path.</h3>
 
 <p align="center">
-  Action-first flow maps from browser-observed requests to scanned Spring Boot and Next.js code.
+  Action-first flow maps from browser, Next.js server, and Spring Boot dev evidence.
 </p>
 
 <p align="center">
@@ -19,14 +19,13 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/anlyx"><img alt="npm" src="https://img.shields.io/npm/v/anlyx?color=2563eb"></a>
   <a href="./LICENSE"><img alt="license" src="https://img.shields.io/github/license/suhannoh/anlyx?color=0f172a"></a>
   <a href="https://github.com/suhannoh/anlyx/actions/workflows/ci.yml"><img alt="ci" src="https://img.shields.io/github/actions/workflow/status/suhannoh/anlyx/ci.yml?branch=main&label=ci"></a>
   <a href="https://suhannoh.github.io/anlyx/"><img alt="demo" src="https://img.shields.io/badge/demo-GitHub%20Pages-16a34a"></a>
 </p>
 
 <p align="center">
-  <img src="./docs/assets/readme/anlyx-demo.gif" alt="Anlyx demo showing a real app action mapped to a backend flow diagram" />
+  <img src="./docs/assets/readme/anlyx-demo.png" alt="Anlyx demo showing a real app action mapped to a backend flow diagram" />
 </p>
 
 ## What It Does
@@ -37,13 +36,18 @@ Anlyx runs beside your local app and answers the question developers usually cha
 I clicked this button. What API fired, and where does it go?
 ```
 
-It keeps the host app running on its normal localhost port, observes the API caused by the latest user action, and maps that request to scanned backend evidence:
+It keeps the host app running on its normal localhost port, observes local API activity, and maps each request to scanned backend evidence:
 
 ```txt
-User action -> Browser API -> Controller -> Service -> Repository -> Database -> Result
+User action or page load -> API -> Controller -> Service -> Repository -> Database -> Result
 ```
 
-The diagram is evidence-aware. Browser requests are live-observed. Controller, Service, Repository, and Database nodes are scanned or inferred from source code unless a future runtime bridge reports them.
+The diagram is evidence-aware:
+
+- **Browser observed**: local browser `fetch`/XHR requests caused by user actions.
+- **Next server observed**: local Next.js server `fetch` calls, including Server Component data loading that the browser cannot see.
+- **Backend observed**: development-only Spring Boot bridge spans for Controller, Service, Repository, and JDBC work.
+- **Source matched**: scanned code evidence. This is not a runtime trace unless a dev bridge reports spans for the same request.
 
 ## Why Developers Use It
 
@@ -57,13 +61,25 @@ The diagram is evidence-aware. Browser requests are live-observed. Controller, S
 
 ## Quick Start
 
+> Pre-publish note: npm publishing is intentionally paused while v0.1 is being validated on real projects. Use the source workflow below in this repository. The `npm install -D anlyx` path is the intended command after the first npm release.
+
+From this repository:
+
+```bash
+corepack pnpm install
+corepack pnpm build
+corepack pnpm pack:local
+```
+
+After npm release:
+
 ```bash
 npm install -D anlyx
 npx anlyx init
 npx anlyx dev
 ```
 
-Then use your app normally. Keep Anlyx Workspace open beside it at `http://localhost:4777/_anlyx/viewer`, click a real button or submit a real form, and watch the matched backend flow update live.
+Before running `npx anlyx dev`, check the generated `anlyx.config.ts`: `backend.sourceDir`, `frontend.sourceDir`, `frontend.baseUrl`, `frontend.router`, and `dev.command` must match your local project. Then use your app normally. Keep Anlyx Workspace open beside it at `http://localhost:4777/_anlyx/viewer`, click a real button or submit a real form, and watch the matched backend flow update live.
 
 ## Support Matrix
 
@@ -77,9 +93,10 @@ Then use your app normally. Keep Anlyx Workspace open beside it at `http://local
 
 ## Install In A Real App
 
-Create a config:
+After the npm package is published, install and create a config:
 
 ```bash
+npm install -D anlyx
 npx anlyx init
 ```
 
@@ -95,7 +112,8 @@ export default {
   frontend: {
     type: "next",
     sourceDir: "./frontend",
-    baseUrl: "http://localhost:3000"
+    baseUrl: "http://localhost:3000",
+    router: "app"
   },
   server: {
     port: 4777,
@@ -108,37 +126,31 @@ export default {
 };
 ```
 
-For Next.js App Router, add the development-only helper to your root layout:
+Run Anlyx next to your app:
 
-```tsx
-import { AnlyxDevOverlay } from "anlyx/next";
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html>
-      <body>
-        {children}
-        <AnlyxDevOverlay />
-      </body>
-    </html>
-  );
-}
+```bash
+npx anlyx dev
 ```
 
-`AnlyxDevOverlay` renders nothing in production. For special local setups, the raw fallback script is:
+For standard Next.js App Router projects, `anlyx dev` preloads the development-only Next server bridge and opens the Live Workspace. If your local app cannot be launched through `dev.command`, start your app yourself and keep the fallback capture script available in development:
 
 ```html
 <script src="http://localhost:4777/_anlyx/capture.js" defer></script>
 ```
+
+Do not use Anlyx in production. The runtime is designed for local development only.
+
+Prerequisites: Node.js 22 or newer. Contributors should use Corepack with the pinned pnpm version from `package.json`. If Playwright capture fails on a fresh machine, install Chromium for the local capture package with `npx playwright install chromium`.
 
 ## How It Works
 
 1. Scans Spring Boot endpoints and best-effort Controller -> Service -> Repository paths.
 2. Discovers Next.js App Router pages and dynamic route samples.
 3. Captures local page states and browser-visible API calls.
-4. Separates user-action requests from background auth, health, and polling traffic.
-5. Matches browser requests to scanned endpoint and backend flow data.
-6. Streams the matched request into the full-page Live Workspace with Summary, Timing, Diagram, confidence, and evidence.
+4. Observes Next.js server-side `fetch` calls during local development when `anlyx dev` can preload the bridge.
+5. Optionally receives Spring Boot dev bridge spans for correlated backend method and JDBC timing.
+6. Separates user-action requests from background auth, health, polling, framework, and static asset traffic.
+7. Streams the matched request into the full-page Live Workspace with Summary, Timing, Diagram, confidence, and evidence.
 
 ## UI Surfaces
 
@@ -147,7 +159,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 | Live Workspace      | Primary experience at `http://localhost:4777/_anlyx/viewer` for live request flow review. |
 | Capture badge       | Small optional app-side entry point that confirms capture and links back to Workspace.    |
 | Capture runtime     | Development-only `fetch`/XHR observer loaded by the app; it does not render a drawer.     |
+| Next server bridge  | Development-only `fetch` observer for local Next.js server-side data loading.             |
+| Spring dev bridge   | Development-only span reporter for correlated Controller/Service/Repository/JDBC timing.  |
 | README / Pages demo | Fixture-backed demo of the same workspace direction, not a hand-drawn mock.               |
+
+## Evidence And Timing
+
+Anlyx deliberately separates measured data from code-derived evidence:
+
+| Label                 | Meaning                                                                                  |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| Browser observed      | A local browser request or action was captured. Timing comes from the browser runtime.   |
+| Next server observed  | A local Next.js server `fetch` was captured. Timing comes from the Next.js dev process.  |
+| Backend observed      | A development-only Spring Boot bridge reported a method or JDBC span.                    |
+| Source matched        | The row came from scanned source code. It is useful context, not measured runtime time.  |
+| Not proven            | The node exists in scanned code, but Anlyx cannot prove it ran for this request.         |
+| Response not observed | Anlyx found source evidence, but no browser or Next server response timing was captured. |
+
+When a value such as `999 ms` appears in Timing, it comes from a captured local runtime event, not a placeholder. Source-only rows are shown as estimates or not-proven rows instead of measured spans.
 
 ## Demo Assets
 
@@ -159,7 +188,7 @@ corepack pnpm demo:dev
 corepack pnpm demo:build
 ```
 
-`docs:readme-demo` writes `docs/assets/readme/anlyx-demo.gif` and `docs/assets/readme/anlyx-demo.png`. The GitHub Pages demo lives in `apps/demo` and shows the fake app plus Live Workspace product direction. The Pages workflow builds the demo on `main` pushes, while deployment runs only from manual workflow dispatch after GitHub Pages is enabled for the repository.
+`docs:readme-demo` writes `docs/assets/readme/anlyx-demo.png`. The GitHub Pages demo lives in `apps/demo` and shows the fake app plus Live Workspace product direction. The Pages workflow builds the demo on `main` pushes, while deployment runs only from manual workflow dispatch after GitHub Pages is enabled for the repository.
 
 ## Capture And Dynamic Routes
 
@@ -183,6 +212,7 @@ export default {
     type: "next",
     sourceDir: "./frontend",
     baseUrl: "http://localhost:3000",
+    router: "app",
     sampleParams: {
       "/benefit/[brandSlug]/[benefitSlugWithId]": {
         brandSlug: "starbucks",
@@ -227,9 +257,23 @@ This is expected when using `--skip-capture`, manual frontend URLs, or routes wi
 
 Confirm the frontend server is running at `frontend.baseUrl`, dynamic routes have `sampleParams`, and login-only pages have a valid capture setup. Use `--skip-capture` for a static scan while debugging capture.
 
+### Spring Security or CORS blocks the dev bridge
+
+Spring Security filters can return `401` or `403` before a request reaches a Spring MVC controller. In that case Anlyx should show the controller and downstream layers as source evidence or not-proven unless the development bridge reports backend spans. If the bridge cannot correlate requests, allow the local development header `X-Anlyx-Request-Id` in your Spring CORS configuration for the local frontend origin only.
+
 ### Package status
 
-Use `anlyx@0.1.3` or newer. Older `0.1.0` and `0.1.1` builds are not recommended. Release packages are verified with pnpm pack dry-runs so workspace dependencies are resolved before publishing.
+npm publish is paused. Before the first public npm release, verify with:
+
+```bash
+corepack pnpm build
+corepack pnpm test
+corepack pnpm pack:local
+corepack pnpm pack:smoke
+npm pack --dry-run
+```
+
+Do not claim a live npm release until the package has actually been published and installed from npm in a clean project.
 
 ## Not Included In v0.1
 

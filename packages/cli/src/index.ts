@@ -49,6 +49,12 @@ Usage:
   anlyx --help
 
 Available commands: init, scan, dev
+
+Typical local setup:
+  1. anlyx init
+  2. Edit anlyx.config.ts for backend.sourceDir, frontend.sourceDir, frontend.baseUrl, and dev.command.
+  3. anlyx scan --skip-capture
+  4. anlyx dev
 `;
 }
 
@@ -62,6 +68,8 @@ Options:
   --config <path>   Load a specific anlyx config file.
   --out <dir>       Write output JSON files to a custom directory.
   --skip-capture    Skip Playwright capture and use adapter page data as-is.
+
+Use --skip-capture first when setting up a new project. It validates source scanning before any browser capture runs.
 `;
 }
 
@@ -76,6 +84,8 @@ Options:
   --out <dir>       Read report-data.json from a custom output directory.
   --port <port>     Serve the local UI on a custom port.
   --no-open         Start the UI server without opening a browser.
+
+The Live Workspace opens at /_anlyx/viewer. The runtime only accepts Anlyx event posts from the configured local frontend origin.
 `;
 }
 
@@ -185,7 +195,8 @@ export async function runCli(args: string[] = process.argv.slice(2), options: Cl
           write("Started configured frontend dev command.");
         }
         write(`Use your app at ${result.frontendUrl}`);
-        write(`Capture script: ${result.url}/_anlyx/overlay.js`);
+        write(`Capture runtime: ${result.url}/_anlyx/capture.js`);
+        write(`Optional badge/compat script: ${result.url}/_anlyx/overlay.js`);
         if (options.keepAlive) {
           await waitUntilInterrupted();
         }

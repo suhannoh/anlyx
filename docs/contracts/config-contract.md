@@ -74,6 +74,8 @@ type ManualFrontendConfig = {
   type: "manual";
   baseUrl: string;
   urls: string[];
+  sourceDir?: string;
+  routeFiles?: Record<string, string[]>;
   viewport?: ViewportConfig;
   capture?: CaptureConfig;
 };
@@ -85,8 +87,10 @@ Rules:
 - `frontend.type = "manual"` is handled by `ManualFrontendAdapter`.
 - `ManualFrontendAdapter` MUST read `frontend.urls` and create one `PageStoryboard` per URL.
 - Manual page storyboards MAY be captured by `CaptureAdapter`.
+- Manual frontend MAY include `sourceDir` and `routeFiles` to attach source-derived API calls to explicit URLs.
+- `routeFiles` keys MUST match entries in `urls`; values are file paths relative to `sourceDir`.
 - OpenAPI-only backend plus manual frontend is the official v0.1 Basic Support path.
-- React SPA projects, including Vite, CRA, and custom React Router apps, MUST use `frontend.type = "manual"` in v0.1. This keeps React compatibility through explicit URLs and browser-observed API events without adding React Router Deep Support.
+- React SPA projects, including Vite, CRA, and custom React Router apps, MUST use `frontend.type = "manual"` in v0.1. This keeps React compatibility through explicit URLs, optional route-to-source file mapping, and browser-observed API events without adding React Router Deep Support.
 - React Router Deep Support MUST NOT be added in v0.1.
 
 ## Capture Config
@@ -170,8 +174,8 @@ Rules:
 - If `dev.command` is present, `anlyx dev` SHOULD check `frontend.baseUrl` first and only start the command when the frontend is not already reachable.
 - If `.anlyx/report-data.json` is missing, `anlyx dev` SHOULD run a lightweight scan before starting the runtime.
 - Analysis or scan failures MUST be reported clearly and MUST NOT be hidden behind a blank workspace.
-- Next.js users SHOULD use `AnlyxDevOverlay` from `anlyx/next` to render the local capture helper during development.
-- `AnlyxDevOverlay` MUST render nothing when `NODE_ENV = "production"`.
+- Next.js users SHOULD prefer `npx anlyx dev`, which can preload the development-only Next server bridge and serve the local capture helper without requiring app code changes.
+- `AnlyxDevOverlay` from `anlyx/next` MAY remain as a compatibility helper for local setups that cannot use `anlyx dev` preloading. It MUST render nothing when `NODE_ENV = "production"` and MUST NOT render the primary analysis UI.
 - Non-Next React users MAY inject `/_anlyx/capture.js` directly or use the compatibility `/_anlyx/overlay.js` helper with a development-only raw script tag or their app's local HTML/template mechanism. This is a supported local-development path for React SPA compatibility and MUST NOT require Next.js.
 - Browser-observed API events caused by recent user actions SHOULD become the selected main flow automatically.
 - Background events such as page-load effects, health checks, and polling SHOULD be recorded but MUST NOT replace the selected main flow.
@@ -260,7 +264,7 @@ export default defineConfig({
 });
 ```
 
-In this example, `ManualFrontendAdapter.scanPages()` MUST convert `/`, `/dashboard`, and `/items` into `PageStoryboard[]` entries. Because manual URLs do not identify source files, their `filePath` fields MUST be omitted unless a future explicit mapping feature is added.
+In this example, `ManualFrontendAdapter.scanPages()` MUST convert `/`, `/dashboard`, and `/items` into `PageStoryboard[]` entries. Because manual URLs do not identify source files, their `filePath` fields MUST be omitted when `routeFiles` is not configured.
 
 ## Spring Boot + React SPA Example
 
@@ -279,7 +283,13 @@ export default defineConfig({
   frontend: {
     type: "manual",
     baseUrl: "http://localhost:5173",
-    urls: ["/", "/dashboard", "/items/123"]
+    urls: ["/", "/dashboard", "/items/123"],
+    sourceDir: "./frontend/src",
+    routeFiles: {
+      "/": ["pages/Home.tsx", "lib/api.ts"],
+      "/dashboard": ["pages/Dashboard.tsx", "lib/api.ts"],
+      "/items/123": ["pages/ItemDetail.tsx", "lib/api.ts"]
+    }
   },
 
   server: {
@@ -293,4 +303,4 @@ export default defineConfig({
 });
 ```
 
-In this example, Anlyx does not infer React Router source routes. The explicit `urls` provide page/storyboard coverage, while the browser capture runtime observes `fetch` and `XMLHttpRequest` calls caused by real user actions in the running React app.
+In this example, Anlyx does not infer React Router source routes. The explicit `urls` provide page/storyboard coverage, `routeFiles` lets Anlyx scan the listed React files and local helpers for source-derived `fetch`, `axios`, helper, and `sendBeacon` API calls, while the browser capture runtime observes `fetch` and `XMLHttpRequest` calls caused by real user actions in the running React app.

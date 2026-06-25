@@ -35,6 +35,8 @@ Before implementation work, every Agent MUST read:
 - During implementation phases, keep changes scoped and verify against fixture expected output.
 - Failed captures and unknown analysis MUST be represented in data and UI. Do not hide them.
 - Fixture expected output mismatch means the implementation is not complete.
+- npm publishing is paused unless the user explicitly resumes it. Do not claim an npm release is live without verifying a clean npm install.
+- The public demo route is `/demo`. Do not add or document a `/Demo` alias.
 
 ## Planning and Approval
 

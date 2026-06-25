@@ -577,6 +577,89 @@
   color: #0b5fff;
 }
 
+.duration-chip--muted strong {
+  color: #64748b;
+}
+
+.timing-unobserved {
+  display: grid;
+  gap: 18px;
+  padding: 0 22px 22px;
+}
+
+.timing-unobserved > div:first-child {
+  padding: 18px;
+  border: 1px solid #dbe4f0;
+  border-radius: 14px;
+  background: #f8fbff;
+}
+
+.timing-unobserved > div:first-child strong {
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.timing-unobserved > div:first-child p {
+  max-width: 760px;
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.timing-unobserved__rows {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--lw-border);
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.timing-unobserved__rows > div {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 68px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--lw-border-soft);
+}
+
+.timing-unobserved__rows > div:last-child {
+  border-bottom: 0;
+}
+
+.timing-unobserved__rows strong,
+.timing-unobserved__rows small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timing-unobserved__rows strong {
+  color: #111827;
+  font-size: 13px;
+}
+
+.timing-unobserved__rows small {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.timing-unobserved__rows em {
+  min-width: 108px;
+  padding: 7px 10px;
+  border: 1px dashed #bfdbfe;
+  border-radius: 8px;
+  color: #2563eb;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  text-align: center;
+}
+
 .timing-overview {
   margin: 0 22px 16px;
   padding: 16px 18px 18px;
@@ -1478,7 +1561,7 @@
 
 .recent-events button {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: 44px minmax(0, 1fr) auto;
   gap: 2px 8px;
   align-items: center;
   width: 100%;
@@ -1492,12 +1575,30 @@
   text-align: left;
 }
 
+.recent-events button.is-action {
+  border-left: 3px solid #2563eb;
+}
+
+.recent-events button.is-auto {
+  border-left: 3px solid #f59e0b;
+}
+
+.recent-events button.is-source {
+  border-left: 3px solid #8b5cf6;
+  background: #fbfaff;
+}
+
+.recent-events button.is-server {
+  border-left: 3px solid #0f766e;
+  background: #f0fdfa;
+}
+
 .recent-events button.is-selected {
   border-color: #bfdbfe;
   background: #eff6ff;
 }
 
-.recent-events span {
+.recent-events__method {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1511,6 +1612,38 @@
   font-weight: 800;
 }
 
+.recent-events__kind {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.recent-events__kind--action {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.recent-events__kind--auto {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.recent-events__kind--source {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.recent-events__kind--server {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
 .recent-events strong {
   overflow: hidden;
   color: #111827;
@@ -1520,7 +1653,7 @@
 }
 
 .recent-events small {
-  grid-column: 2;
+  grid-column: 2 / -1;
   color: #5d6b83;
   font-size: 11px;
 }
@@ -1540,7 +1673,7 @@
 .diagram-canvas-card {
   position: relative;
   min-height: 720px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .diagram-canvas-toolbar {
@@ -1609,14 +1742,15 @@
 }
 
 .diagram-canvas {
-  position: absolute;
-  inset: 72px 0 0;
+  position: relative;
+  min-height: var(--diagram-stage-height, 640px);
+  overflow: auto;
   background-image: radial-gradient(#d9e0eb 1px, transparent 1px);
   background-size: 18px 18px;
 }
 
 .diagram-canvas--layered {
-  inset: 76px 0 48px;
+  margin: 0;
   background: #f8fafc, radial-gradient(rgba(100, 116, 139, 0.22) 1px, transparent 1px);
   background-size:
     auto,
@@ -1626,15 +1760,15 @@
 .layered-diagram {
   position: absolute;
   top: 18px;
-  left: 50%;
+  left: 22px;
   width: 1320px;
   min-height: 610px;
-  transform-origin: top center;
+  transform-origin: top left;
   transition: transform 160ms ease;
 }
 
 .layered-diagram--react-flow {
-  height: 610px;
+  height: var(--layered-column-height, 610px);
 }
 
 .layered-react-flow {
@@ -1714,7 +1848,7 @@
   position: absolute;
   top: 0;
   width: 220px;
-  min-height: 560px;
+  min-height: var(--layered-column-height, 560px);
   padding: 14px 12px 16px;
   border: 1px solid rgba(148, 163, 184, 0.34);
   border-radius: 20px;
@@ -2125,14 +2259,12 @@
 }
 
 .layered-diagram-status {
-  position: absolute;
-  right: 22px;
-  bottom: 14px;
-  left: 22px;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  margin: 12px 22px 16px;
   min-height: 30px;
   color: #53627a;
   font-size: 12px;

@@ -6,6 +6,7 @@ import {
   ArrowRight,
   BadgeCheck,
   CheckCircle2,
+  Clipboard,
   Code2,
   ExternalLink,
   GitBranch,
@@ -25,6 +26,7 @@ const landingCopy = {
   en: {
     navOverview: "Overview",
     navDemo: "Demo",
+    navAgent: "Agent prompt",
     langToggle: "한글",
     heroEyebrow: "Live workspace for local apps",
     heroTitle: "Use your app normally. Watch the backend flow live.",
@@ -34,14 +36,14 @@ const landingCopy = {
     heroSecondary: "View GitHub",
     installLabel: "Install locally",
     previewCaptured: "Workspace listening",
-    previewTitle: "Birthday coffee coupon",
+    previewTitle: "Selected request",
     previewBody:
-      "Clicking this product action sends a real request while the workspace updates live.",
-    previewButton: "Open detail",
-    proofPage: "Frontend Page",
-    proofApi: "API Match",
-    proofFlow: "Main Flow",
-    proofEvidence: "Evidence",
+      "A real browser or server request is selected, then Summary, Timing, and Diagram explain what Anlyx observed and what came from source evidence.",
+    previewButton: "Inspect flow",
+    proofPage: "Request source",
+    proofApi: "API mapping",
+    proofFlow: "Backend path",
+    proofEvidence: "Evidence labels",
     whyEyebrow: "Why it exists",
     whyTitle: "Swagger tells you what exists. Anlyx shows what this click used.",
     featureAction: "Start from user action",
@@ -56,13 +58,23 @@ const landingCopy = {
     workflowEyebrow: "How it runs",
     workflowTitle: "Install Anlyx into your project, then keep using the app you already know.",
     workflowBody:
-      "The site stays yours. Anlyx runs beside it, captures browser-observed requests, and connects them to scanned source evidence.",
+      "The site stays yours. Anlyx runs beside it, captures browser, Next server, and optional backend spans, then connects them to scanned source evidence.",
     stepInstall: "Add the local development tool to the project.",
     stepInit: "Create a config for Spring Boot and Next.js App Router sources.",
     stepDev: "Start the Anlyx runtime and keep using the real frontend.",
     workflowNoteTitle: "Separate live workspace",
     workflowNoteBody:
       "Your app keeps its own UI. Anlyx uses browser capture and streams meaningful requests into the separate Workspace.",
+    agentEyebrow: "For AI agents",
+    agentTitle: "Give your coding agent a copy-ready setup prompt.",
+    agentBody:
+      "Paste one of these prompts into Codex, Claude Code, Cursor, or another coding agent. It tells the agent to install Anlyx, keep the app local, and verify observed data separately from source-matched evidence.",
+    agentNextTitle: "Next.js + Spring Boot",
+    agentNextBody: "Best for the v0.1 deep-support path.",
+    agentReactTitle: "React or manual frontend",
+    agentReactBody: "Use when the frontend is not Next.js App Router yet.",
+    copyPrompt: "Copy prompt",
+    copiedPrompt: "Copied",
     demoEyebrow: "Interactive walkthrough",
     demoTitle: "Open a small product site and watch Anlyx Workspace update from real requests.",
     demoBody:
@@ -72,6 +84,7 @@ const landingCopy = {
   ko: {
     navOverview: "소개",
     navDemo: "시연",
+    navAgent: "Agent 프롬프트",
     langToggle: "EN",
     heroEyebrow: "로컬 앱을 위한 라이브 워크스페이스",
     heroTitle: "앱은 그대로 쓰고, 백엔드 흐름은 Workspace에서 봅니다.",
@@ -81,13 +94,14 @@ const landingCopy = {
     heroSecondary: "GitHub 보기",
     installLabel: "로컬 설치",
     previewCaptured: "Workspace 수신 중",
-    previewTitle: "생일 커피 쿠폰",
-    previewBody: "이 제품 액션을 클릭하면 실제 요청이 발생하고 Workspace가 바로 갱신됩니다.",
-    previewButton: "상세 열기",
-    proofPage: "프론트 페이지",
-    proofApi: "API 매칭",
-    proofFlow: "메인 플로우",
-    proofEvidence: "분석 근거",
+    previewTitle: "선택된 요청",
+    previewBody:
+      "실제 브라우저 또는 서버 요청을 선택하면 Summary, Timing, Diagram에서 관측된 데이터와 소스 근거를 구분해 보여줍니다.",
+    previewButton: "흐름 확인",
+    proofPage: "요청 출처",
+    proofApi: "API 매핑",
+    proofFlow: "백엔드 경로",
+    proofEvidence: "근거 라벨",
     whyEyebrow: "왜 필요한가",
     whyTitle: "Swagger가 API 목록을 보여준다면, Anlyx는 이 클릭이 사용한 흐름을 보여줍니다.",
     featureAction: "사용자 액션에서 시작",
@@ -102,13 +116,23 @@ const landingCopy = {
     workflowEyebrow: "실행 방식",
     workflowTitle: "프로젝트에 Anlyx를 설치하고, 이미 쓰던 앱을 그대로 사용하세요.",
     workflowBody:
-      "앱은 기존 방식대로 렌더링됩니다. Anlyx는 옆에서 브라우저 요청을 관찰하고, 스캔한 소스 근거와 연결합니다.",
+      "앱은 기존 방식대로 렌더링됩니다. Anlyx는 옆에서 브라우저, Next 서버, 선택적 백엔드 span을 관찰하고, 스캔한 소스 근거와 연결합니다.",
     stepInstall: "프로젝트에 로컬 개발 도구를 추가합니다.",
     stepInit: "Spring Boot와 Next.js App Router 소스 위치를 설정합니다.",
     stepDev: "Anlyx 런타임을 켜고 실제 프론트 앱을 그대로 사용합니다.",
     workflowNoteTitle: "별도 라이브 Workspace로 봅니다",
     workflowNoteBody:
       "앱 UI는 그대로 유지됩니다. Anlyx는 브라우저 요청을 캡처해서 별도 Workspace로 의미 있는 흐름만 보냅니다.",
+    agentEyebrow: "AI 에이전트용",
+    agentTitle: "설치와 세팅을 에이전트에게 바로 맡길 수 있게 준비했습니다.",
+    agentBody:
+      "Codex, Claude Code, Cursor 같은 코딩 에이전트에 그대로 붙여넣을 수 있는 프롬프트입니다. Anlyx를 설치하고, 앱은 로컬에서 유지하며, 관측 데이터와 소스 매칭 근거를 구분해서 검증하도록 지시합니다.",
+    agentNextTitle: "Next.js + Spring Boot",
+    agentNextBody: "v0.1 deep support 경로에 가장 적합합니다.",
+    agentReactTitle: "React 또는 수동 프론트엔드",
+    agentReactBody: "Next.js App Router가 아닌 프론트엔드에서 시작할 때 사용합니다.",
+    copyPrompt: "프롬프트 복사",
+    copiedPrompt: "복사됨",
     demoEyebrow: "인터랙티브 시연",
     demoTitle: "작은 제품 사이트에서 실제 요청을 보내고 Anlyx Workspace가 갱신되는 걸 확인하세요.",
     demoBody:
@@ -149,6 +173,20 @@ function LandingPage({
   onToggleLanguage: () => void;
 }): JSX.Element {
   const t = landingCopy[language];
+  const [copiedPrompt, setCopiedPrompt] = useState<AgentPromptId | null>(null);
+  const agentPrompts = getAgentPrompts(language);
+  const copyAgentPrompt = async (id: AgentPromptId, prompt: string) => {
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopiedPrompt(id);
+      window.setTimeout(
+        () => setCopiedPrompt((current) => (current === id ? null : current)),
+        1600
+      );
+    } catch {
+      setCopiedPrompt(null);
+    }
+  };
 
   return (
     <main className={`site-page site-page--${language}`} lang={language}>
@@ -209,7 +247,7 @@ function LandingPage({
                   <img alt="" src={logoSrc} />
                   <div>
                     <strong>Anlyx Workspace</strong>
-                    <span>GET /api/public/benefits/123</span>
+                    <span>GET /api/public/benefits/43</span>
                   </div>
                 </div>
                 <HeroFlowPreview />
@@ -220,10 +258,14 @@ function LandingPage({
       </section>
 
       <section className="proof-band" aria-label="What Anlyx connects">
-        <ProofItem icon={<Globe2 size={18} />} label={t.proofPage} value="Next.js App Router" />
-        <ProofItem icon={<Code2 size={18} />} label={t.proofApi} value="Spring endpoint" />
+        <ProofItem icon={<Globe2 size={18} />} label={t.proofPage} value="Browser / Server" />
+        <ProofItem icon={<Code2 size={18} />} label={t.proofApi} value="GET /api/..." />
         <ProofItem icon={<GitBranch size={18} />} label={t.proofFlow} value="Controller to DB" />
-        <ProofItem icon={<Activity size={18} />} label={t.proofEvidence} value="Confidence-aware" />
+        <ProofItem
+          icon={<Activity size={18} />}
+          label={t.proofEvidence}
+          value="Observed vs source"
+        />
       </section>
 
       <section className="section-grid" id="why">
@@ -282,6 +324,37 @@ function LandingPage({
         </ol>
       </section>
 
+      <section className="agent-section" id="agent">
+        <div className="section-heading">
+          <p className="eyebrow">{t.agentEyebrow}</p>
+          <h2>{t.agentTitle}</h2>
+          <p>{t.agentBody}</p>
+        </div>
+        <div className="agent-prompt-grid">
+          {agentPrompts.map((prompt) => (
+            <article className="agent-prompt-card" key={prompt.id}>
+              <div className="agent-prompt-card__head">
+                <div>
+                  <strong>{prompt.title}</strong>
+                  <span>{prompt.body}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void copyAgentPrompt(prompt.id, prompt.prompt)}
+                  aria-label={`${t.copyPrompt}: ${prompt.title}`}
+                >
+                  <Clipboard size={15} />
+                  {copiedPrompt === prompt.id ? t.copiedPrompt : t.copyPrompt}
+                </button>
+              </div>
+              <pre>
+                <code>{prompt.prompt}</code>
+              </pre>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="demo-cta">
         <div>
           <p className="eyebrow">{t.demoEyebrow}</p>
@@ -315,6 +388,7 @@ function SiteNav({
         <nav aria-label="Anlyx">
           <a href={routeHref("/")}>{t.navOverview}</a>
           <a href={routeHref("/demo")}>{t.navDemo}</a>
+          <a href="#agent">{t.navAgent}</a>
           <a href="https://github.com/suhannoh/anlyx">GitHub</a>
         </nav>
         <button
@@ -330,40 +404,115 @@ function SiteNav({
   );
 }
 
+type AgentPromptId = "next-spring" | "react-manual";
+
+function getAgentPrompts(language: Language): Array<{
+  id: AgentPromptId;
+  title: string;
+  body: string;
+  prompt: string;
+}> {
+  const t = landingCopy[language];
+
+  return [
+    {
+      id: "next-spring",
+      title: t.agentNextTitle,
+      body: t.agentNextBody,
+      prompt: `You are working inside my local web app repository. Install and configure Anlyx for local development.
+
+Goal:
+- Use Anlyx as a separate full-page Live Workspace, not as an overlay, modal, or drawer.
+- Keep my app running on its normal localhost port.
+- Configure Anlyx for a Next.js App Router frontend and Spring Boot backend when those folders exist.
+- Clearly separate Browser observed, Next server observed, Backend observed, Source matched, and Not proven evidence.
+- Do not add production tracing or send source code outside my machine.
+
+Steps:
+1. Install Anlyx as a dev dependency: npm install -D anlyx
+2. Initialize config: npx anlyx init
+3. Inspect this repo and update anlyx.config.ts with:
+   - projectName
+   - frontend.type = "next"
+   - frontend.sourceDir and frontend.baseUrl
+   - backend.type = "spring"
+   - backend.sourceDir
+   - server.port = 4777
+   - dev.command for my local app
+4. Run Anlyx locally: npx anlyx dev
+5. Open my app and http://localhost:4777/_anlyx/viewer side by side.
+6. Trigger real app actions and verify Summary, Timing, and Diagram use observed runtime data where available and mark source-only rows as Source matched or Not proven.
+
+Before finishing, report:
+- The exact config you created.
+- Which requests were Browser observed, Next server observed, Backend observed, Source matched, or Not proven.
+- Any route or backend layer Anlyx could not prove at runtime.`
+    },
+    {
+      id: "react-manual",
+      title: t.agentReactTitle,
+      body: t.agentReactBody,
+      prompt: `You are working inside my local web app repository. Add Anlyx for local request-flow inspection with the smallest safe setup.
+
+Goal:
+- Keep the app UI unchanged and use the separate Anlyx Live Workspace at http://localhost:4777/_anlyx/viewer.
+- If this is not a Next.js App Router project, use Anlyx manual frontend capture and source/backend evidence where supported.
+- Capture real browser fetch/XHR requests from local development.
+- Do not claim source-derived rows are runtime traces.
+- Do not enable Anlyx in production.
+
+Steps:
+1. Install Anlyx as a dev dependency: npm install -D anlyx
+2. Initialize config: npx anlyx init
+3. Inspect the repo and configure anlyx.config.ts with the correct projectName, app baseUrl, server.port = 4777, and any Spring/OpenAPI backend source available.
+4. Start my app normally.
+5. Run Anlyx: npx anlyx dev
+6. If automatic injection is not available, add this development-only fallback script to the local app shell:
+   <script src="http://localhost:4777/_anlyx/capture.js" defer></script>
+7. Open http://localhost:4777/_anlyx/viewer, use the real app, and verify requests appear in Recent requests with correct evidence labels.
+
+Before finishing, report:
+- What Anlyx could observe directly.
+- What was only source-matched.
+- What remains not proven or unsupported for this framework.`
+    }
+  ];
+}
+
 const heroFlowRows = [
   {
     step: "01",
-    label: "Page",
-    value: "/app/benefits/[id]/page.tsx",
-    badge: "clicked",
+    label: "Source",
+    value: "Browser or Next server observed",
+    badge: "observed",
     tone: "blue"
   },
   {
     step: "02",
     label: "API",
-    value: "GET /api/public/benefits/:id",
-    badge: "matched",
+    value: "GET /api/public/benefits/43",
+    badge: "200 OK",
     tone: "blue"
   },
   {
     step: "03",
     label: "Controller",
-    value: "BenefitController.getPublicBenefit()",
-    badge: "source",
+    value: "PublicViewController.benefit()",
+    badge: "matched",
     tone: "violet"
   },
   {
     step: "04",
     label: "Service",
-    value: "BenefitService.findVisibleBenefit()",
-    badge: "87%",
+    value: "Service / Repository / JDBC spans",
+    badge: "runtime",
     tone: "emerald"
   },
   {
     step: "05",
-    label: "DB",
-    value: "benefits.id = 123",
-    badge: "table",
+    label: "Evidence",
+    value: "Observed, source matched, not proven",
+    badge: "clear",
     tone: "emerald"
   }
 ] as const;

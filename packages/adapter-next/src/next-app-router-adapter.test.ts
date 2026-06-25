@@ -129,13 +129,121 @@ describe("Next.js App Router Adapter", () => {
     expect(pages.map((page) => page.route)).toEqual(["/"]);
   });
 
-  it("generated pages have empty screenshots and apiCalls", async () => {
+  it("generated pages have empty screenshots when no source API calls are found", async () => {
     await writeProjectFile("app/dashboard/page.tsx");
 
     const [page] = await scanNextAppRouterPages({ sourceDir: projectRoot });
 
     expect(page?.screenshots).toEqual([]);
     expect(page?.apiCalls).toEqual([]);
+  });
+
+  it("detects direct fetch API calls in page files", async () => {
+    await writeProjectFile(
+      "app/dashboard/page.tsx",
+      `
+      export default async function Page() {
+        await fetch("/api/public/dashboard", { method: "POST" });
+        return null;
+      }
+      `
+    );
+
+    const [page] = await scanNextAppRouterPages({ sourceDir: projectRoot });
+
+    expect(page?.apiCalls).toEqual([{ method: "POST", path: "/api/public/dashboard" }]);
+  });
+
+  it("detects imported API helper calls used by a page", async () => {
+    await writeProjectFile(
+      "frontend/src/app/page.tsx",
+      `
+      import { getPublicHome } from "@/lib/api";
+
+      export default async function HomePage() {
+        const home = await getPublicHome();
+        return null;
+      }
+      `
+    );
+    await writeProjectFile(
+      "frontend/src/lib/api.ts",
+      `
+      async function getJson<T>(path: string): Promise<T> {
+        return fetch(\`http://localhost:8080\${path}\`).then((response) => response.json());
+      }
+
+      export function getPublicHome() {
+        return getJson("/api/public/home");
+      }
+
+      export function getUnusedRanking() {
+        return getJson("/api/public/ranking");
+      }
+      `
+    );
+
+    const [page] = await scanNextAppRouterPages({ sourceDir: join(projectRoot, "frontend") });
+
+    expect(page?.apiCalls).toEqual([{ method: "GET", path: "/api/public/home" }]);
+  });
+
+  it("detects axios and sendBeacon API calls", async () => {
+    await writeProjectFile(
+      "app/page.tsx",
+      `
+      import axios from "axios";
+
+      export default function Page() {
+        axios.get("/api/public/search?q=coffee");
+        navigator.sendBeacon("/api/public/page-views", "{}");
+        return null;
+      }
+      `
+    );
+
+    const [page] = await scanNextAppRouterPages({ sourceDir: projectRoot });
+
+    expect(page?.apiCalls).toEqual([
+      { method: "GET", path: "/api/public/search?q=coffee" },
+      { method: "POST", path: "/api/public/page-views" }
+    ]);
+  });
+
+  it("keeps dynamic template path segments matchable", async () => {
+    await writeProjectFile(
+      "app/vertical/[vertical]/page.tsx",
+      `
+      export default async function Page({ params }: { params: { vertical: string } }) {
+        await fetch(\`/api/public/verticals/\${params.vertical}\`);
+        await fetch("https://example.com/not-an-api");
+        return null;
+      }
+      `
+    );
+
+    const [page] = await scanNextAppRouterPages({ sourceDir: projectRoot });
+
+    expect(page?.apiCalls).toEqual([
+      { method: "GET", path: "/api/public/verticals/{vertical}" }
+    ]);
+  });
+
+  it("drops dynamic query suffix helpers from template paths", async () => {
+    await writeProjectFile(
+      "app/ranking/page.tsx",
+      `
+      export default async function Page() {
+        const suffix = "?period=weekly";
+        await fetch(\`/api/public/ranking\${suffix}\`);
+        return null;
+      }
+      `
+    );
+
+    const [page] = await scanNextAppRouterPages({ sourceDir: projectRoot });
+
+    expect(page?.apiCalls).toEqual([{ method: "GET", path: "/api/public/ranking" }]);
   });
 
   it("generated pages have captureStatus pending", async () => {
@@ -199,9 +307,9 @@ describe("Next.js App Router Adapter", () => {
     ]);
   });
 
-  async function writeProjectFile(relativePath: string): Promise<void> {
+  async function writeProjectFile(relativePath: string, content?: string): Promise<void> {
     const filePath = join(projectRoot, relativePath);
     await mkdir(filePath.split("/").slice(0, -1).join("/"), { recursive: true });
-    await writeFile(filePath, "export default function Page() { return null; }\n");
+    await writeFile(filePath, content ?? "export default function Page() { return null; }\n");
   }
 });
