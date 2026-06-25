@@ -52,11 +52,17 @@
   align-items: center;
   min-height: 74px;
   padding: 0 16px;
+  color: inherit;
+  text-decoration: none;
 }
 
 .workspace-brand img {
   width: 88px;
   height: auto;
+}
+
+.workspace-brand:hover img {
+  opacity: 0.82;
 }
 
 .workspace-nav {

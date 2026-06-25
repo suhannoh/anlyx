@@ -141,9 +141,9 @@ function AnlyxSidebar({
 }): JSX.Element {
   return (
     <aside className="workspace-sidebar workspace-sidebar--timing">
-      <div className="workspace-brand">
+      <a className="workspace-brand" href={landingHref()} aria-label="Back to Anlyx overview">
         <img alt="Anlyx" src={logoSrc} />
-      </div>
+      </a>
       <nav className="workspace-nav" aria-label="Workspace">
         <a className="is-active" href="#workspace">
           <Workflow size={19} />
@@ -170,6 +170,11 @@ function AnlyxSidebar({
       </div>
     </aside>
   );
+}
+
+function landingHref(): string {
+  const pathname = window.location.pathname;
+  return pathname === "/anlyx" || pathname.startsWith("/anlyx/") ? "/anlyx" : "/";
 }
 
 function DemoWorkspaceShell({

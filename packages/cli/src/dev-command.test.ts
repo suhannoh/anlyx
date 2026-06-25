@@ -645,6 +645,30 @@ describe("dev command", () => {
     });
   });
 
+  it("passes the bundled docs page through to the static viewer middleware", async () => {
+    const { request, response } = createRuntimeHarness({
+      method: "GET",
+      url: "/docs.html"
+    });
+    let passedToStaticMiddleware = false;
+
+    const middleware = createAnlyxRuntimeMiddleware({
+      port: 4777,
+      reportData: scanResult,
+      viewerRoot: join(process.cwd(), "packages/ui/dist/viewer"),
+      frontendBaseUrl: "http://localhost:3000",
+      mode: "inject",
+      flowStore: createLocalFlowStore()
+    });
+
+    await middleware(request, response, () => {
+      passedToStaticMiddleware = true;
+    });
+
+    expect(passedToStaticMiddleware).toBe(true);
+    expect(response.ended).toBe(false);
+  });
+
   it("serves a development-only Spring backend bridge template", async () => {
     const { request, response } = createRuntimeHarness({
       method: "GET",
@@ -675,7 +699,9 @@ describe("dev command", () => {
 
     expect(response.statusCode).toBe(204);
     expect(response.getHeader("access-control-allow-methods")).toBe("GET, POST, OPTIONS");
-    expect(response.getHeader("access-control-allow-headers")).toBe("content-type, x-anlyx-request-id");
+    expect(response.getHeader("access-control-allow-headers")).toBe(
+      "content-type, x-anlyx-request-id"
+    );
   });
 
   it("rejects runtime event posts from non-local configured origins", async () => {
@@ -1260,7 +1286,12 @@ function createBackendSpanEvent(requestId: string) {
   };
 }
 
-function createRuntimeHarness(options: { method: string; url: string; body?: string; origin?: string }): {
+function createRuntimeHarness(options: {
+  method: string;
+  url: string;
+  body?: string;
+  origin?: string;
+}): {
   request: FakeRequest;
   response: FakeResponse;
 } {

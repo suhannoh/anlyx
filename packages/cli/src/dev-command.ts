@@ -386,7 +386,9 @@ export function createLocalFlowStore(): LocalFlowStore {
 
       store.pendingBackendSpans.delete(record.requestId);
       const shouldSkipSourceOnly = isSourceOnlyFlowRecord(nextRecord)
-        ? store.records.some((item) => isObservedFlowRecord(item) && recordsDescribeSameEndpoint(item, nextRecord))
+        ? store.records.some(
+            (item) => isObservedFlowRecord(item) && recordsDescribeSameEndpoint(item, nextRecord)
+          )
         : false;
 
       if (shouldSkipSourceOnly) {
@@ -398,7 +400,11 @@ export function createLocalFlowStore(): LocalFlowStore {
         ...store.records.filter(
           (item) =>
             item.id !== nextRecord.id &&
-            !(isObservedFlowRecord(nextRecord) && isSourceOnlyFlowRecord(item) && recordsDescribeSameEndpoint(nextRecord, item))
+            !(
+              isObservedFlowRecord(nextRecord) &&
+              isSourceOnlyFlowRecord(item) &&
+              recordsDescribeSameEndpoint(nextRecord, item)
+            )
         )
       ].slice(0, 100);
       for (const client of store.clients) {
@@ -492,6 +498,10 @@ function createAnlyxDevPlugin(options: LocalUiServerOptions) {
           request.url = "/viewer.html";
         }
 
+        if (request.method === "GET" && isDocsPath(request.url ?? "/")) {
+          request.url = "/docs.html";
+        }
+
         next();
       });
 
@@ -570,6 +580,11 @@ export function createAnlyxRuntimeMiddleware(options: AnlyxRuntimeMiddlewareOpti
       return;
     }
 
+    if (request.method === "GET" && isDocsHtmlPath(requestUrl)) {
+      next();
+      return;
+    }
+
     if (options.mode === "viewer" || options.mode === "inject") {
       next();
       return;
@@ -594,6 +609,28 @@ function isStandaloneViewerPath(path: string): boolean {
   return path === "/_anlyx/viewer" || path === "/_anlyx/viewer.html";
 }
 
+function isDocsPath(path: string): boolean {
+  const pathname = getRequestPathname(path);
+  return (
+    pathname === "/docs" ||
+    pathname === "/docs/" ||
+    pathname === "/_anlyx/docs" ||
+    pathname === "/_anlyx/docs/"
+  );
+}
+
+function isDocsHtmlPath(path: string): boolean {
+  return getRequestPathname(path) === "/docs.html";
+}
+
+function getRequestPathname(path: string): string {
+  try {
+    return new URL(path, "http://127.0.0.1").pathname;
+  } catch {
+    return path;
+  }
+}
+
 function isAnlyxPath(path: string): boolean {
   return path.startsWith("/_anlyx/");
 }
@@ -604,7 +641,10 @@ async function handleBrowserEventPost(
   options: AnlyxRuntimeMiddlewareOptions
 ): Promise<void> {
   if (!isAllowedRuntimeOrigin(request, options)) {
-    sendAcceptedJson(request, response, options, 403, { accepted: false, error: "Forbidden origin." });
+    sendAcceptedJson(request, response, options, 403, {
+      accepted: false,
+      error: "Forbidden origin."
+    });
     return;
   }
 
@@ -615,7 +655,10 @@ async function handleBrowserEventPost(
   }
 
   if (!body) {
-    sendAcceptedJson(request, response, options, 400, { accepted: false, error: "Missing JSON body." });
+    sendAcceptedJson(request, response, options, 400, {
+      accepted: false,
+      error: "Missing JSON body."
+    });
     return;
   }
 
@@ -624,7 +667,10 @@ async function handleBrowserEventPost(
   try {
     parsed = JSON.parse(body.toString("utf8"));
   } catch {
-    sendAcceptedJson(request, response, options, 400, { accepted: false, error: "Invalid JSON body." });
+    sendAcceptedJson(request, response, options, 400, {
+      accepted: false,
+      error: "Invalid JSON body."
+    });
     return;
   }
 
@@ -632,7 +678,10 @@ async function handleBrowserEventPost(
     const reportData = await resolveRuntimeReportData(options);
     const records = buildFlowRecordsFromPageViewEvent(parsed, reportData);
     const preserveRecords = options.flowStore.records.filter((record) =>
-      records.some((sourceRecord) => isObservedFlowRecord(record) && recordsDescribeSameEndpoint(record, sourceRecord))
+      records.some(
+        (sourceRecord) =>
+          isObservedFlowRecord(record) && recordsDescribeSameEndpoint(record, sourceRecord)
+      )
     );
 
     options.flowStore.beginPageScope({ preserveRecords });
@@ -689,7 +738,10 @@ async function handleBackendSpanPost(
   options: AnlyxRuntimeMiddlewareOptions
 ): Promise<void> {
   if (!isAllowedRuntimeOrigin(request, options)) {
-    sendAcceptedJson(request, response, options, 403, { accepted: false, error: "Forbidden origin." });
+    sendAcceptedJson(request, response, options, 403, {
+      accepted: false,
+      error: "Forbidden origin."
+    });
     return;
   }
 
@@ -700,7 +752,10 @@ async function handleBackendSpanPost(
   }
 
   if (!body) {
-    sendAcceptedJson(request, response, options, 400, { accepted: false, error: "Missing JSON body." });
+    sendAcceptedJson(request, response, options, 400, {
+      accepted: false,
+      error: "Missing JSON body."
+    });
     return;
   }
 
@@ -709,12 +764,18 @@ async function handleBackendSpanPost(
   try {
     parsed = JSON.parse(body.toString("utf8"));
   } catch {
-    sendAcceptedJson(request, response, options, 400, { accepted: false, error: "Invalid JSON body." });
+    sendAcceptedJson(request, response, options, 400, {
+      accepted: false,
+      error: "Invalid JSON body."
+    });
     return;
   }
 
   if (!isBackendSpanEvent(parsed)) {
-    sendAcceptedJson(request, response, options, 400, { accepted: false, error: "Invalid backend span event." });
+    sendAcceptedJson(request, response, options, 400, {
+      accepted: false,
+      error: "Invalid backend span event."
+    });
     return;
   }
 
@@ -844,7 +905,9 @@ function isAllowedRuntimeOrigin(
   return allowedRuntimeOrigins(options).has(origin);
 }
 
-function allowedRuntimeOrigins(options: Pick<AnlyxRuntimeMiddlewareOptions, "frontendBaseUrl" | "port">) {
+function allowedRuntimeOrigins(
+  options: Pick<AnlyxRuntimeMiddlewareOptions, "frontendBaseUrl" | "port">
+) {
   const origins = new Set([`http://localhost:${options.port}`, `http://127.0.0.1:${options.port}`]);
 
   try {
@@ -864,7 +927,10 @@ async function readRuntimeEventBody(
   try {
     return await readRequestBody(request, MAX_RUNTIME_EVENT_BODY_BYTES);
   } catch (error) {
-    const message = error instanceof RequestBodyTooLargeError ? "Event body too large." : "Could not read request body.";
+    const message =
+      error instanceof RequestBodyTooLargeError
+        ? "Event body too large."
+        : "Could not read request body.";
     sendAcceptedJson(request, response, options, 413, { accepted: false, error: message });
     return false;
   }

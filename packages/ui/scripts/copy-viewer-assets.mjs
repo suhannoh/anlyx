@@ -10,7 +10,8 @@ const assets = [
     "../../docs/assets/brand/anlyx-logo-transparent.png",
     "dist/viewer/workspace/anlyx-logo-transparent.png"
   ],
-  ["src/viewer/viewer.html", "dist/viewer/viewer.html"]
+  ["src/viewer/viewer.html", "dist/viewer/viewer.html"],
+  ["src/viewer/docs.html", "dist/viewer/docs.html"]
 ];
 
 for (const [from, to] of assets) {

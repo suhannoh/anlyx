@@ -590,7 +590,7 @@ function WorkspaceSidebar({
             한
           </button>
         </div>
-        <a className="workspace-doc-link" href="#workspace">
+        <a className="workspace-doc-link" href="/docs" target="_blank" rel="noreferrer">
           <FileCode2 size={19} />
           <span>{t(locale, "docs")}</span>
         </a>
@@ -802,7 +802,9 @@ function TimingWaterfallView({ record }: { record: FlowRecord }): JSX.Element {
   const total = Math.max(observedDuration, 1);
   const ticks = timelineTicks(total);
   const slowestLayer = rows
-    .filter((layer) => isRuntimeObservedLayer(layer) && layer.type !== "api" && layer.type !== "result")
+    .filter(
+      (layer) => isRuntimeObservedLayer(layer) && layer.type !== "api" && layer.type !== "result"
+    )
     .sort((a, b) => estimatedLayerDuration(b, total) - estimatedLayerDuration(a, total))[0];
 
   return (

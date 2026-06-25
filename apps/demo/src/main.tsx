@@ -5,14 +5,18 @@ import {
   Activity,
   ArrowRight,
   BadgeCheck,
+  BookOpen,
   CheckCircle2,
   Clipboard,
   Code2,
   ExternalLink,
+  FileText,
   GitBranch,
   Globe2,
   Layers3,
   MousePointerClick,
+  Rocket,
+  Scale,
   ShieldCheck
 } from "lucide-react";
 import { StrictMode, useState } from "react";
@@ -26,19 +30,18 @@ const landingCopy = {
   en: {
     navOverview: "Overview",
     navDemo: "Demo",
-    navAgent: "Agent prompt",
-    langToggle: "한글",
+    navDocs: "Docs",
+    langToggle: "KO",
     heroEyebrow: "Live workspace for local apps",
-    heroTitle: "Use your app normally. Watch the backend flow live.",
+    heroTitle: "See the backend path behind each frontend click.",
     heroBody:
-      "Open your local app on one screen and Anlyx Workspace on another. Browser-observed requests stream into a source-backed API, Controller, Service, Repository, and Database flow.",
-    heroPrimary: "Try the live demo",
-    heroSecondary: "View GitHub",
-    installLabel: "Install locally",
+      "Anlyx captures local browser and server requests, then maps them to API, Controller, Service, Repository, and DB evidence without leaving your machine.",
+    heroPrimary: "Try 30-sec live demo",
+    heroSecondary: "Read quick start",
     previewCaptured: "Workspace listening",
-    previewTitle: "Selected request",
+    previewTitle: "Click to code path",
     previewBody:
-      "A real browser or server request is selected, then Summary, Timing, and Diagram explain what Anlyx observed and what came from source evidence.",
+      "A product action becomes a selected request, then Anlyx shows which backend evidence matched it.",
     previewButton: "Inspect flow",
     proofPage: "Request source",
     proofApi: "API mapping",
@@ -59,12 +62,41 @@ const landingCopy = {
     workflowTitle: "Install Anlyx into your project, then keep using the app you already know.",
     workflowBody:
       "The site stays yours. Anlyx runs beside it, captures browser, Next server, and optional backend spans, then connects them to scanned source evidence.",
-    stepInstall: "Add the local development tool to the project.",
-    stepInit: "Create a config for Spring Boot and Next.js App Router sources.",
-    stepDev: "Start the Anlyx runtime and keep using the real frontend.",
+    stepInstall: "Install repository dependencies with the pinned workspace toolchain.",
+    stepInit: "Build the CLI, UI, and demo packages before local validation.",
+    stepDev: "Create the local package artifact used for v0.1 installation checks.",
     workflowNoteTitle: "Separate live workspace",
     workflowNoteBody:
       "Your app keeps its own UI. Anlyx uses browser capture and streams meaningful requests into the separate Workspace.",
+    techEyebrow: "Tech and architecture",
+    techTitle: "A local-first request map for Next.js, Spring Boot, and browser apps.",
+    techBody:
+      "Anlyx keeps source scanning, runtime capture, and the Live Workspace on your machine. The first deep-support path is Next.js App Router plus Spring Boot, with browser capture available for React/manual apps.",
+    techStackTitle: "Stack",
+    techFlowTitle: "Request flow",
+    techStackCli: "TypeScript CLI",
+    techStackNext: "Next.js App Router bridge",
+    techStackSpring: "Spring Boot source scanner",
+    techStackWorkspace: "React Live Workspace",
+    techStackFlow: "React Flow diagrams",
+    techStackLocal: "Local SSE runtime",
+    techFlowBrowser: "Browser or Next server request",
+    techFlowAnalyzer: "Local Anlyx runtime",
+    techFlowEvidence: "Source and backend evidence",
+    techFlowWorkspace: "Summary, Timing, Diagram",
+    communityEyebrow: "Open-source ready",
+    communityTitle: "Built for fast adoption and careful contribution.",
+    communityBody:
+      "The repository includes the core docs a new user expects: README, getting started, usage guide, security notes, contribution rules, and MIT license.",
+    communityDocs: "Docs first",
+    communityDocsBody:
+      "Quick start, usage, evidence labels, security, and AI setup prompts live in one docs page.",
+    communityContribute: "Contribution path",
+    communityContributeBody:
+      "Issues and pull requests should preserve evidence semantics and avoid treating source-derived rows as runtime traces.",
+    communityLicense: "MIT licensed",
+    communityLicenseBody:
+      "The license is explicit so developers can evaluate usage, redistribution, and contribution boundaries.",
     agentEyebrow: "For AI agents",
     agentTitle: "Give your coding agent a copy-ready setup prompt.",
     agentBody:
@@ -79,24 +111,67 @@ const landingCopy = {
     demoTitle: "Open a small product site and watch Anlyx Workspace update from real requests.",
     demoBody:
       "Search, open detail, save a perk, redeem, or try an admin sync. Each action sends a real request that appears in Recent events, Summary, Timing, Diagram, and the inspector.",
-    demoButton: "Open demo"
+    demoButton: "Open demo",
+    docsEyebrow: "Open-source docs",
+    docsTitle: "Install Anlyx, verify it locally, and understand every evidence label.",
+    docsBody:
+      "This page collects the docs a new user or contributor needs first: overview, setup, usage, security, contribution rules, and license.",
+    docsQuickStart: "Quick start",
+    docsCopyCommand: "Copy command",
+    docsCopied: "Copied",
+    docsCopyFailed: "Copy failed",
+    docsPrepublish:
+      "Pre-publish note: npm release is paused during v0.1 validation. Use the repository workflow first; npm install is the intended post-release path.",
+    docsDevOnly:
+      "Local development only. Do not ship /_anlyx/capture.js, the Next server bridge, or the Spring dev bridge to production.",
+    docsConfigChecklist:
+      "Before dev, check backend.sourceDir, frontend.sourceDir, frontend.baseUrl, and dev.command.",
+    docsAgentPrompt: "Copy AI setup prompt",
+    docsOpenDemo: "Open live demo",
+    docsGithub: "GitHub repository",
+    docsReadmeTitle: "README overview",
+    docsReadmeBody:
+      "Anlyx is a local developer tool that maps real browser and Next.js server requests to scanned backend evidence in a separate Live Workspace.",
+    docsInstallTitle: "Getting started",
+    docsInstallBody:
+      "Use Node 22+, initialize config, review the required paths, run scan, then open the local workspace beside your app.",
+    docsUsageTitle: "Usage guide",
+    docsUsageBody:
+      "Open Summary for the readable path, Timing for observed spans, and Diagram for the layered request flow. Labels distinguish observed, source matched, and not proven rows.",
+    docsSecurityTitle: "Security and privacy",
+    docsSecurityBody:
+      "Anlyx scans local source and captures request paths, status, duration, and optional action/page context into local artifacts. Do not expose port 4777 or deploy dev bridges.",
+    docsContributingTitle: "Contributing",
+    docsContributingBody:
+      "Keep changes scoped, run tests before PRs, preserve evidence semantics, and avoid claiming source-derived rows are runtime traces.",
+    docsLicenseTitle: "License",
+    docsLicenseBody:
+      "Anlyx is distributed under the MIT License. Check package metadata and LICENSE before redistribution.",
+    docsSupportTitle: "Framework support",
+    docsSupportBody:
+      "Deep Support is Next.js App Router + Spring Boot. OpenAPI is Basic Support only; React/manual capture records browser requests without React Router deep support.",
+    docsPrinciplesTitle: "Evidence principles",
+    docsPrinciplesBody:
+      "Observed data, source-derived evidence, inferred branches, and not-proven paths must stay visually distinct.",
+    docsSectionsTitle: "Docs structure",
+    docsCommandsTitle: "Commands",
+    docsPromptTitle: "Agent-ready setup prompt"
   },
   ko: {
     navOverview: "소개",
     navDemo: "시연",
-    navAgent: "Agent 프롬프트",
+    navDocs: "문서",
     langToggle: "EN",
     heroEyebrow: "로컬 앱을 위한 라이브 워크스페이스",
-    heroTitle: "앱은 그대로 쓰고, 백엔드 흐름은 Workspace에서 봅니다.",
+    heroTitle: "프론트 클릭이 실제로 탄 백엔드 경로를 보여줍니다.",
     heroBody:
-      "한쪽에는 실제 로컬 앱을 열고, 다른 쪽에는 Anlyx Workspace를 열어두세요. 브라우저에서 관찰한 요청이 API, Controller, Service, Repository, Database 흐름으로 실시간 연결됩니다.",
-    heroPrimary: "시연 보기",
-    heroSecondary: "GitHub 보기",
-    installLabel: "로컬 설치",
+      "Anlyx는 로컬 브라우저와 서버 요청을 캡처하고 API, Controller, Service, Repository, DB 근거와 연결합니다. 코드는 내 머신 밖으로 나가지 않습니다.",
+    heroPrimary: "30초 시연 보기",
+    heroSecondary: "빠른 시작 읽기",
     previewCaptured: "Workspace 수신 중",
-    previewTitle: "선택된 요청",
+    previewTitle: "클릭에서 코드 경로까지",
     previewBody:
-      "실제 브라우저 또는 서버 요청을 선택하면 Summary, Timing, Diagram에서 관측된 데이터와 소스 근거를 구분해 보여줍니다.",
+      "제품 액션이 선택된 요청이 되고, Anlyx는 어떤 백엔드 근거가 매칭됐는지 보여줍니다.",
     previewButton: "흐름 확인",
     proofPage: "요청 출처",
     proofApi: "API 매핑",
@@ -117,12 +192,41 @@ const landingCopy = {
     workflowTitle: "프로젝트에 Anlyx를 설치하고, 이미 쓰던 앱을 그대로 사용하세요.",
     workflowBody:
       "앱은 기존 방식대로 렌더링됩니다. Anlyx는 옆에서 브라우저, Next 서버, 선택적 백엔드 span을 관찰하고, 스캔한 소스 근거와 연결합니다.",
-    stepInstall: "프로젝트에 로컬 개발 도구를 추가합니다.",
-    stepInit: "Spring Boot와 Next.js App Router 소스 위치를 설정합니다.",
-    stepDev: "Anlyx 런타임을 켜고 실제 프론트 앱을 그대로 사용합니다.",
+    stepInstall: "저장소 의존성을 고정된 workspace 도구 체인으로 설치합니다.",
+    stepInit: "로컬 검증 전에 CLI, UI, demo 패키지를 빌드합니다.",
+    stepDev: "v0.1 설치 검증에 사용할 로컬 패키지 artifact를 만듭니다.",
     workflowNoteTitle: "별도 라이브 Workspace로 봅니다",
     workflowNoteBody:
       "앱 UI는 그대로 유지됩니다. Anlyx는 브라우저 요청을 캡처해서 별도 Workspace로 의미 있는 흐름만 보냅니다.",
+    techEyebrow: "기술과 구조",
+    techTitle: "Next.js, Spring Boot, 브라우저 앱을 위한 로컬 우선 요청 지도입니다.",
+    techBody:
+      "Anlyx는 소스 스캔, 런타임 캡처, Live Workspace를 모두 로컬에서 실행합니다. 첫 deep-support 경로는 Next.js App Router와 Spring Boot이고, React/manual 앱은 브라우저 캡처부터 사용할 수 있습니다.",
+    techStackTitle: "기술 스택",
+    techFlowTitle: "요청 흐름",
+    techStackCli: "TypeScript CLI",
+    techStackNext: "Next.js App Router 브리지",
+    techStackSpring: "Spring Boot 소스 스캐너",
+    techStackWorkspace: "React Live Workspace",
+    techStackFlow: "React Flow 다이어그램",
+    techStackLocal: "로컬 SSE 런타임",
+    techFlowBrowser: "브라우저 또는 Next 서버 요청",
+    techFlowAnalyzer: "로컬 Anlyx 런타임",
+    techFlowEvidence: "소스와 백엔드 근거",
+    techFlowWorkspace: "Summary, Timing, Diagram",
+    communityEyebrow: "오픈소스 준비",
+    communityTitle: "빠르게 써보고, 조심스럽게 기여할 수 있게 정리했습니다.",
+    communityBody:
+      "저장소에는 새 사용자가 기대하는 핵심 문서가 포함됩니다. README, 시작 가이드, 사용법, 보안 안내, 기여 규칙, MIT 라이선스를 확인할 수 있습니다.",
+    communityDocs: "문서 우선",
+    communityDocsBody:
+      "빠른 시작, 사용법, 근거 라벨, 보안, AI 세팅 프롬프트를 한 문서 페이지에 모았습니다.",
+    communityContribute: "기여 경로",
+    communityContributeBody:
+      "이슈와 PR은 근거 표현 원칙을 지키고, source-derived row를 runtime trace처럼 표현하지 않아야 합니다.",
+    communityLicense: "MIT 라이선스",
+    communityLicenseBody:
+      "라이선스를 명확히 두어 사용, 재배포, 기여 범위를 개발자가 빠르게 판단할 수 있게 했습니다.",
     agentEyebrow: "AI 에이전트용",
     agentTitle: "설치와 세팅을 에이전트에게 바로 맡길 수 있게 준비했습니다.",
     agentBody:
@@ -137,7 +241,51 @@ const landingCopy = {
     demoTitle: "작은 제품 사이트에서 실제 요청을 보내고 Anlyx Workspace가 갱신되는 걸 확인하세요.",
     demoBody:
       "검색, 상세 보기, 저장, 교환, 관리자 동기화를 눌러보세요. 각 액션이 실제 요청을 만들고 Recent events, Summary, Timing, Diagram, Inspector를 갱신합니다.",
-    demoButton: "시연 열기"
+    demoButton: "시연 열기",
+    docsEyebrow: "오픈소스 문서",
+    docsTitle: "Anlyx 설치, 로컬 검증, 근거 라벨까지 한 번에 파악하세요.",
+    docsBody:
+      "처음 쓰는 사용자와 기여자가 가장 먼저 필요한 문서를 한곳에 모았습니다. 개요, 시작 방법, 사용법, 보안, 기여 규칙, 라이선스를 빠르게 확인할 수 있습니다.",
+    docsQuickStart: "빠른 시작",
+    docsCopyCommand: "명령어 복사",
+    docsCopied: "복사됨",
+    docsCopyFailed: "복사 실패",
+    docsPrepublish:
+      "배포 전 안내: v0.1 검증 중이라 npm release는 멈춰둔 상태입니다. 지금은 저장소 검증 흐름을 먼저 사용하고, npm install은 첫 배포 이후 경로로 봐주세요.",
+    docsDevOnly:
+      "로컬 개발 전용입니다. /_anlyx/capture.js, Next server bridge, Spring dev bridge를 production에 배포하지 마세요.",
+    docsConfigChecklist:
+      "dev 실행 전 backend.sourceDir, frontend.sourceDir, frontend.baseUrl, dev.command를 확인하세요.",
+    docsAgentPrompt: "AI 세팅 프롬프트 복사",
+    docsOpenDemo: "라이브 시연 열기",
+    docsGithub: "GitHub 저장소",
+    docsReadmeTitle: "README 개요",
+    docsReadmeBody:
+      "Anlyx는 실제 브라우저와 Next.js 서버 요청을 스캔된 백엔드 근거와 연결해 별도 Live Workspace에서 보여주는 로컬 개발 도구입니다.",
+    docsInstallTitle: "설치 및 시작",
+    docsInstallBody:
+      "Node 22 이상에서 config를 만들고, 필요한 경로를 확인한 뒤 scan을 실행하고, 기존 앱 옆에 Anlyx Workspace를 띄우면 됩니다.",
+    docsUsageTitle: "사용법",
+    docsUsageBody:
+      "Summary는 읽기 쉬운 경로, Timing은 관측된 시간, Diagram은 레이어형 흐름을 보여줍니다. observed, source matched, not proven 라벨은 분리해서 읽어야 합니다.",
+    docsSecurityTitle: "보안과 개인정보",
+    docsSecurityBody:
+      "Anlyx는 로컬 소스를 스캔하고 request path, status, duration, 선택적 action/page context를 로컬 artifact로 저장합니다. 4777 포트와 dev bridge를 외부에 노출하지 마세요.",
+    docsContributingTitle: "기여 방법",
+    docsContributingBody:
+      "변경 범위를 작게 유지하고, PR 전 테스트를 실행하며, source-derived row를 runtime trace처럼 표현하지 않는 원칙을 지켜주세요.",
+    docsLicenseTitle: "라이선스",
+    docsLicenseBody:
+      "Anlyx는 MIT License로 배포됩니다. 재배포 전 패키지 메타데이터와 LICENSE를 확인하세요.",
+    docsSupportTitle: "지원 프레임워크",
+    docsSupportBody:
+      "Deep Support는 Next.js App Router + Spring Boot입니다. OpenAPI는 Basic Support이고, React/manual capture는 브라우저 요청만 기록하며 React Router deep support는 v0.1 범위가 아닙니다.",
+    docsPrinciplesTitle: "근거 표현 원칙",
+    docsPrinciplesBody:
+      "관측 데이터, 소스 기반 근거, 추론된 분기, not-proven 경로는 UI에서 명확하게 구분되어야 합니다.",
+    docsSectionsTitle: "문서 구조",
+    docsCommandsTitle: "명령어",
+    docsPromptTitle: "에이전트용 세팅 프롬프트"
   }
 } satisfies Record<Language, Record<string, string>>;
 
@@ -162,6 +310,10 @@ function App(): JSX.Element {
     return <DemoWorkspacePage />;
   }
 
+  if (route === "docs") {
+    return <DocsPage language={language} onToggleLanguage={toggleLanguage} />;
+  }
+
   return <LandingPage language={language} onToggleLanguage={toggleLanguage} />;
 }
 
@@ -173,20 +325,6 @@ function LandingPage({
   onToggleLanguage: () => void;
 }): JSX.Element {
   const t = landingCopy[language];
-  const [copiedPrompt, setCopiedPrompt] = useState<AgentPromptId | null>(null);
-  const agentPrompts = getAgentPrompts(language);
-  const copyAgentPrompt = async (id: AgentPromptId, prompt: string) => {
-    try {
-      await navigator.clipboard.writeText(prompt);
-      setCopiedPrompt(id);
-      window.setTimeout(
-        () => setCopiedPrompt((current) => (current === id ? null : current)),
-        1600
-      );
-    } catch {
-      setCopiedPrompt(null);
-    }
-  };
 
   return (
     <main className={`site-page site-page--${language}`} lang={language}>
@@ -204,15 +342,10 @@ function LandingPage({
               {t.heroPrimary}
               <ArrowRight size={17} />
             </a>
-            <a className="hero-text-link" href="https://github.com/suhannoh/anlyx">
-              <Code2 size={17} />
+            <a className="secondary-link" href={routeHref("/docs")}>
+              <BookOpen size={17} />
               {t.heroSecondary}
             </a>
-          </div>
-          <div className="install-strip" aria-label="Install command">
-            <span>{t.installLabel}</span>
-            <code>npm i -D anlyx</code>
-            <code>npx anlyx dev</code>
           </div>
         </div>
 
@@ -236,11 +369,10 @@ function LandingPage({
                   {t.previewButton}
                   <MousePointerClick size={16} />
                 </button>
-              </div>
-              <span className="preview-request-line" aria-hidden="true" />
-              <div className="preview-capture-badge">
-                <span />
-                Anlyx capturing · Open workspace
+                <div className="preview-capture-badge">
+                  <span />
+                  Anlyx capturing · Open workspace
+                </div>
               </div>
               <div className="preview-workspace">
                 <div className="preview-workspace__head">
@@ -255,17 +387,6 @@ function LandingPage({
             </div>
           </div>
         </div>
-      </section>
-
-      <section className="proof-band" aria-label="What Anlyx connects">
-        <ProofItem icon={<Globe2 size={18} />} label={t.proofPage} value="Browser / Server" />
-        <ProofItem icon={<Code2 size={18} />} label={t.proofApi} value="GET /api/..." />
-        <ProofItem icon={<GitBranch size={18} />} label={t.proofFlow} value="Controller to DB" />
-        <ProofItem
-          icon={<Activity size={18} />}
-          label={t.proofEvidence}
-          value="Observed vs source"
-        />
       </section>
 
       <section className="section-grid" id="why">
@@ -295,6 +416,17 @@ function LandingPage({
         </div>
       </section>
 
+      <section className="proof-band" aria-label="What Anlyx connects">
+        <ProofItem icon={<Globe2 size={18} />} label={t.proofPage} value="Browser / Server" />
+        <ProofItem icon={<Code2 size={18} />} label={t.proofApi} value="GET /api/..." />
+        <ProofItem icon={<GitBranch size={18} />} label={t.proofFlow} value="Controller to DB" />
+        <ProofItem
+          icon={<Activity size={18} />}
+          label={t.proofEvidence}
+          value="Observed vs source"
+        />
+      </section>
+
       <section className="how-section" id="how">
         <div className="workflow-copy">
           <p className="eyebrow">{t.workflowEyebrow}</p>
@@ -310,50 +442,22 @@ function LandingPage({
         </div>
         <ol className="steps">
           <li>
-            <code>npm i -D anlyx</code>
+            <code>corepack pnpm install</code>
             <span>{t.stepInstall}</span>
           </li>
           <li>
-            <code>npx anlyx init</code>
+            <code>corepack pnpm build</code>
             <span>{t.stepInit}</span>
           </li>
           <li>
-            <code>npx anlyx dev</code>
+            <code>corepack pnpm pack:local</code>
             <span>{t.stepDev}</span>
           </li>
         </ol>
       </section>
 
-      <section className="agent-section" id="agent">
-        <div className="section-heading">
-          <p className="eyebrow">{t.agentEyebrow}</p>
-          <h2>{t.agentTitle}</h2>
-          <p>{t.agentBody}</p>
-        </div>
-        <div className="agent-prompt-grid">
-          {agentPrompts.map((prompt) => (
-            <article className="agent-prompt-card" key={prompt.id}>
-              <div className="agent-prompt-card__head">
-                <div>
-                  <strong>{prompt.title}</strong>
-                  <span>{prompt.body}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void copyAgentPrompt(prompt.id, prompt.prompt)}
-                  aria-label={`${t.copyPrompt}: ${prompt.title}`}
-                >
-                  <Clipboard size={15} />
-                  {copiedPrompt === prompt.id ? t.copiedPrompt : t.copyPrompt}
-                </button>
-              </div>
-              <pre>
-                <code>{prompt.prompt}</code>
-              </pre>
-            </article>
-          ))}
-        </div>
-      </section>
+      <TechArchitectureSection t={t} />
+      <OpenSourceSection t={t} />
 
       <section className="demo-cta">
         <div>
@@ -388,8 +492,10 @@ function SiteNav({
         <nav aria-label="Anlyx">
           <a href={routeHref("/")}>{t.navOverview}</a>
           <a href={routeHref("/demo")}>{t.navDemo}</a>
-          <a href="#agent">{t.navAgent}</a>
-          <a href="https://github.com/suhannoh/anlyx">GitHub</a>
+          <a href={routeHref("/docs")}>{t.navDocs}</a>
+          <a href="https://github.com/suhannoh/anlyx" target="_blank" rel="noreferrer">
+            GitHub
+          </a>
         </nav>
         <button
           className="language-toggle"
@@ -401,6 +507,164 @@ function SiteNav({
         </button>
       </div>
     </header>
+  );
+}
+
+function DocsPage({
+  language,
+  onToggleLanguage
+}: {
+  language: Language;
+  onToggleLanguage: () => void;
+}): JSX.Element {
+  const t = landingCopy[language];
+  const [copyState, setCopyState] = useState<"quick" | "agent" | "failed" | null>(null);
+  const quickCommand = "corepack pnpm install\ncorepack pnpm build\ncorepack pnpm pack:local";
+  const agentPrompt = getAgentPrompts(language)[0]?.prompt ?? "";
+  const copyText = async (kind: "quick" | "agent", value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyState(kind);
+      window.setTimeout(() => setCopyState((current) => (current === kind ? null : current)), 1600);
+    } catch {
+      setCopyState("failed");
+      window.setTimeout(() => setCopyState(null), 1600);
+    }
+  };
+  const docsCards = [
+    {
+      icon: <FileText size={19} />,
+      title: t.docsReadmeTitle,
+      body: t.docsReadmeBody,
+      href: "https://github.com/suhannoh/anlyx#readme"
+    },
+    {
+      icon: <Rocket size={19} />,
+      title: t.docsInstallTitle,
+      body: t.docsInstallBody,
+      href: "https://github.com/suhannoh/anlyx#getting-started"
+    },
+    {
+      icon: <Layers3 size={19} />,
+      title: t.docsUsageTitle,
+      body: t.docsUsageBody,
+      href: "https://github.com/suhannoh/anlyx#usage"
+    },
+    {
+      icon: <ShieldCheck size={19} />,
+      title: t.docsSecurityTitle,
+      body: t.docsSecurityBody,
+      href: "https://github.com/suhannoh/anlyx/blob/main/SECURITY.md"
+    },
+    {
+      icon: <GitBranch size={19} />,
+      title: t.docsContributingTitle,
+      body: t.docsContributingBody,
+      href: "https://github.com/suhannoh/anlyx/blob/main/CONTRIBUTING.md"
+    },
+    {
+      icon: <Scale size={19} />,
+      title: t.docsLicenseTitle,
+      body: t.docsLicenseBody,
+      href: "https://github.com/suhannoh/anlyx/blob/main/LICENSE"
+    }
+  ];
+
+  return (
+    <main className={`site-page site-page--docs site-page--${language}`} lang={language}>
+      <SiteNav language={language} onToggleLanguage={onToggleLanguage} />
+      <section className="docs-hero">
+        <div className="docs-hero__copy">
+          <p className="eyebrow">
+            <span />
+            {t.docsEyebrow}
+          </p>
+          <h1>{t.docsTitle}</h1>
+          <p>{t.docsBody}</p>
+          <div className="docs-actions">
+            <a className="primary-link" href={routeHref("/demo")}>
+              {t.docsOpenDemo}
+              <ExternalLink size={17} />
+            </a>
+            <a
+              className="secondary-link"
+              href="https://github.com/suhannoh/anlyx"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Code2 size={17} />
+              {t.docsGithub}
+            </a>
+          </div>
+        </div>
+        <aside className="docs-command-panel" aria-label={t.docsQuickStart}>
+          <div className="docs-command-panel__head">
+            <strong>{t.docsQuickStart}</strong>
+            <button type="button" onClick={() => void copyText("quick", quickCommand)}>
+              <Clipboard size={15} />
+              {copyState === "quick"
+                ? t.docsCopied
+                : copyState === "failed"
+                  ? t.docsCopyFailed
+                  : t.docsCopyCommand}
+            </button>
+          </div>
+          <pre>
+            <code>{quickCommand}</code>
+          </pre>
+          <ol>
+            <li>{t.docsPrepublish}</li>
+            <li>{t.docsConfigChecklist}</li>
+            <li>{t.docsDevOnly}</li>
+            <li>
+              Open <code>http://localhost:4777/_anlyx/viewer</code>
+            </li>
+          </ol>
+        </aside>
+      </section>
+
+      <section className="docs-grid" aria-label={t.docsSectionsTitle}>
+        {docsCards.map((card) => (
+          <a className="docs-card" href={card.href} key={card.title} target="_blank" rel="noreferrer">
+            <div>{card.icon}</div>
+            <h2>{card.title}</h2>
+            <p>{card.body}</p>
+          </a>
+        ))}
+      </section>
+
+      <section className="docs-split">
+        <div className="docs-support">
+          <article>
+            <strong>{t.docsSupportTitle}</strong>
+            <p>{t.docsSupportBody}</p>
+          </article>
+          <article>
+            <strong>{t.docsPrinciplesTitle}</strong>
+            <p>{t.docsPrinciplesBody}</p>
+          </article>
+        </div>
+        <article className="docs-agent-box">
+          <div className="docs-agent-box__head">
+            <div>
+              <p className="eyebrow">{t.docsPromptTitle}</p>
+              <h2>{t.agentNextTitle}</h2>
+            </div>
+            <button type="button" onClick={() => void copyText("agent", agentPrompt)}>
+              <Clipboard size={15} />
+              {copyState === "agent"
+                ? t.docsCopied
+                : copyState === "failed"
+                  ? t.docsCopyFailed
+                  : t.docsAgentPrompt}
+            </button>
+          </div>
+          <pre>
+            <code>{agentPrompt}</code>
+          </pre>
+        </article>
+      </section>
+    </main>
   );
 }
 
@@ -482,8 +746,8 @@ Before finishing, report:
 const heroFlowRows = [
   {
     step: "01",
-    label: "Source",
-    value: "Browser or Next server observed",
+    label: "Click",
+    value: "Open product detail",
     badge: "observed",
     tone: "blue"
   },
@@ -503,15 +767,15 @@ const heroFlowRows = [
   },
   {
     step: "04",
-    label: "Service",
-    value: "Service / Repository / JDBC spans",
-    badge: "runtime",
+    label: "Backend",
+    value: "Service / Repository evidence",
+    badge: "source",
     tone: "emerald"
   },
   {
     step: "05",
     label: "Evidence",
-    value: "Observed, source matched, not proven",
+    value: "Observed vs source matched",
     badge: "clear",
     tone: "emerald"
   }
@@ -605,12 +869,120 @@ function FeatureMini({ variant }: { variant: "action" | "flow" | "confidence" })
   );
 }
 
-function getRoute(): "landing" | "demo" {
-  const pathname = window.location.pathname.replace(/\/+$/, "");
-  return pathname.endsWith("/demo") ? "demo" : "landing";
+function TechArchitectureSection({ t }: { t: Record<string, string> }): JSX.Element {
+  const stack = [
+    t.techStackCli,
+    t.techStackNext,
+    t.techStackSpring,
+    t.techStackWorkspace,
+    t.techStackFlow,
+    t.techStackLocal
+  ];
+  const flow = [
+    t.techFlowBrowser,
+    t.techFlowAnalyzer,
+    t.techFlowEvidence,
+    t.techFlowWorkspace
+  ];
+
+  return (
+    <section className="tech-section" id="architecture">
+      <div className="section-heading">
+        <p className="eyebrow">{t.techEyebrow}</p>
+        <h2>{t.techTitle}</h2>
+        <p>{t.techBody}</p>
+      </div>
+      <div className="tech-panels">
+        <article className="tech-panel">
+          <div className="tech-panel__head">
+            <Code2 size={18} />
+            <strong>{t.techStackTitle}</strong>
+          </div>
+          <div className="tech-stack-list">
+            {stack.map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
+        </article>
+        <article className="tech-panel tech-panel--flow">
+          <div className="tech-panel__head">
+            <GitBranch size={18} />
+            <strong>{t.techFlowTitle}</strong>
+          </div>
+          <div className="architecture-flow">
+            {flow.map((item, index) => (
+              <div className="architecture-step" key={item}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{item}</strong>
+              </div>
+            ))}
+          </div>
+        </article>
+      </div>
+    </section>
+  );
 }
 
-function routeHref(path: "/" | "/demo"): string {
+function OpenSourceSection({ t }: { t: Record<string, string> }): JSX.Element {
+  const items = [
+    {
+      icon: <BookOpen size={18} />,
+      title: t.communityDocs,
+      body: t.communityDocsBody,
+      href: routeHref("/docs")
+    },
+    {
+      icon: <GitBranch size={18} />,
+      title: t.communityContribute,
+      body: t.communityContributeBody,
+      href: "https://github.com/suhannoh/anlyx/blob/main/CONTRIBUTING.md"
+    },
+    {
+      icon: <Scale size={18} />,
+      title: t.communityLicense,
+      body: t.communityLicenseBody,
+      href: "https://github.com/suhannoh/anlyx/blob/main/LICENSE"
+    }
+  ];
+
+  return (
+    <section className="oss-section" id="community">
+      <div className="section-heading">
+        <p className="eyebrow">{t.communityEyebrow}</p>
+        <h2>{t.communityTitle}</h2>
+        <p>{t.communityBody}</p>
+      </div>
+      <div className="oss-grid">
+        {items.map((item) => {
+          const isExternal = item.href.startsWith("https://");
+          return (
+            <a
+              className="oss-card"
+              href={item.href}
+              key={item.title}
+              target={isExternal ? "_blank" : undefined}
+              rel={isExternal ? "noreferrer" : undefined}
+            >
+              <div>{item.icon}</div>
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function getRoute(): "landing" | "demo" | "docs" {
+  const pathname = window.location.pathname.replace(/\/+$/, "");
+  if (pathname.endsWith("/demo")) {
+    return "demo";
+  }
+  return pathname.endsWith("/docs") ? "docs" : "landing";
+}
+
+function routeHref(path: "/" | "/demo" | "/docs"): string {
   const base = getSiteBase();
   if (path === "/") {
     return `${base || "/"}`;
@@ -624,6 +996,5 @@ function getSiteBase(): string {
     return "/anlyx";
   }
 
-  const basePath = new URL(document.baseURI).pathname.replace(/\/+$/, "");
-  return basePath === "/" ? "" : basePath;
+  return "";
 }
