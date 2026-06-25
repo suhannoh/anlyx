@@ -32,12 +32,12 @@ Anlyx may add an `X-Anlyx-Request-Id` header to same-app or same-backend local A
 
 ## Data Exposure Checklist
 
-| Surface | Local data involved | Boundary |
-| --- | --- | --- |
-| Source scanner | File paths, route names, Java class/method names, table names | Read from configured local directories only |
-| Browser capture | Local request method/path/status/duration and click labels | Posted to the local Anlyx runtime |
-| Next server bridge | Local Next.js server `fetch` path/status/duration | Posted to the local Anlyx runtime |
-| Spring dev bridge | Controller/service/repository/JDBC span labels and timing | Posted to the local Anlyx runtime |
-| Live Workspace | Aggregated local evidence and timing | Served from the local Anlyx runtime |
+| Surface            | Local data involved                                           | Boundary                                    |
+| ------------------ | ------------------------------------------------------------- | ------------------------------------------- |
+| Source scanner     | File paths, route names, Java class/method names, table names | Read from configured local directories only |
+| Browser capture    | Local request method/path/status/duration and click labels    | Posted to the local Anlyx runtime           |
+| Next server bridge | Local Next.js server `fetch` path/status/duration             | Posted to the local Anlyx runtime           |
+| Spring dev bridge  | Controller/service/repository/JDBC span labels and timing     | Posted to the local Anlyx runtime           |
+| Live Workspace     | Aggregated local evidence and timing                          | Served from the local Anlyx runtime         |
 
 The local runtime restricts Anlyx event ingest to the configured local frontend origin and the Anlyx localhost origin. Treat the runtime port as developer-only infrastructure, not as a shared network service.

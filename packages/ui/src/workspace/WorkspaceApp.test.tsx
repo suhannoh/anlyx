@@ -112,7 +112,9 @@ describe("WorkspaceApp", () => {
     MockEventSource.instances[0]?.emit("reset", {});
 
     await waitFor(() => {
-      expect(screen.getByText("Click your local app to stream the first browser request.")).toBeTruthy();
+      expect(
+        screen.getByText("Click your local app to stream the first browser request.")
+      ).toBeTruthy();
     });
   });
 

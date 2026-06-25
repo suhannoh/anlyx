@@ -451,10 +451,7 @@ function buildLayers(options: {
   status: number | undefined;
   duration: number | undefined;
   match: EndpointMatch;
-  requestEvidenceLevel: Extract<
-    LiveEvidenceLevel,
-    "browser_observed" | "frontend_server_observed"
-  >;
+  requestEvidenceLevel: Extract<LiveEvidenceLevel, "browser_observed" | "frontend_server_observed">;
   apiEvidence: string;
   resultEvidence: (status: number) => string;
   missingResultEvidence: string;
@@ -609,7 +606,9 @@ function buildResultLayer(options: {
     label: status === undefined ? "Response not observed" : `${status} response`,
     execution: status === undefined ? "unknown" : blocked ? "blocked" : "executed",
     evidenceLevel: status === undefined ? "inferred" : options.evidenceLevel,
-    evidence: [status === undefined ? options.missingResultEvidence : options.resultEvidence(status)],
+    evidence: [
+      status === undefined ? options.missingResultEvidence : options.resultEvidence(status)
+    ],
     ...(status !== undefined ? { status } : {})
   };
 }

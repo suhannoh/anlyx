@@ -224,9 +224,7 @@ describe("Next.js App Router Adapter", () => {
 
     const [page] = await scanNextAppRouterPages({ sourceDir: projectRoot });
 
-    expect(page?.apiCalls).toEqual([
-      { method: "GET", path: "/api/public/verticals/{vertical}" }
-    ]);
+    expect(page?.apiCalls).toEqual([{ method: "GET", path: "/api/public/verticals/{vertical}" }]);
   });
 
   it("drops dynamic query suffix helpers from template paths", async () => {

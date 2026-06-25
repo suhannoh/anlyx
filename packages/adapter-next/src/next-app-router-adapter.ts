@@ -213,11 +213,7 @@ async function scanFileApiCalls(
       continue;
     }
 
-    const importedFilePath = await resolveImportFile(
-      filePath,
-      sourceRoot,
-      importedFunction.source
-    );
+    const importedFilePath = await resolveImportFile(filePath, sourceRoot, importedFunction.source);
 
     if (!importedFilePath) {
       continue;
@@ -358,10 +354,7 @@ function readMethodFromInit(initSource: string | undefined): HttpMethod | undefi
 }
 
 function readObjectStringProperty(source: string, propertyName: string): string | undefined {
-  const pattern = new RegExp(
-    String.raw`\b${propertyName}\s*:\s*(["'\`])([^"'\`]+)\1`,
-    "i"
-  );
+  const pattern = new RegExp(String.raw`\b${propertyName}\s*:\s*(["'\`])([^"'\`]+)\1`, "i");
   return source.match(pattern)?.[2];
 }
 
@@ -381,7 +374,11 @@ function readStaticApiPath(source: string | undefined): string | undefined {
 
   if (template) {
     const templatedPath = template.replace(/\$\{\s*([^}]+?)\s*\}/g, (match, expression, offset) => {
-      const name = String(expression).split(".").pop()?.replace(/[^\w$]+/g, "") || "value";
+      const name =
+        String(expression)
+          .split(".")
+          .pop()
+          ?.replace(/[^\w$]+/g, "") || "value";
 
       if (offset > 0 && template[offset - 1] !== "/" && /(?:suffix|query|params?)/i.test(name)) {
         return "";
@@ -490,9 +487,7 @@ function parseNamedImports(content: string): Array<{
 }
 
 function isIdentifierCalled(content: string, identifier: string): boolean {
-  return new RegExp(String.raw`\b${escapeRegExp(identifier)}\s*(?:<[^>()]+>)?\s*\(`).test(
-    content
-  );
+  return new RegExp(String.raw`\b${escapeRegExp(identifier)}\s*(?:<[^>()]+>)?\s*\(`).test(content);
 }
 
 async function resolveImportFile(
@@ -538,7 +533,10 @@ function extractExportedFunctionBody(content: string, exportName: string): strin
   ).exec(content);
 
   if (functionMatch) {
-    const openingBraceIndex = findBodyOpeningBrace(content, functionMatch.index + functionMatch[0].length);
+    const openingBraceIndex = findBodyOpeningBrace(
+      content,
+      functionMatch.index + functionMatch[0].length
+    );
     return openingBraceIndex === undefined
       ? undefined
       : readBalancedBlock(content, openingBraceIndex);
@@ -582,7 +580,7 @@ function findBodyOpeningBrace(content: string, startIndex: number): number | und
       continue;
     }
 
-    if (character === "\"" || character === "'" || character === "`") {
+    if (character === '"' || character === "'" || character === "`") {
       quote = character;
       continue;
     }
@@ -639,7 +637,7 @@ function readBalancedBlock(content: string, openingBraceIndex: number): string |
       continue;
     }
 
-    if (character === "\"" || character === "'" || character === "`") {
+    if (character === '"' || character === "'" || character === "`") {
       quote = character;
       continue;
     }

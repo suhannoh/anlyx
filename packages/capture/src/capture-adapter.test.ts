@@ -27,7 +27,11 @@ describe("Capture Adapter", () => {
     const sourcePage = page("/");
     sourcePage.apiCalls = [
       { method: "GET", path: "/api/public/home" },
-      { method: "GET", path: "/api/public/benefits", endpointId: "endpoint:get:/api/public/benefits" }
+      {
+        method: "GET",
+        path: "/api/public/benefits",
+        endpointId: "endpoint:get:/api/public/benefits"
+      }
     ];
 
     const pages = await capturePages([sourcePage], baseOptions(), successDriver());

@@ -20,9 +20,7 @@ type FetchState = {
   captureDepth: number;
 };
 
-export function installAnlyxNextServerRuntime(
-  options: AnlyxNextServerRuntimeOptions = {}
-): void {
+export function installAnlyxNextServerRuntime(options: AnlyxNextServerRuntimeOptions = {}): void {
   if (process.env.NODE_ENV === "production") {
     return;
   }

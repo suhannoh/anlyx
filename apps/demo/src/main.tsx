@@ -625,7 +625,13 @@ function DocsPage({
 
       <section className="docs-grid" aria-label={t.docsSectionsTitle}>
         {docsCards.map((card) => (
-          <a className="docs-card" href={card.href} key={card.title} target="_blank" rel="noreferrer">
+          <a
+            className="docs-card"
+            href={card.href}
+            key={card.title}
+            target="_blank"
+            rel="noreferrer"
+          >
             <div>{card.icon}</div>
             <h2>{card.title}</h2>
             <p>{card.body}</p>
@@ -878,12 +884,7 @@ function TechArchitectureSection({ t }: { t: Record<string, string> }): JSX.Elem
     t.techStackFlow,
     t.techStackLocal
   ];
-  const flow = [
-    t.techFlowBrowser,
-    t.techFlowAnalyzer,
-    t.techFlowEvidence,
-    t.techFlowWorkspace
-  ];
+  const flow = [t.techFlowBrowser, t.techFlowAnalyzer, t.techFlowEvidence, t.techFlowWorkspace];
 
   return (
     <section className="tech-section" id="architecture">

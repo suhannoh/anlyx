@@ -366,9 +366,7 @@ function shouldIgnorePagePath(path: string) {
     path.startsWith("/@react-refresh") ||
     path.startsWith("/__vite") ||
     path.startsWith("/node_modules/") ||
-    /\.(?:avif|css|eot|gif|ico|jpe?g|js|map|mjs|png|svg|ts|tsx|ttf|webp|woff2?)($|\?)/i.test(
-      path
-    )
+    /\.(?:avif|css|eot|gif|ico|jpe?g|js|map|mjs|png|svg|ts|tsx|ttf|webp|woff2?)($|\?)/i.test(path)
   );
 }
 
