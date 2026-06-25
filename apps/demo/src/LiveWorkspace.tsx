@@ -12,7 +12,6 @@ import {
   type NodeProps
 } from "@xyflow/react";
 import {
-  BarChart3,
   Box,
   Check,
   ChevronRight,
@@ -1519,7 +1518,7 @@ function toLayeredDiagramNode(
     layer: diagramLayerForFlowLayer(node.layer),
     kind: node.layer,
     title: layeredDiagramTitle(node, flow, locale),
-    subtitle: layeredDiagramSubtitle(node, flow, locale),
+    subtitle: layeredDiagramSubtitle(node, flow),
     status,
     edgeKind: edgeKindForNode(node, status),
     isMainPath: node.proven,
@@ -1641,11 +1640,7 @@ function layeredDiagramTitle(node: FlowNode, flow: FlowRecord, locale: Workspace
   return diagramTitle(node);
 }
 
-function layeredDiagramSubtitle(
-  node: FlowNode,
-  flow: FlowRecord,
-  _locale: WorkspaceLocale
-): string {
+function layeredDiagramSubtitle(node: FlowNode, flow: FlowRecord): string {
   if (node.layer === "action") return flow.sourceAction ?? node.title;
   if (node.layer === "api") return `${flow.method} ${flow.shortPath}`;
   if (node.layer === "result") return node.subtitle ?? flow.outcomeLabel;
@@ -2502,24 +2497,4 @@ function diagramTitle(node?: FlowNode): string {
   if (node.layer === "repository") return "Repository";
   if (node.layer === "database") return "Database";
   return node.title;
-}
-
-function diagramSubtitle(node?: FlowNode): string {
-  if (!node) {
-    return "";
-  }
-
-  if (node.layer === "api") return `${node.method ?? "POST"}\n${node.subtitle ?? node.path ?? ""}`;
-  if (node.layer === "auth") return "Auth gate";
-  if (node.layer === "result") return node.subtitle ?? node.title;
-  return node.subtitle ?? node.title;
-}
-
-function diagramStatusLabel(node: FlowNode): string {
-  if (node.status === "not-proven") return "Not proven";
-  if (node.status === "inferred") return "Inferred";
-  if (node.status === "blocked") return "Blocked";
-  if (node.layer === "api" || node.layer === "result") return "Observed";
-
-  return "Matched";
 }
