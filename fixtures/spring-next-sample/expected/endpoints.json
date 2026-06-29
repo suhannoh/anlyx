@@ -1,0 +1,34 @@
+[
+  {
+    "id": "endpoint:get:/api/public/benefits/{id}",
+    "method": "GET",
+    "path": "/api/public/benefits/{id}",
+    "framework": "spring",
+    "supportLevel": "deep",
+    "controller": "PublicBenefitController",
+    "handler": "getDetail",
+    "filePath": "backend/src/main/java/com/zup/benefit/PublicBenefitController.java",
+    "lineNumber": 24,
+    "responseSchema": "BenefitDetailResponse",
+    "authRequired": false,
+    "tags": ["benefits", "public"],
+    "usedByPageIds": ["page:benefit-detail"],
+    "confidence": "high"
+  },
+  {
+    "id": "endpoint:get:/api/public/benefits",
+    "method": "GET",
+    "path": "/api/public/benefits",
+    "framework": "spring",
+    "supportLevel": "deep",
+    "controller": "PublicBenefitController",
+    "handler": "list",
+    "filePath": "backend/src/main/java/com/zup/benefit/PublicBenefitController.java",
+    "lineNumber": 18,
+    "responseSchema": "BenefitSummaryListResponse",
+    "authRequired": false,
+    "tags": ["benefits", "public"],
+    "usedByPageIds": ["page:benefits-list"],
+    "confidence": "high"
+  }
+]

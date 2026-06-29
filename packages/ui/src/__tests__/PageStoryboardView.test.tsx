@@ -1,0 +1,184 @@
+// @vitest-environment jsdom
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
+
+import type { ScanResult } from "@anlyx/core";
+
+import { AnlyxAppShell } from "../components/AnlyxAppShell.js";
+import { mockScanResult } from "../mock-data.js";
+
+afterEach(() => {
+  cleanup();
+  window.localStorage.clear();
+});
+
+describe("Captures view", () => {
+  it("renders Captures view from the tab", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Captures" }));
+
+    expect(screen.getByRole("region", { name: "Page Storyboard" })).toBeTruthy();
+    expect(
+      screen.getAllByRole("heading", { name: "/benefit/[brandSlug]/[benefitSlugWithId]" }).length
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Connected Frontend").length).toBeGreaterThan(0);
+  });
+
+  it("captures tab switches from Flow Story to Page Storyboard", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    expect(screen.getByRole("region", { name: "Flow Story canvas" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Captures" }));
+
+    expect(screen.queryByRole("region", { name: "Flow Story canvas" })).toBeNull();
+    expect(screen.getByRole("region", { name: "Page Storyboard" })).toBeTruthy();
+  });
+
+  it("page list click changes selected page", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Captures" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "/admin/benefits failed 0 API calls 0 screenshots" })
+    );
+
+    expect(screen.getAllByRole("heading", { name: "/admin/benefits" }).length).toBeGreaterThan(0);
+    expect(screen.getByText("Capture failed")).toBeTruthy();
+  });
+
+  it("selected page route and filePath are visible", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Captures" }));
+
+    const storyboard = screen.getByRole("region", { name: "Page Storyboard" });
+    expect(
+      within(storyboard).getAllByText("/benefit/[brandSlug]/[benefitSlugWithId]").length
+    ).toBeGreaterThan(0);
+    expect(
+      within(storyboard).getByText("frontend/app/benefit/[brandSlug]/[benefitSlugWithId]/page.tsx")
+    ).toBeTruthy();
+  });
+
+  it("screenshot segments and metadata are rendered without requiring files", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Captures" }));
+
+    const storyboard = screen.getByRole("region", { name: "Page Storyboard" });
+    expect(within(storyboard).getByText("Segment 1")).toBeTruthy();
+    expect(within(storyboard).getByAltText("Hero / Summary")).toBeTruthy();
+    expect(within(storyboard).getByText(".anlyx/screenshots/benefit-detail-0.png")).toBeTruthy();
+    expect(within(storyboard).getByText("scrollY 0")).toBeTruthy();
+    expect(within(storyboard).getByText("1440 x 900")).toBeTruthy();
+  });
+
+  it("API calls are rendered with linked and unmatched states", () => {
+    render(<AnlyxAppShell data={withUnmatchedApiCall(mockScanResult)} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Captures" }));
+
+    const storyboard = screen.getByRole("region", { name: "Page Storyboard" });
+    expect(within(storyboard).getByText("/api/public/benefits/123")).toBeTruthy();
+    expect(within(storyboard).getByText("Linked endpoint")).toBeTruthy();
+    expect(within(storyboard).getByText("Matched endpoint")).toBeTruthy();
+    expect(within(storyboard).getByText("GET /api/public/benefits/{id}")).toBeTruthy();
+    expect(within(storyboard).getByText("PublicBenefitController#getDetail")).toBeTruthy();
+    expect(within(storyboard).getByText("/api/public/benefits/123/related")).toBeTruthy();
+    expect(within(storyboard).getByText("Unmatched")).toBeTruthy();
+  });
+
+  it("renders page to endpoint relationship panel", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Captures" }));
+
+    const relationship = screen.getByRole("region", { name: "Page to endpoint relationship" });
+    expect(within(relationship).getByText("Page to Endpoint")).toBeTruthy();
+    expect(within(relationship).getByText("/api/public/benefits/{id}")).toBeTruthy();
+  });
+
+  it("renders a page evidence board that separates capture proof from backend linkage", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Captures" }));
+
+    const evidenceBoard = screen.getByRole("region", { name: "Page execution evidence" });
+    expect(within(evidenceBoard).getByText("Capture proof")).toBeTruthy();
+    expect(within(evidenceBoard).getByText("Screenshots")).toBeTruthy();
+    expect(within(evidenceBoard).getByText("API evidence")).toBeTruthy();
+    expect(within(evidenceBoard).getByText("Backend linkage")).toBeTruthy();
+    expect(within(evidenceBoard).getByText("1 linked")).toBeTruthy();
+    expect(within(evidenceBoard).getByText("0 unmatched")).toBeTruthy();
+  });
+
+  it("failed page status and errorMessage are visible", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Captures" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "/admin/benefits failed 0 API calls 0 screenshots" })
+    );
+
+    expect(screen.getByText("Capture failed")).toBeTruthy();
+    expect(screen.getByText("Reason: Login required")).toBeTruthy();
+    expect(screen.getAllByText("Waiting for capture data").length).toBeGreaterThan(0);
+  });
+
+  it("pending page status and errorMessage are visible", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Captures" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "/preview/[slug] pending 0 API calls 0 screenshots" })
+    );
+
+    expect(screen.getByText("Capture was skipped.")).toBeTruthy();
+    expect(screen.getByText("Reason: Missing sampleParams")).toBeTruthy();
+    expect(
+      screen.getByText("Add page evidence to Flow JSON, then run `anlyx import` again.")
+    ).toBeTruthy();
+  });
+
+  it("empty page list shows empty state", () => {
+    render(<AnlyxAppShell data={{ ...mockScanResult, pages: [] }} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Captures" }));
+
+    expect(screen.getByText("No pages available yet.")).toBeTruthy();
+  });
+
+  it("Process Flow tab shows the replay-capable Endpoint Map", () => {
+    render(<AnlyxAppShell data={mockScanResult} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Process" }));
+
+    expect(screen.getByRole("region", { name: "Process Flow map" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Process Flow controls" })).toBeTruthy();
+    expect(screen.queryByText("Endpoint Map will render here")).toBeNull();
+  });
+});
+
+function withUnmatchedApiCall(data: ScanResult): ScanResult {
+  const firstPage = data.pages[0]!;
+
+  return {
+    ...data,
+    pages: [
+      {
+        ...firstPage,
+        apiCalls: [
+          ...firstPage.apiCalls,
+          {
+            method: "GET",
+            path: "/api/public/benefits/123/related",
+            status: 200
+          }
+        ]
+      },
+      ...data.pages.slice(1)
+    ]
+  };
+}

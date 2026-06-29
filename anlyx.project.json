@@ -1,0 +1,457 @@
+{
+  "schemaVersion": "0.2.0",
+  "project": {
+    "id": "anlyx",
+    "name": "Anlyx",
+    "description": "Local architecture visualization viewer for AI Agent-authored project JSON.",
+    "root": "/Users/suhannoh/Documents/anlyx",
+    "analyzedAt": "2026-06-28T00:00:00+09:00",
+    "frameworkNotes": [
+      "Monorepo with CLI, core schema, and React viewer packages.",
+      "The 4777 viewer renders anlyx.project.json and does not auto-fallback to legacy report data."
+    ],
+    "generatedBy": {
+      "kind": "agent",
+      "name": "Codex"
+    },
+    "metadata": {
+      "port": 4777,
+      "mode": "local-only",
+      "timing": "disabled",
+      "sourceFile": "anlyx.project.json"
+    }
+  },
+  "areas": [
+    {
+      "id": "viewer",
+      "name": "Viewer",
+      "description": "Local workspace UI rendered from Project JSON.",
+      "order": 1,
+      "evidenceIds": ["ev.viewer-app", "ev.workspace-app"]
+    },
+    {
+      "id": "runtime",
+      "name": "Runtime",
+      "description": "Local CLI server that serves Project JSON and viewer assets.",
+      "order": 2,
+      "evidenceIds": ["ev.dev-command"]
+    },
+    {
+      "id": "contract",
+      "name": "Contract",
+      "description": "Schema, normalization, and documentation that AI Agents follow.",
+      "order": 3,
+      "evidenceIds": ["ev.project-schema", "ev.project-normalize"]
+    }
+  ],
+  "pages": [
+    {
+      "id": "page.workspace",
+      "path": "/",
+      "title": "Pages",
+      "areaId": "viewer",
+      "description": "Project overview and page-by-page flow explanation.",
+      "source": {
+        "filePath": "packages/ui/src/workspace/WorkspaceApp.tsx",
+        "symbol": "WorkspaceApp"
+      },
+      "featureIds": ["feature.pages"],
+      "evidenceIds": ["ev.workspace-app"],
+      "confidence": "high"
+    },
+    {
+      "id": "page.map",
+      "path": "/map",
+      "title": "Map",
+      "areaId": "viewer",
+      "description": "Layered dependency map generated from architecture nodes and edges.",
+      "source": {
+        "filePath": "packages/ui/src/workspace/ScanTreeMap.tsx",
+        "symbol": "ScanTreeMap"
+      },
+      "featureIds": ["feature.map"],
+      "evidenceIds": ["ev.scan-tree-map"],
+      "confidence": "high"
+    },
+    {
+      "id": "page.json",
+      "path": "/json",
+      "title": "JSON",
+      "areaId": "viewer",
+      "description": "Readable outline and raw view of the current Project JSON.",
+      "source": {
+        "filePath": "packages/ui/src/workspace/WorkspaceApp.tsx",
+        "symbol": "WorkspaceApp"
+      },
+      "featureIds": ["feature.json"],
+      "evidenceIds": ["ev.workspace-app"],
+      "confidence": "high"
+    }
+  ],
+  "features": [
+    {
+      "id": "feature.pages",
+      "pageId": "page.workspace",
+      "name": "Project pages",
+      "description": "Shows project areas, pages, feature summaries, request roles, and evidence status from anlyx.project.json.",
+      "requestIds": ["req.project-data"],
+      "evidenceIds": ["ev.workspace-app"],
+      "confidence": "high"
+    },
+    {
+      "id": "feature.map",
+      "pageId": "page.map",
+      "name": "Architecture map",
+      "description": "Renders frontend-to-data dependencies from Project JSON architecture nodes and edges.",
+      "requestIds": ["req.project-data"],
+      "evidenceIds": ["ev.scan-tree-map"],
+      "confidence": "high"
+    },
+    {
+      "id": "feature.json",
+      "pageId": "page.json",
+      "name": "Project JSON reader",
+      "description": "Displays the active Project JSON, schema metadata, and timing disabled state when measurements are absent.",
+      "requestIds": ["req.project-data"],
+      "evidenceIds": ["ev.project-schema", "ev.workspace-app"],
+      "confidence": "high"
+    }
+  ],
+  "requests": [
+    {
+      "id": "req.project-data",
+      "method": "GET",
+      "path": "/api/project-data",
+      "label": "Load Project JSON",
+      "role": "primary",
+      "purpose": "data-load",
+      "description": "The 4777 viewer loads the current anlyx.project.json from the local Anlyx runtime.",
+      "flowId": "flow.project-data",
+      "evidenceIds": ["ev.viewer-app", "ev.dev-command"],
+      "confidence": "high"
+    }
+  ],
+  "flows": [
+    {
+      "id": "flow.project-data",
+      "requestId": "req.project-data",
+      "name": "Load project workspace",
+      "layers": [
+        {
+          "id": "layer.viewer-fetch",
+          "kind": "frontend",
+          "label": "ViewerApp fetches /api/project-data",
+          "source": {
+            "filePath": "packages/ui/src/viewer/ViewerApp.tsx",
+            "symbol": "fetchViewerData"
+          },
+          "evidenceIds": ["ev.viewer-app"],
+          "status": "source-matched",
+          "confidence": "high"
+        },
+        {
+          "id": "layer.project-route",
+          "kind": "api",
+          "label": "GET /api/project-data",
+          "source": {
+            "filePath": "packages/cli/src/dev-command.ts",
+            "symbol": "createLocalUiServer"
+          },
+          "evidenceIds": ["ev.dev-command"],
+          "status": "source-matched",
+          "confidence": "high"
+        },
+        {
+          "id": "layer.project-read",
+          "kind": "service",
+          "label": "readProjectData",
+          "source": {
+            "filePath": "packages/cli/src/dev-command.ts",
+            "symbol": "readProjectData"
+          },
+          "evidenceIds": ["ev.dev-command"],
+          "status": "source-matched",
+          "confidence": "high"
+        },
+        {
+          "id": "layer.project-normalize",
+          "kind": "mapper",
+          "label": "normalizeProjectInput",
+          "source": {
+            "filePath": "packages/core/src/project-normalize.ts",
+            "symbol": "normalizeProjectInput"
+          },
+          "evidenceIds": ["ev.project-normalize"],
+          "status": "source-matched",
+          "confidence": "high"
+        },
+        {
+          "id": "layer.project-schema",
+          "kind": "policy",
+          "label": "projectDataSchema",
+          "source": {
+            "filePath": "packages/core/src/project-schema.ts",
+            "symbol": "projectDataSchema"
+          },
+          "evidenceIds": ["ev.project-schema"],
+          "status": "source-matched",
+          "confidence": "high"
+        },
+        {
+          "id": "layer.workspace-render",
+          "kind": "result",
+          "label": "WorkspaceApp renders Pages, Map, and JSON",
+          "source": {
+            "filePath": "packages/ui/src/workspace/WorkspaceApp.tsx",
+            "symbol": "WorkspaceApp"
+          },
+          "evidenceIds": ["ev.workspace-app"],
+          "status": "source-matched",
+          "confidence": "high"
+        }
+      ],
+      "evidenceIds": ["ev.viewer-app", "ev.dev-command", "ev.project-schema"],
+      "confidence": "high"
+    }
+  ],
+  "architecture": {
+    "nodes": [
+      {
+        "id": "node.viewer-app",
+        "kind": "frontend",
+        "label": "ViewerApp",
+        "displayLabel": "ViewerApp",
+        "domain": "Viewer",
+        "source": {
+          "filePath": "packages/ui/src/viewer/ViewerApp.tsx",
+          "symbol": "ViewerApp"
+        },
+        "evidenceIds": ["ev.viewer-app"],
+        "confidence": "high"
+      },
+      {
+        "id": "node.project-api",
+        "kind": "api",
+        "label": "GET /api/project-data",
+        "displayLabel": "Project data",
+        "domain": "Runtime",
+        "source": {
+          "filePath": "packages/cli/src/dev-command.ts",
+          "symbol": "createLocalUiServer"
+        },
+        "evidenceIds": ["ev.dev-command"],
+        "confidence": "high"
+      },
+      {
+        "id": "node.dev-command",
+        "kind": "service",
+        "label": "Anlyx dev runtime",
+        "displayLabel": "Dev runtime",
+        "domain": "Runtime",
+        "source": {
+          "filePath": "packages/cli/src/dev-command.ts",
+          "symbol": "runDevCommand"
+        },
+        "evidenceIds": ["ev.dev-command"],
+        "confidence": "high"
+      },
+      {
+        "id": "node.project-schema",
+        "kind": "policy",
+        "label": "projectDataSchema",
+        "displayLabel": "Project schema",
+        "domain": "Contract",
+        "source": {
+          "filePath": "packages/core/src/project-schema.ts",
+          "symbol": "projectDataSchema"
+        },
+        "evidenceIds": ["ev.project-schema"],
+        "confidence": "high"
+      },
+      {
+        "id": "node.project-normalize",
+        "kind": "mapper",
+        "label": "normalizeProjectInput",
+        "displayLabel": "Normalize JSON",
+        "domain": "Contract",
+        "source": {
+          "filePath": "packages/core/src/project-normalize.ts",
+          "symbol": "normalizeProjectInput"
+        },
+        "evidenceIds": ["ev.project-normalize"],
+        "confidence": "high"
+      },
+      {
+        "id": "node.workspace-app",
+        "kind": "result",
+        "label": "WorkspaceApp",
+        "displayLabel": "Workspace UI",
+        "domain": "Viewer",
+        "source": {
+          "filePath": "packages/ui/src/workspace/WorkspaceApp.tsx",
+          "symbol": "WorkspaceApp"
+        },
+        "evidenceIds": ["ev.workspace-app"],
+        "confidence": "high"
+      },
+      {
+        "id": "node.scan-tree-map",
+        "kind": "result",
+        "label": "ScanTreeMap",
+        "displayLabel": "Map UI",
+        "domain": "Viewer",
+        "source": {
+          "filePath": "packages/ui/src/workspace/ScanTreeMap.tsx",
+          "symbol": "ScanTreeMap"
+        },
+        "evidenceIds": ["ev.scan-tree-map"],
+        "confidence": "high"
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge.viewer.project-api",
+        "source": "node.viewer-app",
+        "target": "node.project-api",
+        "role": "primary",
+        "evidenceIds": ["ev.viewer-app"],
+        "confidence": "high"
+      },
+      {
+        "id": "edge.project-api.dev-command",
+        "source": "node.project-api",
+        "target": "node.dev-command",
+        "role": "primary",
+        "evidenceIds": ["ev.dev-command"],
+        "confidence": "high"
+      },
+      {
+        "id": "edge.dev-command.normalize",
+        "source": "node.dev-command",
+        "target": "node.project-normalize",
+        "role": "primary",
+        "evidenceIds": ["ev.project-normalize"],
+        "confidence": "high"
+      },
+      {
+        "id": "edge.normalize.schema",
+        "source": "node.project-normalize",
+        "target": "node.project-schema",
+        "role": "primary",
+        "evidenceIds": ["ev.project-schema"],
+        "confidence": "high"
+      },
+      {
+        "id": "edge.schema.workspace",
+        "source": "node.project-schema",
+        "target": "node.workspace-app",
+        "role": "primary",
+        "evidenceIds": ["ev.workspace-app"],
+        "confidence": "high"
+      },
+      {
+        "id": "edge.workspace.map",
+        "source": "node.workspace-app",
+        "target": "node.scan-tree-map",
+        "role": "shared",
+        "evidenceIds": ["ev.scan-tree-map"],
+        "confidence": "high"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "id": "ev.viewer-app",
+      "status": "source-matched",
+      "label": "Viewer fetches Project JSON only",
+      "detail": "ViewerApp reads /api/project-data and does not fall back to /api/report-data.",
+      "source": {
+        "filePath": "packages/ui/src/viewer/ViewerApp.tsx",
+        "symbol": "fetchViewerData"
+      },
+      "targetIds": ["node.viewer-app", "req.project-data"],
+      "confidence": "high"
+    },
+    {
+      "id": "ev.dev-command",
+      "status": "source-matched",
+      "label": "Dev runtime serves Project JSON",
+      "detail": "runDevCommand requires anlyx.project.json or split project data for the current viewer.",
+      "source": {
+        "filePath": "packages/cli/src/dev-command.ts",
+        "symbol": "runDevCommand"
+      },
+      "targetIds": ["node.dev-command", "node.project-api"],
+      "confidence": "high"
+    },
+    {
+      "id": "ev.project-schema",
+      "status": "source-matched",
+      "label": "Project schema version 0.2.0",
+      "detail": "projectDataSchema validates the current Project JSON contract.",
+      "source": {
+        "filePath": "packages/core/src/project-schema.ts",
+        "symbol": "projectDataSchema"
+      },
+      "targetIds": ["node.project-schema"],
+      "confidence": "high"
+    },
+    {
+      "id": "ev.project-normalize",
+      "status": "source-matched",
+      "label": "Project JSON normalization",
+      "detail": "normalizeProjectInput prepares Agent-authored Project JSON for the viewer.",
+      "source": {
+        "filePath": "packages/core/src/project-normalize.ts",
+        "symbol": "normalizeProjectInput"
+      },
+      "targetIds": ["node.project-normalize"],
+      "confidence": "high"
+    },
+    {
+      "id": "ev.workspace-app",
+      "status": "source-matched",
+      "label": "Workspace renders project surfaces",
+      "detail": "WorkspaceApp presents Pages, Map, and JSON from ProjectData.",
+      "source": {
+        "filePath": "packages/ui/src/workspace/WorkspaceApp.tsx",
+        "symbol": "WorkspaceApp"
+      },
+      "targetIds": ["node.workspace-app"],
+      "confidence": "high"
+    },
+    {
+      "id": "ev.scan-tree-map",
+      "status": "source-matched",
+      "label": "Map renders architecture graph",
+      "detail": "ScanTreeMap renders the architecture nodes and edges authored by the Agent.",
+      "source": {
+        "filePath": "packages/ui/src/workspace/ScanTreeMap.tsx",
+        "symbol": "ScanTreeMap"
+      },
+      "targetIds": ["node.scan-tree-map"],
+      "confidence": "high"
+    }
+  ],
+  "measurements": [],
+  "dictionary": {
+    "defaultLanguage": "en",
+    "terms": [
+      {
+        "id": "term.project-json",
+        "term": "Project JSON",
+        "definition": "The Agent-authored anlyx.project.json file that contains project pages, requests, flows, architecture, and evidence."
+      },
+      {
+        "id": "term.local-viewer",
+        "term": "Local viewer",
+        "definition": "The Anlyx UI served on localhost:4777 for inspecting Project JSON without sending source data to a remote service."
+      },
+      {
+        "id": "term.timing-disabled",
+        "term": "Timing disabled",
+        "definition": "Runtime measurements are absent, so the viewer shows architecture and evidence without claiming measured durations."
+      }
+    ]
+  }
+}

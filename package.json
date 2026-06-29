@@ -1,0 +1,41 @@
+{
+  "name": "anlyx-workspace",
+  "version": "0.1.5",
+  "private": true,
+  "description": "Workspace for Anlyx, a local Project JSON architecture viewer for AI-agent-authored project maps.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/suhannoh/anlyx.git"
+  },
+  "homepage": "https://github.com/suhannoh/anlyx#readme",
+  "bugs": {
+    "url": "https://github.com/suhannoh/anlyx/issues"
+  },
+  "packageManager": "pnpm@10.26.1",
+  "scripts": {
+    "build": "corepack pnpm -r --sort run build",
+    "typecheck": "tsc -b --pretty false",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
+    "demo:build": "corepack pnpm --filter @anlyx/demo build",
+    "demo:dev": "corepack pnpm --filter @anlyx/demo dev",
+    "docs:readme-demo": "node scripts/generate-readme-demo.mjs",
+    "pack:local": "node scripts/pack-local-install.mjs",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^24.10.1",
+    "eslint": "^9.39.2",
+    "prettier": "^3.7.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.50.0",
+    "vitest": "^4.0.16"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

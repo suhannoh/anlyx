@@ -1,0 +1,165 @@
+{
+  "schemaVersion": "0.1.5",
+  "project": {
+    "name": "Benefit Search",
+    "root": ".",
+    "frameworks": ["agent-generated"]
+  },
+  "generatedBy": {
+    "type": "agent",
+    "name": "Codex",
+    "version": "v0.1.5-flow-json"
+  },
+  "snapshot": {
+    "id": "snapshot.benefit-search",
+    "createdAt": "2026-06-26T02:00:00.000Z",
+    "source": "packages/core/src/flow-spec/examples/benefit-search.flow.json"
+  },
+  "flows": [
+    {
+      "id": "flow.benefit-search",
+      "title": "Search benefits",
+      "description": "A user searches for visible benefits and receives a benefit list.",
+      "entry": {
+        "type": "user-action",
+        "label": "Search benefits",
+        "page": "/benefits"
+      },
+      "nodes": [
+        {
+          "id": "ui.search-submit",
+          "type": "ui.action",
+          "label": "Submit benefit search",
+          "status": "observed",
+          "evidenceIds": ["ev.click"]
+        },
+        {
+          "id": "api.benefit-search",
+          "type": "api.request",
+          "label": "GET /api/public/benefits",
+          "status": "measured",
+          "evidenceIds": ["ev.fetch"],
+          "timing": {
+            "kind": "measured",
+            "durationMs": 283,
+            "evidenceId": "ev.fetch"
+          },
+          "request": {
+            "query": {
+              "keyword": "string",
+              "category": "string"
+            }
+          },
+          "response": {
+            "statusCodes": [200],
+            "bodyShape": {
+              "items": [
+                {
+                  "id": "number",
+                  "title": "string",
+                  "brand": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "service.benefit-search",
+          "type": "service",
+          "label": "BenefitSearchService.findVisibleBenefits",
+          "status": "source-matched",
+          "evidenceIds": ["ev.service-source"],
+          "timing": {
+            "kind": "estimate",
+            "durationMs": 120,
+            "reason": "Estimated from source path only; not runtime measured."
+          }
+        },
+        {
+          "id": "repository.benefit",
+          "type": "repository",
+          "label": "BenefitRepository.findVisibleByKeyword",
+          "status": "source-matched",
+          "evidenceIds": ["ev.repository-source"]
+        },
+        {
+          "id": "result.benefit-list",
+          "type": "result",
+          "label": "Benefit list response",
+          "status": "observed",
+          "evidenceIds": ["ev.fetch"]
+        }
+      ],
+      "edges": [
+        {
+          "from": "ui.search-submit",
+          "to": "api.benefit-search",
+          "label": "triggers",
+          "status": "observed",
+          "evidenceIds": ["ev.click", "ev.fetch"]
+        },
+        {
+          "from": "api.benefit-search",
+          "to": "service.benefit-search",
+          "label": "handled by",
+          "status": "source-matched",
+          "evidenceIds": ["ev.service-source"]
+        },
+        {
+          "from": "service.benefit-search",
+          "to": "repository.benefit",
+          "label": "queries",
+          "status": "source-matched",
+          "evidenceIds": ["ev.repository-source"]
+        },
+        {
+          "from": "repository.benefit",
+          "to": "result.benefit-list",
+          "label": "returns",
+          "status": "agent-inferred",
+          "evidenceIds": ["ev.agent-note"]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "ev.click",
+          "kind": "runtime.browser.click",
+          "label": "Search button clicked",
+          "observedAt": "2026-06-26T02:00:00.000Z",
+          "detail": "Observed in the browser while using the local app."
+        },
+        {
+          "id": "ev.fetch",
+          "kind": "runtime.browser.fetch",
+          "label": "Captured GET /api/public/benefits",
+          "observedAt": "2026-06-26T02:00:01.000Z",
+          "detail": "Browser fetch completed in 283ms."
+        },
+        {
+          "id": "ev.service-source",
+          "kind": "source",
+          "label": "Service source match",
+          "file": "packages/core/src/flow-spec/examples/source/BenefitSearchService.java",
+          "symbol": "findVisibleBenefits",
+          "lineStart": 11,
+          "lineEnd": 17
+        },
+        {
+          "id": "ev.repository-source",
+          "kind": "source",
+          "label": "Repository source match",
+          "file": "packages/core/src/flow-spec/examples/source/BenefitRepository.java",
+          "symbol": "findVisibleByKeyword",
+          "lineStart": 6,
+          "lineEnd": 6
+        },
+        {
+          "id": "ev.agent-note",
+          "kind": "agent",
+          "label": "Agent inferred return mapping",
+          "detail": "The result relationship is likely from naming and response shape, but no direct runtime server span was provided."
+        }
+      ]
+    }
+  ]
+}
