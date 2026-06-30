@@ -242,8 +242,43 @@ type ArchitectureNode = {
   source?: SourceLocation;
   evidenceIds?: string[];
   confidence?: ConfidenceLevel;
+  metadata?: Record<string, unknown>;
 };
 ```
+
+Architecture node `metadata` is optional. Agents may use it to author a compact
+data contract for the Map inspector, but Anlyx must still accept nodes without
+contract metadata.
+
+Recommended optional convention:
+
+```json
+{
+  "metadata": {
+    "contracts": {
+      "endpoint": "GET /api/project-data",
+      "input": {
+        "name": "None",
+        "shape": null
+      },
+      "output": {
+        "name": "ProjectData",
+        "kind": "dto",
+        "shape": {
+          "schemaVersion": "string",
+          "project": "ProjectInfo",
+          "pages": "ProjectPage[]",
+          "architecture": "ArchitectureGraph"
+        }
+      },
+      "relatedModels": ["ProjectData", "ArchitectureNode", "ArchitectureEdge"]
+    }
+  }
+}
+```
+
+Do not fabricate DTOs, entities, or shapes. If a contract is not known, omit the
+metadata or leave the relevant field absent.
 
 ```ts
 type ArchitectureEdge = {

@@ -94,7 +94,7 @@
       "pageId": "page.workspace",
       "name": "Project pages",
       "description": "Shows project areas, pages, feature summaries, request roles, and evidence status from anlyx.project.json.",
-      "requestIds": ["req.project-data"],
+      "requestIds": ["req.project-data", "req.project-summary"],
       "evidenceIds": ["ev.workspace-app"],
       "confidence": "high"
     },
@@ -103,7 +103,7 @@
       "pageId": "page.map",
       "name": "Architecture map",
       "description": "Renders frontend-to-data dependencies from Project JSON architecture nodes and edges.",
-      "requestIds": ["req.project-data"],
+      "requestIds": ["req.project-data", "req.map-graph"],
       "evidenceIds": ["ev.scan-tree-map"],
       "confidence": "high"
     },
@@ -112,7 +112,7 @@
       "pageId": "page.json",
       "name": "Project JSON reader",
       "description": "Displays the active Project JSON, schema metadata, and timing disabled state when measurements are absent.",
-      "requestIds": ["req.project-data"],
+      "requestIds": ["req.project-data", "req.project-summary"],
       "evidenceIds": ["ev.project-schema", "ev.workspace-app"],
       "confidence": "high"
     }
@@ -129,6 +129,36 @@
       "flowId": "flow.project-data",
       "evidenceIds": ["ev.viewer-app", "ev.dev-command"],
       "confidence": "high"
+    },
+    {
+      "id": "req.project-summary",
+      "method": "GET",
+      "path": "/api/project-summary",
+      "label": "Load Project Summary",
+      "role": "supporting",
+      "purpose": "data-load",
+      "description": "Example branch used to inspect how another viewer request shares the same runtime service.",
+      "flowId": "flow.project-summary",
+      "evidenceIds": ["ev.example-shared-branches"],
+      "confidence": "medium",
+      "metadata": {
+        "samplePurpose": "map-shared-service"
+      }
+    },
+    {
+      "id": "req.map-graph",
+      "method": "GET",
+      "path": "/api/map-graph",
+      "label": "Load Map Graph",
+      "role": "supporting",
+      "purpose": "data-load",
+      "description": "Example branch used to inspect how a map-specific request shares the same repository.",
+      "flowId": "flow.map-graph",
+      "evidenceIds": ["ev.example-shared-branches"],
+      "confidence": "medium",
+      "metadata": {
+        "samplePurpose": "map-shared-repository"
+      }
     }
   ],
   "flows": [
@@ -212,6 +242,76 @@
       ],
       "evidenceIds": ["ev.viewer-app", "ev.dev-command", "ev.project-schema"],
       "confidence": "high"
+    },
+    {
+      "id": "flow.project-summary",
+      "requestId": "req.project-summary",
+      "name": "Load project summary",
+      "layers": [
+        {
+          "id": "layer.summary-route",
+          "kind": "api",
+          "label": "GET /api/project-summary",
+          "evidenceIds": ["ev.example-shared-branches"],
+          "status": "agent-inferred",
+          "confidence": "medium"
+        },
+        {
+          "id": "layer.summary-runtime",
+          "kind": "service",
+          "label": "runDevCommand",
+          "source": {
+            "filePath": "packages/cli/src/dev-command.ts",
+            "symbol": "runDevCommand"
+          },
+          "evidenceIds": ["ev.dev-command"],
+          "status": "source-matched",
+          "confidence": "high"
+        },
+        {
+          "id": "layer.summary-repository",
+          "kind": "repository",
+          "label": "ProjectJsonRepository",
+          "evidenceIds": ["ev.example-shared-branches"],
+          "status": "agent-inferred",
+          "confidence": "medium"
+        }
+      ],
+      "evidenceIds": ["ev.example-shared-branches"],
+      "confidence": "medium"
+    },
+    {
+      "id": "flow.map-graph",
+      "requestId": "req.map-graph",
+      "name": "Load map graph",
+      "layers": [
+        {
+          "id": "layer.map-graph-route",
+          "kind": "api",
+          "label": "GET /api/map-graph",
+          "evidenceIds": ["ev.example-shared-branches"],
+          "status": "agent-inferred",
+          "confidence": "medium"
+        },
+        {
+          "id": "layer.map-projection",
+          "kind": "service",
+          "label": "MapProjectionService",
+          "evidenceIds": ["ev.example-shared-branches"],
+          "status": "agent-inferred",
+          "confidence": "medium"
+        },
+        {
+          "id": "layer.map-repository",
+          "kind": "repository",
+          "label": "ProjectJsonRepository",
+          "evidenceIds": ["ev.example-shared-branches"],
+          "status": "agent-inferred",
+          "confidence": "medium"
+        }
+      ],
+      "evidenceIds": ["ev.example-shared-branches"],
+      "confidence": "medium"
     }
   ],
   "architecture": {
@@ -239,8 +339,53 @@
           "filePath": "packages/cli/src/dev-command.ts",
           "symbol": "createLocalUiServer"
         },
+        "metadata": {
+          "contracts": {
+            "endpoint": "GET /api/project-data",
+            "input": {
+              "name": "None",
+              "shape": null
+            },
+            "output": {
+              "name": "ProjectData",
+              "kind": "dto",
+              "shape": {
+                "schemaVersion": "string",
+                "project": "ProjectInfo",
+                "pages": "ProjectPage[]",
+                "features": "ProjectFeature[]",
+                "architecture": "ArchitectureGraph"
+              }
+            },
+            "relatedModels": ["ProjectData", "ArchitectureNode", "ArchitectureEdge"]
+          }
+        },
         "evidenceIds": ["ev.dev-command"],
         "confidence": "high"
+      },
+      {
+        "id": "node.project-summary-api",
+        "kind": "api",
+        "label": "GET /api/project-summary",
+        "displayLabel": "Project summary",
+        "domain": "Runtime",
+        "metadata": {
+          "samplePurpose": "map-shared-service"
+        },
+        "evidenceIds": ["ev.example-shared-branches"],
+        "confidence": "medium"
+      },
+      {
+        "id": "node.map-graph-api",
+        "kind": "api",
+        "label": "GET /api/map-graph",
+        "displayLabel": "Map graph",
+        "domain": "Runtime",
+        "metadata": {
+          "samplePurpose": "map-shared-repository"
+        },
+        "evidenceIds": ["ev.example-shared-branches"],
+        "confidence": "medium"
       },
       {
         "id": "node.dev-command",
@@ -252,8 +397,59 @@
           "filePath": "packages/cli/src/dev-command.ts",
           "symbol": "runDevCommand"
         },
+        "metadata": {
+          "contracts": {
+            "input": {
+              "name": "anlyx.project.json"
+            },
+            "output": {
+              "name": "ProjectData",
+              "kind": "dto"
+            },
+            "transforms": [
+              "read project JSON",
+              "validate ProjectData schema",
+              "serve local viewer response"
+            ],
+            "relatedModels": ["ProjectData"]
+          }
+        },
         "evidenceIds": ["ev.dev-command"],
         "confidence": "high"
+      },
+      {
+        "id": "node.map-projection-service",
+        "kind": "service",
+        "label": "MapProjectionService",
+        "displayLabel": "Map projection",
+        "domain": "Viewer",
+        "metadata": {
+          "samplePurpose": "map-shared-repository"
+        },
+        "evidenceIds": ["ev.example-shared-branches"],
+        "confidence": "medium"
+      },
+      {
+        "id": "node.project-json-repository",
+        "kind": "repository",
+        "label": "ProjectJsonRepository",
+        "displayLabel": "Project JSON repo",
+        "domain": "Runtime",
+        "metadata": {
+          "samplePurpose": "map-shared-repository",
+          "contracts": {
+            "input": {
+              "name": "Project JSON files"
+            },
+            "output": {
+              "name": "RawProjectInput",
+              "kind": "json"
+            },
+            "relatedModels": ["ProjectData", "RawProjectInput"]
+          }
+        },
+        "evidenceIds": ["ev.example-shared-branches"],
+        "confidence": "medium"
       },
       {
         "id": "node.project-schema",
@@ -264,6 +460,25 @@
         "source": {
           "filePath": "packages/core/src/project-schema.ts",
           "symbol": "projectDataSchema"
+        },
+        "metadata": {
+          "contracts": {
+            "input": {
+              "name": "RawProjectInput"
+            },
+            "output": {
+              "name": "ProjectData",
+              "kind": "dto",
+              "shape": {
+                "schemaVersion": "0.2.0",
+                "project": "ProjectInfo",
+                "areas": "ProjectArea[]",
+                "requests": "ProjectRequest[]",
+                "evidence": "ProjectEvidence[]"
+              }
+            },
+            "relatedModels": ["ProjectData", "ProjectEvidence", "ProjectMeasurement"]
+          }
         },
         "evidenceIds": ["ev.project-schema"],
         "confidence": "high"
@@ -277,6 +492,25 @@
         "source": {
           "filePath": "packages/core/src/project-normalize.ts",
           "symbol": "normalizeProjectInput"
+        },
+        "metadata": {
+          "contracts": {
+            "input": {
+              "name": "RawProjectInput",
+              "kind": "json"
+            },
+            "output": {
+              "name": "ProjectData",
+              "kind": "dto"
+            },
+            "mapping": "Raw split files -> normalized project model",
+            "transforms": [
+              "fill default arrays",
+              "normalize split files",
+              "preserve authored evidence states"
+            ],
+            "relatedModels": ["ProjectData", "ArchitectureGraph"]
+          }
         },
         "evidenceIds": ["ev.project-normalize"],
         "confidence": "high"
@@ -318,6 +552,22 @@
         "confidence": "high"
       },
       {
+        "id": "edge.viewer.project-summary-api",
+        "source": "node.viewer-app",
+        "target": "node.project-summary-api",
+        "role": "primary",
+        "evidenceIds": ["ev.example-shared-branches"],
+        "confidence": "medium"
+      },
+      {
+        "id": "edge.viewer.map-graph-api",
+        "source": "node.viewer-app",
+        "target": "node.map-graph-api",
+        "role": "primary",
+        "evidenceIds": ["ev.example-shared-branches"],
+        "confidence": "medium"
+      },
+      {
         "id": "edge.project-api.dev-command",
         "source": "node.project-api",
         "target": "node.dev-command",
@@ -326,12 +576,44 @@
         "confidence": "high"
       },
       {
-        "id": "edge.dev-command.normalize",
+        "id": "edge.project-summary.dev-command",
+        "source": "node.project-summary-api",
+        "target": "node.dev-command",
+        "role": "primary",
+        "evidenceIds": ["ev.example-shared-branches"],
+        "confidence": "medium"
+      },
+      {
+        "id": "edge.map-graph.map-projection",
+        "source": "node.map-graph-api",
+        "target": "node.map-projection-service",
+        "role": "primary",
+        "evidenceIds": ["ev.example-shared-branches"],
+        "confidence": "medium"
+      },
+      {
+        "id": "edge.dev-command.project-repository",
         "source": "node.dev-command",
+        "target": "node.project-json-repository",
+        "role": "shared",
+        "evidenceIds": ["ev.example-shared-branches"],
+        "confidence": "medium"
+      },
+      {
+        "id": "edge.map-projection.project-repository",
+        "source": "node.map-projection-service",
+        "target": "node.project-json-repository",
+        "role": "shared",
+        "evidenceIds": ["ev.example-shared-branches"],
+        "confidence": "medium"
+      },
+      {
+        "id": "edge.repository.normalize",
+        "source": "node.project-json-repository",
         "target": "node.project-normalize",
         "role": "primary",
-        "evidenceIds": ["ev.project-normalize"],
-        "confidence": "high"
+        "evidenceIds": ["ev.example-shared-branches", "ev.project-normalize"],
+        "confidence": "medium"
       },
       {
         "id": "edge.normalize.schema",
@@ -431,6 +713,33 @@
       },
       "targetIds": ["node.scan-tree-map"],
       "confidence": "high"
+    },
+    {
+      "id": "ev.example-shared-branches",
+      "status": "agent-inferred",
+      "label": "Example shared Map branches",
+      "detail": "Additional sample requests show shared service and repository routing for visual Map review.",
+      "targetIds": [
+        "req.project-summary",
+        "req.map-graph",
+        "flow.project-summary",
+        "flow.map-graph",
+        "node.project-summary-api",
+        "node.map-graph-api",
+        "node.map-projection-service",
+        "node.project-json-repository",
+        "edge.viewer.project-summary-api",
+        "edge.viewer.map-graph-api",
+        "edge.project-summary.dev-command",
+        "edge.map-graph.map-projection",
+        "edge.dev-command.project-repository",
+        "edge.map-projection.project-repository",
+        "edge.repository.normalize"
+      ],
+      "confidence": "medium",
+      "metadata": {
+        "samplePurpose": "map-layout-validation"
+      }
     }
   ],
   "measurements": [],

@@ -38,10 +38,11 @@ import {
   RotateCw,
   Search,
   ShieldCheck,
+  Tag,
   Workflow,
   Zap
 } from "lucide-react";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { Fragment, createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import type {
@@ -463,18 +464,6 @@ function t(locale: WorkspaceLocale, key: TranslationKey): string {
   return translations[locale][key] ?? translations.en[key];
 }
 
-const projectChromeLocales: Array<{
-  label: string;
-  shortLabel: string;
-  value: ProjectChromeLocale;
-}> = [
-  { value: "en", label: "English", shortLabel: "EN" },
-  { value: "ko", label: "한국어", shortLabel: "KO" },
-  { value: "zh", label: "中文", shortLabel: "ZH" },
-  { value: "ja", label: "日本語", shortLabel: "JA" },
-  { value: "fr", label: "Français", shortLabel: "FR" }
-];
-
 const projectChromeTranslations: Record<
   ProjectChromeLocale,
   Record<ProjectChromeTranslationKey, string>
@@ -813,9 +802,7 @@ function projectSourceFile(model: ProjectWorkspaceViewModel): string {
 }
 
 function ProjectTopBar({
-  locale,
-  model,
-  onLocaleChange
+  model
 }: {
   locale: ProjectChromeLocale;
   model: ProjectWorkspaceViewModel;
@@ -826,7 +813,6 @@ function ProjectTopBar({
       <div className="project-topbar__brand">
         <img alt="Anlyx" src="/workspace/anlyx-logo-transparent.png" />
         <span>v{model.schemaVersion}</span>
-        <strong>OSS</strong>
       </div>
       <button className="project-topbar__project" type="button">
         <Folder size={17} />
@@ -834,23 +820,6 @@ function ProjectTopBar({
         <ChevronRight size={14} />
       </button>
       <div className="project-topbar__spacer" />
-      <div className="project-topbar__actions">
-        <label className="project-language-select">
-          <Languages size={15} />
-          <span>{tp(locale, "language")}</span>
-          <select
-            aria-label={tp(locale, "language")}
-            value={locale}
-            onChange={(event) => onLocaleChange(event.currentTarget.value as ProjectChromeLocale)}
-          >
-            {projectChromeLocales.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.shortLabel}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
     </header>
   );
 }
@@ -893,79 +862,152 @@ function ProjectPagesWorkspace({
   onPageSelect(pageId: string): void;
   selectedPageId: string | undefined;
 }): JSX.Element {
+  const [isPageIndexCollapsed, setIsPageIndexCollapsed] = useState(false);
+
   return (
-    <div className="project-pages-layout">
-      <ProjectPageIndex model={model} selectedPageId={selectedPageId} onPageSelect={onPageSelect} />
-      <ProjectPagesView selectedPage={model.selectedPage} onOpenMap={onOpenMap} />
+    <div
+      className={`anlyx-pages project-pages-layout${
+        isPageIndexCollapsed ? " is-index-collapsed" : ""
+      }`}
+    >
+      <ProjectPageIndex
+        isCollapsed={isPageIndexCollapsed}
+        model={model}
+        selectedPageId={selectedPageId}
+        onPageSelect={onPageSelect}
+        onToggleCollapse={() => setIsPageIndexCollapsed((value) => !value)}
+      />
+      <ProjectPagesView model={model} selectedPage={model.selectedPage} onOpenMap={onOpenMap} />
     </div>
   );
 }
 
 function ProjectPageIndex({
+  isCollapsed,
   model,
   onPageSelect,
+  onToggleCollapse,
   selectedPageId
 }: {
+  isCollapsed: boolean;
   model: ProjectWorkspaceViewModel;
   onPageSelect(pageId: string): void;
+  onToggleCollapse(): void;
   selectedPageId: string | undefined;
 }): JSX.Element {
+  const pages = model.pageGroups.flatMap((group) => group.pages);
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleGroups = normalizedQuery
+    ? model.pageGroups
+        .map((group) => ({
+          ...group,
+          pages: group.pages.filter(
+            (page) =>
+              page.title.toLowerCase().includes(normalizedQuery) ||
+              page.path.toLowerCase().includes(normalizedQuery)
+          )
+        }))
+        .filter((group) => group.pages.length > 0)
+    : model.pageGroups;
+
   return (
-    <aside className="project-page-index-panel" aria-label="Page index">
+    <aside
+      className={`anlyx-page-index project-page-index-panel${isCollapsed ? " is-collapsed" : ""}`}
+      aria-label="Page index"
+    >
       <div className="project-panel-title">
-        <h2>Page Index</h2>
-        <button aria-label="Filter pages" type="button">
+        {isCollapsed ? null : (
+          <div>
+            <h2>Page Index</h2>
+            <span>{model.totals.pages} pages analyzed</span>
+          </div>
+        )}
+        <button
+          aria-expanded={!isCollapsed}
+          aria-label={isCollapsed ? "Expand page index" : "Collapse page index"}
+          type="button"
+          onClick={onToggleCollapse}
+        >
           <PanelLeft size={15} />
         </button>
       </div>
-      <div className="project-page-index__search">
-        <Search size={16} />
-        <span>Search pages...</span>
-        <kbd>/</kbd>
-      </div>
-      <nav className="project-page-index" aria-label="Project pages">
-        {model.pageGroups.map((group) => (
-          <section key={group.id}>
-            <h2>
-              {group.name}
-              <span>{group.pages.length}</span>
-            </h2>
-            {group.pages.map((page) => (
-              <button
-                className={selectedPageId === page.id ? "is-active" : ""}
-                key={page.id}
-                type="button"
-                onClick={() => onPageSelect(page.id)}
-              >
-                <BookOpen size={15} />
-                <span>{page.title}</span>
-                <em>{page.path}</em>
-              </button>
+      {isCollapsed ? (
+        <nav className="project-page-index--collapsed" aria-label="Project pages">
+          {pages.map((page) => (
+            <button
+              aria-label={`${page.title} ${page.path}`}
+              className={selectedPageId === page.id ? "is-active" : ""}
+              key={page.id}
+              title={`${page.title} ${page.path}`}
+              type="button"
+              onClick={() => onPageSelect(page.id)}
+            >
+              <BookOpen size={16} />
+            </button>
+          ))}
+        </nav>
+      ) : (
+        <>
+          <div className="project-page-index__search">
+            <Search size={16} />
+            <input
+              aria-label="Search pages"
+              placeholder="Search pages..."
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.currentTarget.value)}
+            />
+            <kbd>/</kbd>
+          </div>
+          <nav className="project-page-index" aria-label="Project pages">
+            {visibleGroups.map((group) => (
+              <section key={group.id}>
+                <h2>
+                  <span>{group.name}</span>
+                  <span>{group.pages.length}</span>
+                </h2>
+                {group.pages.map((page) => (
+                  <button
+                    className={selectedPageId === page.id ? "is-active" : ""}
+                    key={page.id}
+                    type="button"
+                    onClick={() => onPageSelect(page.id)}
+                  >
+                    <BookOpen size={15} />
+                    <span>{page.title}</span>
+                    <em>{page.path}</em>
+                  </button>
+                ))}
+              </section>
             ))}
-          </section>
-        ))}
-      </nav>
-      <div className="project-page-index-panel__footer">
-        <span>Total pages</span>
-        <strong>{model.totals.pages}</strong>
-      </div>
+          </nav>
+          <div className="project-page-index-panel__footer">
+            <span>Total pages</span>
+            <strong>{model.totals.pages}</strong>
+          </div>
+        </>
+      )}
     </aside>
   );
 }
 
 function ProjectPagesView({
+  model,
   onOpenMap,
   selectedPage
 }: {
+  model: ProjectWorkspaceViewModel;
   onOpenMap(): void;
   selectedPage: ProjectSelectedPageView | undefined;
 }): JSX.Element {
-  const firstRequestId = selectedPage?.requests[0]?.id;
-  const [selectedRequestId, setSelectedRequestId] = useState<string | undefined>(firstRequestId);
+  const defaultRequestId = getDefaultPageRequestId(selectedPage);
+  const [selectedRequestId, setSelectedRequestId] = useState<string | undefined>(defaultRequestId);
+  const [isRailOpen, setIsRailOpen] = useState(false);
 
   useEffect(() => {
-    setSelectedRequestId(firstRequestId);
-  }, [firstRequestId, selectedPage?.page.id]);
+    setSelectedRequestId(defaultRequestId);
+  }, [defaultRequestId, selectedPage?.page.id]);
 
   if (!selectedPage) {
     return (
@@ -978,9 +1020,10 @@ function ProjectPagesView({
 
   const selectedRequest =
     selectedPage.requests.find((request) => request.id === selectedRequestId) ??
-    selectedPage.requests[0];
+    getDefaultPageRequest(selectedPage);
   const selectedRequestLabel =
     selectedRequest?.path ?? selectedRequest?.label ?? selectedRequest?.id ?? "selected request";
+  const requestGroups = groupRequestsByRole(selectedPage.requests);
   const selectedRequestFlows = selectedRequest
     ? selectedPage.flows.filter(
         (flow) =>
@@ -989,100 +1032,260 @@ function ProjectPagesView({
       )
     : [];
   const visibleFlows = selectedRequest ? selectedRequestFlows : selectedPage.flows;
+  const unknownEvidence = selectedPage.evidence.filter(
+    (item) => item.status === "not-proven" || item.status === "unknown"
+  );
+  const selectedFlow = visibleFlows[0];
 
   return (
-    <div className="project-page-workspace">
-      <header className="project-page-workspace__title">
-        <div>
-          <span>{selectedPage.areaName} / Page detail</span>
-          <h1>{selectedPage.page.title}</h1>
-          <code>{selectedPage.page.path}</code>
-        </div>
-        <div>
-          <span className="project-badge project-badge--green">AI-authored</span>
-          <button type="button" onClick={onOpenMap}>
-            <Network size={16} />
-            View in Map
+    <div className={`project-page-workspace${isRailOpen ? "" : " is-rail-collapsed"}`}>
+      <main className="anlyx-page-report project-page-workspace__main">
+        {!isRailOpen ? (
+          <button
+            className="anlyx-rail-reopen"
+            type="button"
+            onClick={() => setIsRailOpen(true)}
+          >
+            <PanelLeft size={14} />
+            Details
           </button>
+        ) : null}
+        <PageBrief selectedPage={selectedPage} />
+        <div className="project-page-two-up">
+          <ProjectSection title="Story">
+            <p className="project-story-copy">
+              {selectedPage.page.description ??
+                "No story was authored for this page yet. Ask the project Agent to describe what this page does and why it exists."}
+            </p>
+          </ProjectSection>
+          <ProjectSection className="anlyx-user-actions" title="User actions">
+            <div className="anlyx-action-list project-action-list">
+              {selectedPage.features.length > 0 ? (
+                selectedPage.features.map((feature) => (
+                  <ProjectFeatureCard feature={feature} key={feature.id} />
+                ))
+              ) : (
+                <p className="project-muted">No user actions authored for this page.</p>
+              )}
+            </div>
+          </ProjectSection>
         </div>
-      </header>
-      <ProjectSection title="Story">
-        <p className="project-story-copy">
-          {selectedPage.page.description ??
-            "No story was authored for this page yet. Ask the project Agent to describe what this page does and why it exists."}
-        </p>
-      </ProjectSection>
-      <ProjectSection title="Features">
-        <div className="project-feature-grid">
-          {selectedPage.features.length > 0 ? (
-            selectedPage.features.map((feature) => (
-              <ProjectFeatureCard feature={feature} key={feature.id} />
-            ))
+        <RequestsByRole
+          groups={requestGroups}
+          selectedRequest={selectedRequest}
+          onRequestSelect={setSelectedRequestId}
+        />
+        <ProjectSection
+          className="anlyx-flow-section"
+          meta={
+            selectedRequest
+              ? `${selectedRequest.method ?? "HTTP"} ${selectedRequestLabel}`
+              : undefined
+          }
+          title="Selected Flow"
+        >
+          {selectedFlow ? (
+            <ProjectFlowTrace flow={selectedFlow} />
           ) : (
-            <p className="project-muted">No features authored for this page.</p>
+            <p className="project-muted">No backend flow linked to this request.</p>
           )}
-        </div>
-      </ProjectSection>
-      <ProjectSection title="Requests">
-        <div className="project-section__summary">
-          <span>{selectedPage.requests.length} requests</span>
-          <span>Select a request to show its backend path.</span>
-        </div>
-        <div className="project-request-grid">
-          {selectedPage.requests.length > 0 ? (
-            selectedPage.requests.map((request) => (
-              <ProjectRequestCard
-                isSelected={selectedRequest?.id === request.id}
-                key={request.id}
-                request={request}
-                onSelect={() => setSelectedRequestId(request.id)}
+        </ProjectSection>
+        <div className="anlyx-trust-unknowns project-page-two-up project-page-two-up--trust">
+          <ProjectSection className="anlyx-trust-breakdown" title="Trust Breakdown">
+            <div className="anlyx-trust-grid project-evidence-row">
+              <EvidenceChip
+                label="Source-matched"
+                total={selectedPage.evidenceSummary.total}
+                value={selectedPage.evidenceSummary.sourceMatched}
               />
-            ))
-          ) : (
-            <p className="project-muted">No requests linked to this page.</p>
-          )}
+              <EvidenceChip
+                label="Agent-inferred"
+                total={selectedPage.evidenceSummary.total}
+                value={selectedPage.evidenceSummary.agentInferred}
+              />
+              <EvidenceChip
+                label="Observed"
+                total={selectedPage.evidenceSummary.total}
+                value={selectedPage.evidenceSummary.observed}
+              />
+              <EvidenceChip
+                label="Not-proven"
+                total={selectedPage.evidenceSummary.total}
+                value={selectedPage.evidenceSummary.notProven}
+              />
+              <EvidenceChip
+                label="Unknown"
+                total={selectedPage.evidenceSummary.total}
+                value={selectedPage.evidenceSummary.unknown}
+              />
+            </div>
+          </ProjectSection>
+          <ProjectSection className="anlyx-unknowns" title="Unknowns">
+            {unknownEvidence.length > 0 ? (
+              <ul className="anlyx-unknown-list project-unknown-list">
+                {unknownEvidence.slice(0, 4).map((item) => (
+                  <li key={item.id}>{item.detail ?? item.label}</li>
+                ))}
+              </ul>
+            ) : (
+              <div className="anlyx-unknown-empty">
+                <p>No unknown or not-proven evidence authored for this page.</p>
+                <p>All detected elements are source-matched.</p>
+              </div>
+            )}
+          </ProjectSection>
         </div>
-      </ProjectSection>
-      <ProjectSection
-        meta={
-          selectedRequest
-            ? `${selectedRequest.method ?? "HTTP"} ${selectedRequestLabel}`
-            : undefined
-        }
-        title="Flow summary"
-      >
-        {visibleFlows.length > 0 ? (
-          visibleFlows.map((flow) => <ProjectFlowTrace flow={flow} key={flow.id} />)
-        ) : (
-          <p className="project-muted">No backend flow linked to this request.</p>
-        )}
-      </ProjectSection>
-      <ProjectSection title="Evidence summary">
-        <div className="project-evidence-row">
-          <EvidenceChip label="Observed" value={selectedPage.evidenceSummary.observed} />
-          <EvidenceChip label="Found in code" value={selectedPage.evidenceSummary.sourceMatched} />
-          <EvidenceChip label="Agent inferred" value={selectedPage.evidenceSummary.agentInferred} />
-          <EvidenceChip label="Not proven" value={selectedPage.evidenceSummary.notProven} />
-          <EvidenceChip label="Unknown" value={selectedPage.evidenceSummary.unknown} />
-        </div>
-      </ProjectSection>
+      </main>
+      {isRailOpen ? (
+        <PageDetailsRail
+          model={model}
+          selectedPage={selectedPage}
+          onCollapse={() => setIsRailOpen(false)}
+          onOpenMap={onOpenMap}
+        />
+      ) : null}
     </div>
   );
 }
 
+function PageBrief({
+  selectedPage
+}: {
+  selectedPage: ProjectSelectedPageView;
+}): JSX.Element {
+  return (
+    <header className="project-page-brief">
+      <div className="project-page-brief__body">
+        <div className="project-page-brief__title">
+          <div>
+            <h1>{selectedPage.page.title}</h1>
+            <code>{selectedPage.page.path}</code>
+          </div>
+          <p>
+            {selectedPage.page.description ??
+              "No page story was authored yet. Ask the project Agent to describe what this page does and why it exists."}
+          </p>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function RequestsByRole({
+  groups,
+  onRequestSelect,
+  selectedRequest
+}: {
+  groups: Array<{ label: string; requests: ProjectRequestView[]; role: ProjectRequestView["role"] }>;
+  onRequestSelect(requestId: string): void;
+  selectedRequest: ProjectRequestView | undefined;
+}): JSX.Element {
+  return (
+    <ProjectSection title="Requests">
+      <div className="anlyx-requests-grid project-request-columns">
+        {groups.some((group) => group.requests.length > 0) ? (
+          groups.map((group) => (
+            <section className="project-request-column" key={group.role}>
+              <header>
+                <strong>{group.label}</strong>
+                <span>{group.requests.length}</span>
+              </header>
+              {group.requests.length > 0 ? (
+                group.requests.map((request) => (
+                  <ProjectRequestCard
+                    isSelected={selectedRequest?.id === request.id}
+                    key={request.id}
+                    request={request}
+                    onSelect={() => onRequestSelect(request.id)}
+                  />
+                ))
+              ) : (
+                <div className="anlyx-request-empty">
+                  <Minus size={18} />
+                  <strong>No {group.label.toLowerCase()} requests</strong>
+                  <span>None detected for this page.</span>
+                </div>
+              )}
+            </section>
+          ))
+        ) : (
+          <p className="project-muted">No requests linked to this page.</p>
+        )}
+      </div>
+    </ProjectSection>
+  );
+}
+
+function getDefaultPageRequestId(
+  selectedPage: ProjectSelectedPageView | undefined
+): string | undefined {
+  return getDefaultPageRequest(selectedPage)?.id;
+}
+
+function getDefaultPageRequest(
+  selectedPage: ProjectSelectedPageView | undefined
+): ProjectRequestView | undefined {
+  if (!selectedPage) return undefined;
+
+  return (
+    selectedPage.requests.find((request) => request.role === "primary") ??
+    selectedPage.requests.find((request) => request.role === "supporting") ??
+    selectedPage.requests[0]
+  );
+}
+
+function groupRequestsByRole(
+  requests: ProjectRequestView[]
+): Array<{ label: string; requests: ProjectRequestView[]; role: ProjectRequestView["role"] }> {
+  const groups: Array<{
+    label: string;
+    requests: ProjectRequestView[];
+    role: ProjectRequestView["role"];
+  }> = [
+    { role: "primary", label: "Primary", requests: [] },
+    { role: "supporting", label: "Supporting", requests: [] },
+    { role: "background", label: "Background", requests: [] },
+    { role: "external", label: "External", requests: [] }
+  ];
+
+  for (const request of requests) {
+    const group = groups.find((item) => item.role === request.role);
+
+    group?.requests.push(request);
+  }
+
+  const externalGroup = groups.find((group) => group.role === "external");
+  const baseGroups = groups.filter((group) => group.role !== "external");
+
+  return externalGroup && externalGroup.requests.length > 0
+    ? [...baseGroups, externalGroup]
+    : baseGroups;
+}
+
 function ProjectSection({
   children,
+  className,
+  index,
   meta,
   title
 }: {
   children: ReactNode;
+  className?: string | undefined;
+  index?: number | undefined;
   meta?: string | undefined;
   title: string;
 }): JSX.Element {
   return (
-    <section className="project-section">
+    <section className={`anlyx-report-section project-section${className ? ` ${className}` : ""}`}>
       <header className="project-section__header">
-        <h3>{title}</h3>
+        <h3>
+          {index ? (
+            <span className="project-section__number" aria-hidden="true">
+              {index}
+            </span>
+          ) : null}
+          <span>{title}</span>
+        </h3>
         {meta ? <span>{meta}</span> : null}
       </header>
       {children}
@@ -1092,13 +1295,11 @@ function ProjectSection({
 
 function ProjectFeatureCard({ feature }: { feature: ProjectFeatureView }): JSX.Element {
   return (
-    <article className="project-feature-card">
-      <FileText size={20} />
+    <article className="anlyx-action-item project-feature-card">
       <div>
         <strong>{feature.name}</strong>
         <p>{feature.description ?? "No feature description authored yet."}</p>
       </div>
-      <span>{feature.requests.length} requests</span>
     </article>
   );
 }
@@ -1116,22 +1317,24 @@ function ProjectRequestCard({
 
   return (
     <button
-      className={`project-request-card project-request-card--${request.role} ${
+      className={`anlyx-request-card project-request-card project-request-card--${request.role} ${
         isSelected ? "is-selected" : ""
       }`}
       type="button"
       onClick={onSelect}
     >
       <header>
-        <span>{request.role}</span>
+        <span className={`project-method-badge project-method-badge--${request.method ?? "HTTP"}`}>
+          {request.method ?? "HTTP"}
+        </span>
+        {isSelected ? <Check size={15} /> : null}
       </header>
       <strong>
-        <em>{request.method ?? "HTTP"}</em>
         {label}
       </strong>
+      <p>{request.description ?? request.purpose}</p>
       <footer>
-        <small>Purpose</small>
-        <b>{request.purpose}</b>
+        <b>{request.role}</b>
       </footer>
     </button>
   );
@@ -1139,47 +1342,269 @@ function ProjectRequestCard({
 
 function ProjectFlowTrace({ flow }: { flow: ProjectFlowView }): JSX.Element {
   const layers = flow.layers.length > 0 ? flow.layers : [];
+  const [expandedLayerId, setExpandedLayerId] = useState<string | undefined>();
 
   return (
-    <article className="project-flow-trace">
-      <header>
+    <article className="anlyx-flow-trace project-flow-trace">
+      <header className="project-flow-trace__header">
         <span>{flow.request?.role ?? "flow"}</span>
         <strong>{flow.name ?? flow.request?.path ?? flow.id}</strong>
       </header>
-      <div className="project-flow-trace__layers">
-        {layers.map((layer, index) => (
-          <ProjectFlowLayerCard index={index} key={layer.id} layer={layer} />
-        ))}
+      <div className="anlyx-flow-scroll">
+        <div className="anlyx-flow-track project-flow-trace__layers">
+          {layers.map((layer, index) => (
+            <Fragment key={layer.id}>
+              <ProjectFlowLayerCard
+                isExpanded={expandedLayerId === layer.id}
+                layer={layer}
+                onToggle={() =>
+                  setExpandedLayerId((current) => (current === layer.id ? undefined : layer.id))
+                }
+              />
+              {index < layers.length - 1 ? (
+                <span className="anlyx-flow-arrow" aria-hidden="true">
+                  <ChevronRight size={18} />
+                </span>
+              ) : null}
+            </Fragment>
+          ))}
+        </div>
       </div>
     </article>
   );
 }
 
 function ProjectFlowLayerCard({
-  index,
+  isExpanded,
+  onToggle,
   layer
 }: {
-  index: number;
+  isExpanded: boolean;
   layer: ProjectFlowView["layers"][number];
+  onToggle(): void;
 }): JSX.Element {
+  const source = formatSourceLocation(layer.source) ?? formatLayerHint(layer);
+
   return (
-    <div className={`project-flow-layer project-flow-layer--${layer.kind}`}>
-      <span>{index + 1}</span>
-      <strong>{layer.kind}</strong>
-      <em>{layer.label}</em>
-      <small>{evidenceStatusLabel(layer.status)}</small>
+    <button
+      aria-expanded={isExpanded}
+      className={`anlyx-flow-node project-flow-layer project-flow-layer--${layer.kind}${
+        isExpanded ? " is-expanded" : ""
+      }`}
+      title={source}
+      type="button"
+      onClick={onToggle}
+    >
+      <span className="anlyx-flow-layer">{titleCase(layer.kind)}</span>
+      <strong className="anlyx-flow-title">{layer.label}</strong>
+      <em className="anlyx-flow-source">{source}</em>
+      <small className="anlyx-evidence-pill">{evidenceStatusLabel(layer.status)}</small>
+    </button>
+  );
+}
+
+function EvidenceChip({
+  label,
+  total,
+  value
+}: {
+  label: string;
+  total: number;
+  value: number;
+}): JSX.Element {
+  const percent = total > 0 ? Math.round((value / total) * 100) : 0;
+  const status = label.toLowerCase().replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
+
+  return (
+    <span className={`anlyx-trust-card anlyx-trust-card--${status} project-evidence-chip`}>
+      <span>
+        <i aria-hidden="true" />
+        {label}
+      </span>
+      <strong>{value}</strong>
+      <em>{percent}%</em>
+    </span>
+  );
+}
+
+function PageDetailsRail({
+  model,
+  onCollapse,
+  onOpenMap,
+  selectedPage
+}: {
+  model: ProjectWorkspaceViewModel;
+  onCollapse(): void;
+  onOpenMap(): void;
+  selectedPage: ProjectSelectedPageView;
+}): JSX.Element {
+  const page = selectedPage.page;
+  const relatedPages = getRelatedPages(model, page.metadata?.["relatedPageIds"]);
+  const tags = getStringList(page.metadata?.["tags"]);
+  const evidenceLabel = formatEvidenceSummary(selectedPage.evidenceSummary);
+
+  return (
+    <aside className="anlyx-page-rail project-page-details-panel" aria-label="Page details">
+      <div className="anlyx-page-rail__header">
+        <h2>Page Details</h2>
+        <button aria-label="Collapse page details" type="button" onClick={onCollapse}>
+          <PanelLeft size={14} />
+        </button>
+      </div>
+      <dl>
+        <ProjectDetailField label="Area" value={selectedPage.areaName} />
+        <ProjectDetailField label="Route" value={page.path} />
+        <ProjectDetailField
+          label="Page Type"
+          value={metadataString(page.metadata?.["pageType"]) ?? "Not authored"}
+        />
+        <ProjectDetailField
+          label="Auth Required"
+          value={metadataBooleanLabel(page.metadata?.["authRequired"])}
+        />
+        <ProjectDetailField
+          label="Layout"
+          value={metadataString(page.metadata?.["layout"]) ?? "Not authored"}
+        />
+        <ProjectDetailField
+          label="Last Seen"
+          value={formatAnalysisTime(model.project.analyzedAt) ?? "Not authored"}
+        />
+      </dl>
+      <section>
+        <h3>Evidence</h3>
+        <p>{evidenceLabel}</p>
+        {page.source ? <p>{formatSourceLocation(page.source)}</p> : null}
+      </section>
+      <section>
+        <h3>Related Pages</h3>
+        {relatedPages.length > 0 ? (
+          <ul>
+            {relatedPages.map((relatedPage) => (
+              <li key={relatedPage.id}>
+                <strong>{relatedPage.title}</strong>
+                <span>{relatedPage.path}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No related pages authored.</p>
+        )}
+      </section>
+      <section>
+        <h3>Tags</h3>
+        {tags.length > 0 ? (
+          <div className="project-page-tags">
+            {tags.map((tag) => (
+              <span key={tag}>
+                <Tag size={12} />
+                {tag}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p>No tags authored.</p>
+        )}
+      </section>
+      <button type="button" onClick={onOpenMap}>
+        <Network size={15} />
+        View in Map
+      </button>
+    </aside>
+  );
+}
+
+function ProjectDetailField({ label, value }: { label: string; value: string }): JSX.Element {
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
     </div>
   );
 }
 
-function EvidenceChip({ label, value }: { label: string; value: number }): JSX.Element {
-  return (
-    <span className="project-evidence-chip">
-      <Check size={15} />
-      {label}
-      <strong>{value}</strong>
-    </span>
-  );
+function getRelatedPages(
+  model: ProjectWorkspaceViewModel,
+  value: unknown
+): Array<{ id: string; path: string; title: string }> {
+  const ids = getStringList(value);
+  const pages = model.pageGroups.flatMap((group) => group.pages);
+
+  return ids.flatMap((id) => {
+    const page = pages.find((item) => item.id === id);
+
+    return page ? [{ id: page.id, path: page.path, title: page.title }] : [];
+  });
+}
+
+function getStringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+}
+
+function metadataString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+}
+
+function metadataBooleanLabel(value: unknown): string {
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "string" && value.trim().length > 0) return value;
+
+  return "Not authored";
+}
+
+function formatAnalysisTime(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleString("en", {
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+function formatEvidenceSummary(summary: ProjectSelectedPageView["evidenceSummary"]): string {
+  if (summary.total === 0) return "Not authored";
+
+  const strongest =
+    summary.sourceMatched > 0
+      ? "Source-matched"
+      : summary.observed > 0
+        ? "Observed"
+        : summary.agentInferred > 0
+          ? "Agent-inferred"
+          : summary.notProven > 0
+            ? "Not-proven"
+            : "Unknown";
+
+  return `${strongest} (${summary.total})`;
+}
+
+function formatSourceLocation(
+  source: ProjectFlowView["layers"][number]["source"] | undefined
+): string | undefined {
+  if (!source) return undefined;
+  const line = source.lineStart ? `:${source.lineStart}` : "";
+  const symbol = source.symbol ? ` ${source.symbol}` : "";
+
+  return `${source.filePath}${line}${symbol}`;
+}
+
+function formatLayerHint(layer: ProjectFlowView["layers"][number]): string {
+  return metadataString(layer.metadata?.["module"]) ?? metadataString(layer.metadata?.["file"]) ?? layer.id;
+}
+
+function titleCase(value: string): string {
+  return value
+    .split("-")
+    .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
+    .join("-");
 }
 
 function ProjectMapView({
@@ -1189,7 +1614,18 @@ function ProjectMapView({
   data: ProjectData;
   model: ProjectWorkspaceViewModel;
 }): JSX.Element {
-  const graph = useMemo(() => buildProjectArchitectureReactFlow(data), [data]);
+  const map = useMemo(() => buildProjectArchitectureMap(data), [data]);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | undefined>(undefined);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const selectedNode = map.nodes.find((node) => node.id === selectedNodeId);
+  const focus = useMemo(
+    () => buildProjectArchitectureFocus(map, selectedNode?.id),
+    [map, selectedNode?.id]
+  );
+  const selectNode = (nodeId: string) => {
+    setSelectedNodeId(nodeId);
+    setInspectorOpen(true);
+  };
 
   if (data.architecture.nodes.length === 0) {
     return (
@@ -1216,48 +1652,86 @@ function ProjectMapView({
   }
 
   return (
-    <section
-      className="project-architecture-map project-screen-panel"
-      aria-label="Project architecture map"
-    >
+    <section className="project-architecture-map anlyx-map-shell" aria-label="Project architecture map">
       <header className="project-architecture-map__toolbar">
         <div>
           <h1>Map</h1>
-          <p>
-            Agent-authored architecture map. The viewer renders only nodes and edges from project
-            JSON.
-          </p>
+          <p>Agent-authored architecture map. The viewer renders nodes and edges from project JSON.</p>
         </div>
-        <dl>
-          <div>
-            <dt>Nodes</dt>
-            <dd>{data.architecture.nodes.length}</dd>
-          </div>
-          <div>
-            <dt>Edges</dt>
-            <dd>{graph.edges.length}</dd>
-          </div>
-          <div>
-            <dt>Pages</dt>
-            <dd>{model.totals.pages}</dd>
-          </div>
-        </dl>
+        <div className="anlyx-map-header-actions">
+          <ProjectArchitectureMapStats map={map} model={model} />
+        </div>
       </header>
-      <div className="project-architecture-map__canvas" data-testid="project-architecture-map">
-        <ReactFlow
-          className="project-architecture-react-flow"
-          edgeTypes={projectArchitectureEdgeTypes}
-          edges={graph.edges}
-          fitView
-          fitViewOptions={{ padding: 0.18 }}
-          maxZoom={1.45}
-          minZoom={0.45}
-          nodes={graph.nodes}
-          nodesConnectable={false}
-          nodesDraggable={false}
-          nodeTypes={projectArchitectureNodeTypes}
-          proOptions={{ hideAttribution: true }}
-        />
+      <div className={`anlyx-map-body${inspectorOpen ? " has-inspector" : ""}`}>
+        <div
+          className={`project-architecture-map__canvas${selectedNode ? " is-focused" : ""}${
+            map.isCompact ? " is-small-graph" : ""
+          }`}
+          data-testid="project-architecture-map"
+          style={
+            {
+              "--anlyx-map-width": `${map.width}px`,
+              "--anlyx-map-height": `${map.height}px`
+            } as CSSProperties
+          }
+        >
+          <div className="anlyx-map-stage">
+            <svg
+              aria-hidden="true"
+              className="anlyx-map-edges"
+              height={map.height}
+              viewBox={`0 0 ${map.width} ${map.height}`}
+              width={map.width}
+            >
+              {map.edges.map((edge) => (
+                <ProjectArchitectureMapEdge edge={edge} focus={focus} key={edge.id} />
+              ))}
+            </svg>
+            <div className="anlyx-map-columns" aria-hidden="true">
+              {map.columns.map((column) => (
+                <div
+                  className="anlyx-map-column-guide"
+                  key={column.id}
+                  style={{ left: column.x, width: column.width }}
+                >
+                  <strong>{column.label}</strong>
+                  <span>{column.count}</span>
+                </div>
+              ))}
+            </div>
+            {map.nodes.map((node) => (
+              <ProjectArchitectureMapNode
+                focus={focus}
+                key={node.id}
+                node={node}
+                onSelect={selectNode}
+                selected={node.id === selectedNode?.id}
+              />
+            ))}
+            <div className="anlyx-map-legend">
+              <span>
+                <i className="is-primary" /> Selected path
+              </span>
+              <span>
+                <i className="is-shared" /> Shared dependency
+              </span>
+              <span>
+                <i className="is-muted" /> Other / Unknown
+              </span>
+            </div>
+          </div>
+        </div>
+        {inspectorOpen ? (
+          <ProjectArchitectureInspector
+            focus={focus}
+            node={selectedNode}
+            nodesById={map.nodesById}
+            onClose={() => {
+              setInspectorOpen(false);
+              setSelectedNodeId(undefined);
+            }}
+          />
+        ) : null}
       </div>
     </section>
   );
@@ -1265,167 +1739,705 @@ function ProjectMapView({
 
 type ProjectArchitectureSourceNode = ProjectData["architecture"]["nodes"][number];
 type ProjectArchitectureSourceEdge = ProjectData["architecture"]["edges"][number];
-type ProjectArchitectureViewNode = ProjectArchitectureSourceNode & {
+type ProjectArchitectureMapColumn = {
+  id: string;
+  label: string;
+  kinds: ProjectArchitectureSourceNode["kind"][];
+  x: number;
+  width: number;
+  count: number;
+};
+type ProjectArchitectureMapNode = ProjectArchitectureSourceNode & {
+  columnId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
   connectionCount: number;
+  upstreamCount: number;
+  downstreamCount: number;
+  evidenceStatus: ProjectData["evidence"][number]["status"] | "unknown";
+  evidenceLabel: string;
+  subtitle: string;
 };
-type ProjectArchitectureNodeData = {
-  node: ProjectArchitectureViewNode;
+type ProjectArchitectureMapEdge = ProjectArchitectureSourceEdge & {
+  sourceNode: ProjectArchitectureMapNode;
+  targetNode: ProjectArchitectureMapNode;
+  routeX: number;
 };
-type ProjectArchitectureEdgeData = {
-  edge: ProjectArchitectureSourceEdge;
+type ProjectArchitectureMapModel = {
+  columns: ProjectArchitectureMapColumn[];
+  columnCounts: Map<string, number>;
+  nodes: ProjectArchitectureMapNode[];
+  edges: ProjectArchitectureMapEdge[];
+  logicalEdges: ProjectArchitectureMapEdge[];
+  nodesById: Map<string, ProjectArchitectureMapNode>;
+  width: number;
+  height: number;
+  nodeWidth: number;
+  isCompact: boolean;
 };
-type ProjectArchitectureReactNode = Node<ProjectArchitectureNodeData, "projectArchitectureNode">;
-type ProjectArchitectureReactEdge = Edge<ProjectArchitectureEdgeData, "projectArchitectureEdge">;
-
-const projectArchitectureNodeTypes = { projectArchitectureNode: ProjectArchitectureNode };
-const projectArchitectureEdgeTypes = { projectArchitectureEdge: ProjectArchitectureEdge };
-
-const projectArchitectureLayerX: Record<string, number> = {
-  frontend: 32,
-  request: 220,
-  api: 410,
-  controller: 600,
-  handler: 600,
-  middleware: 600,
-  service: 810,
-  policy: 810,
-  mapper: 810,
-  cache: 810,
-  queue: 810,
-  job: 810,
-  external: 810,
-  repository: 1030,
-  database: 1240,
-  result: 1450,
-  unknown: 810
+type ProjectArchitectureFocus = {
+  nodeIds: Set<string>;
+  edgeIds: Set<string>;
+  upstreamIds: string[];
+  downstreamIds: string[];
 };
 
-function buildProjectArchitectureReactFlow(data: ProjectData): {
-  nodes: ProjectArchitectureReactNode[];
-  edges: ProjectArchitectureReactEdge[];
-} {
+const projectArchitectureColumns: Array<Omit<ProjectArchitectureMapColumn, "x" | "width" | "count">> = [
+  { id: "pages", label: "Pages / Features", kinds: ["frontend"] },
+  { id: "requests", label: "Requests", kinds: ["request"] },
+  { id: "api", label: "API", kinds: ["api"] },
+  { id: "controllers", label: "Controllers", kinds: ["controller", "handler", "middleware"] },
+  { id: "services", label: "Services", kinds: ["service", "cache", "queue", "job", "external"] },
+  { id: "repository", label: "Repository / Mapper", kinds: ["repository", "mapper"] },
+  { id: "policy", label: "Policy / Schema", kinds: ["policy"] },
+  { id: "data", label: "Data / JSON", kinds: ["database"] },
+  { id: "result", label: "Results", kinds: ["result", "unknown"] }
+];
+
+function buildProjectArchitectureMap(data: ProjectData): ProjectArchitectureMapModel {
   const nodeIds = new Set(data.architecture.nodes.map((node) => node.id));
   const validEdges = data.architecture.edges.filter(
     (edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target)
   );
+  const evidenceById = new Map(data.evidence.map((evidence) => [evidence.id, evidence]));
   const connectionCounts = new Map<string, number>();
+  const upstreamCounts = new Map<string, number>();
+  const downstreamCounts = new Map<string, number>();
 
   validEdges.forEach((edge) => {
     connectionCounts.set(edge.source, (connectionCounts.get(edge.source) ?? 0) + 1);
     connectionCounts.set(edge.target, (connectionCounts.get(edge.target) ?? 0) + 1);
+    downstreamCounts.set(edge.source, (downstreamCounts.get(edge.source) ?? 0) + 1);
+    upstreamCounts.set(edge.target, (upstreamCounts.get(edge.target) ?? 0) + 1);
   });
 
-  const domains = Array.from(
-    new Set(data.architecture.nodes.map((node) => node.domain ?? "Project"))
+  const columnIdByKind = new Map(
+    projectArchitectureColumns.flatMap((column) => column.kinds.map((kind) => [kind, column.id]))
   );
-  const domainIndex = new Map(domains.map((domain, index) => [domain, index]));
-  const slotCounts = new Map<string, number>();
+  const isCompact = data.architecture.nodes.length <= 12;
+  const filledColumnWidth = isCompact ? 176 : 196;
+  const nodeHeight = isCompact ? 90 : 96;
+  const columnGap = isCompact ? 28 : 34;
+  const rowGap = isCompact ? 16 : 22;
+  const top = isCompact ? 62 : 82;
+  const left = 18;
 
-  const nodes = data.architecture.nodes.map((node): ProjectArchitectureReactNode => {
-    const domain = node.domain ?? "Project";
-    const layer = node.kind in projectArchitectureLayerX ? node.kind : "unknown";
-    const layerX = projectArchitectureLayerX[layer] ?? 810;
-    const slotKey = `${domain}:${layer}`;
-    const slot = slotCounts.get(slotKey) ?? 0;
-    slotCounts.set(slotKey, slot + 1);
+  const grouped = new Map<string, ProjectArchitectureSourceNode[]>();
+  for (const node of data.architecture.nodes) {
+    const columnId = columnIdByKind.get(node.kind) ?? "result";
+    const nodes = grouped.get(columnId) ?? [];
+    nodes.push(node);
+    grouped.set(columnId, nodes);
+  }
 
-    return {
-      id: node.id,
-      type: "projectArchitectureNode",
-      position: {
-        x: layerX,
-        y: 54 + (domainIndex.get(domain) ?? 0) * 138 + slot * 46
-      },
-      data: {
-        node: {
+  const columnCounts = new Map<string, number>();
+  for (const column of projectArchitectureColumns) {
+    columnCounts.set(column.id, grouped.get(column.id)?.length ?? 0);
+  }
+
+  let currentX = left;
+  const columns: ProjectArchitectureMapColumn[] = projectArchitectureColumns
+    .filter((column) => (columnCounts.get(column.id) ?? 0) > 0)
+    .map((column) => {
+      const count = columnCounts.get(column.id) ?? 0;
+      const width = filledColumnWidth;
+      const positionedColumn = {
+        ...column,
+        x: currentX,
+        width,
+        count
+      };
+      currentX += width + columnGap;
+      return positionedColumn;
+    });
+
+  const mapNodes: ProjectArchitectureMapNode[] = [];
+  for (const column of columns) {
+    const nodes = grouped.get(column.id) ?? [];
+    nodes
+      .sort((a, b) => {
+        const degreeDelta = (connectionCounts.get(b.id) ?? 0) - (connectionCounts.get(a.id) ?? 0);
+        return degreeDelta || a.label.localeCompare(b.label);
+      })
+      .forEach((node, index) => {
+        const evidenceStatus = projectArchitectureEvidenceStatus(node.evidenceIds, evidenceById);
+        const source = formatProjectArchitectureSource(node.source);
+        mapNodes.push({
           ...node,
-          connectionCount: connectionCounts.get(node.id) ?? 0
-        }
-      },
-      draggable: false,
-      selectable: false
+          columnId: column.id,
+          x: column.x,
+          y: top + index * (nodeHeight + rowGap),
+          width: column.width,
+          height: nodeHeight,
+          connectionCount: connectionCounts.get(node.id) ?? 0,
+          upstreamCount: upstreamCounts.get(node.id) ?? 0,
+          downstreamCount: downstreamCounts.get(node.id) ?? 0,
+          evidenceStatus,
+          evidenceLabel: node.evidenceIds.length > 0 ? evidenceStatusLabel(evidenceStatus) : "Unknown",
+          subtitle: source ?? projectArchitectureNodeSubtitle(node)
+        });
+      });
+  }
+
+  const nodesById = new Map(mapNodes.map((node) => [node.id, node]));
+  const logicalEdges = validEdges
+    .map((edge): ProjectArchitectureMapEdge | undefined => {
+      const sourceNode = nodesById.get(edge.source);
+      const targetNode = nodesById.get(edge.target);
+      if (!sourceNode || !targetNode) return undefined;
+      return sourceNode && targetNode ? { ...edge, sourceNode, targetNode, routeX: 0 } : undefined;
+    })
+    .filter((edge): edge is ProjectArchitectureMapEdge => Boolean(edge));
+
+  const mapEdgesWithoutLanes = logicalEdges.filter((edge) => {
+    if (edge.sourceNode.columnId === edge.targetNode.columnId) return false;
+    return edge.sourceNode.x + edge.sourceNode.width < edge.targetNode.x;
+  });
+  const gutterCounts = new Map<string, number>();
+  const mapEdges = mapEdgesWithoutLanes.map((edge) => {
+    const sourceRight = edge.sourceNode.x + edge.sourceNode.width;
+    const gap = Math.max(1, edge.targetNode.x - sourceRight);
+    const gutterKey = `${edge.sourceNode.columnId}->${edge.targetNode.columnId}`;
+    const gutterIndex = gutterCounts.get(gutterKey) ?? 0;
+    gutterCounts.set(gutterKey, gutterIndex + 1);
+    const laneOffset = (gutterIndex - 1) * 6;
+    const routeX = sourceRight + gap / 2 + laneOffset;
+    return {
+      ...edge,
+      routeX: Math.max(sourceRight + 14, Math.min(edge.targetNode.x - 14, routeX))
     };
   });
+  const maxColumnCount = Math.max(1, ...columns.map((column) => column.count));
 
   return {
-    nodes,
-    edges: validEdges.map(
-      (edge): ProjectArchitectureReactEdge => ({
-        id: edge.id,
-        source: edge.source,
-        sourceHandle: "right",
-        target: edge.target,
-        targetHandle: "left",
-        type: "projectArchitectureEdge",
-        data: { edge },
-        focusable: false,
-        selectable: false
-      })
-    )
+    columns,
+    columnCounts,
+    nodes: mapNodes,
+    edges: mapEdges,
+    logicalEdges,
+    nodesById,
+    width: Math.max(0, currentX - columnGap + left),
+    height: top + maxColumnCount * (nodeHeight + rowGap) + (isCompact ? 34 : 80),
+    nodeWidth: filledColumnWidth,
+    isCompact
   };
 }
 
-function ProjectArchitectureNode({ data }: NodeProps<ProjectArchitectureReactNode>): JSX.Element {
-  const node = data.node;
-  const label = node.displayLabel ?? node.label;
-  const Icon = projectArchitectureNodeIcon(node.kind);
+function buildProjectArchitectureFocus(
+  map: ProjectArchitectureMapModel,
+  selectedNodeId: string | undefined
+): ProjectArchitectureFocus {
+  if (!selectedNodeId) {
+    return { nodeIds: new Set(), edgeIds: new Set(), upstreamIds: [], downstreamIds: [] };
+  }
+
+  const upstreamIds = collectArchitectureReachable(map.logicalEdges, selectedNodeId, "upstream");
+  const downstreamIds = collectArchitectureReachable(map.logicalEdges, selectedNodeId, "downstream");
+  const nodeIds = new Set([selectedNodeId, ...upstreamIds, ...downstreamIds]);
+  const edgeIds = new Set(
+    map.logicalEdges
+      .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
+      .map((edge) => edge.id)
+  );
+
+  return { nodeIds, edgeIds, upstreamIds, downstreamIds };
+}
+
+function collectArchitectureReachable(
+  edges: ProjectArchitectureMapEdge[],
+  nodeId: string,
+  direction: "upstream" | "downstream"
+): string[] {
+  const result: string[] = [];
+  const visited = new Set<string>([nodeId]);
+  const queue = [nodeId];
+
+  while (queue.length > 0) {
+    const current = queue.shift() ?? "";
+    const nextEdges =
+      direction === "downstream"
+        ? edges.filter((edge) => edge.source === current)
+        : edges.filter((edge) => edge.target === current);
+
+    for (const edge of nextEdges) {
+      const nextId = direction === "downstream" ? edge.target : edge.source;
+      if (visited.has(nextId)) continue;
+      visited.add(nextId);
+      result.push(nextId);
+      queue.push(nextId);
+    }
+  }
+
+  return result;
+}
+
+function ProjectArchitectureMapStats({
+  map,
+  model
+}: {
+  map: ProjectArchitectureMapModel;
+  model: ProjectWorkspaceViewModel;
+}): JSX.Element {
+  const stats = [
+    { label: "Pages", value: model.totals.pages },
+    { label: "Requests", value: map.columnCounts.get("requests") ?? 0 },
+    { label: "API", value: map.columnCounts.get("api") ?? 0 },
+    { label: "Controllers", value: map.columnCounts.get("controllers") ?? 0 },
+    { label: "Services", value: map.columnCounts.get("services") ?? 0 },
+    { label: "Mappers", value: map.columnCounts.get("repository") ?? 0 },
+    { label: "Results", value: map.columnCounts.get("result") ?? 0 }
+  ];
 
   return (
-    <article
-      className={`project-architecture-node project-architecture-node--${node.kind}`}
-      title={`${node.label}${node.source?.filePath ? ` · ${node.source.filePath}` : ""}`}
-    >
-      <Handle
-        className="project-architecture-handle"
-        id="left"
-        position={Position.Left}
-        type="target"
-      />
-      <span className="project-architecture-node__icon">
-        <Icon size={15} />
-      </span>
-      <div>
-        <strong>{label}</strong>
-        <span>{node.kind}</span>
-      </div>
-      {node.connectionCount > 2 ? <em>{node.connectionCount}</em> : null}
-      <Handle
-        className="project-architecture-handle"
-        id="right"
-        position={Position.Right}
-        type="source"
-      />
-    </article>
+    <dl>
+      {stats.map((stat) => (
+        <div key={stat.label}>
+          <dt>{stat.label}</dt>
+          <dd>{stat.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
-function ProjectArchitectureEdge({
-  data,
-  sourcePosition,
-  sourceX,
-  sourceY,
-  targetPosition,
-  targetX,
-  targetY
-}: EdgeProps<ProjectArchitectureReactEdge>): JSX.Element {
-  const [path] = getSmoothStepPath({
-    borderRadius: 12,
-    offset: 18,
-    sourcePosition,
-    sourceX,
-    sourceY,
-    targetPosition,
-    targetX,
-    targetY
-  });
-  const role = data?.edge.role ?? "primary";
+function ProjectArchitectureMapNode({
+  focus,
+  node,
+  onSelect,
+  selected
+}: {
+  focus: ProjectArchitectureFocus;
+  node: ProjectArchitectureMapNode;
+  onSelect: (nodeId: string) => void;
+  selected: boolean;
+}): JSX.Element {
+  const Icon = projectArchitectureNodeIcon(node.kind);
+  const muted = focus.nodeIds.size > 0 && !focus.nodeIds.has(node.id);
+  const shared = node.upstreamCount > 1 || node.downstreamCount > 1;
 
   return (
-    <BaseEdge
-      className={`project-architecture-edge project-architecture-edge--${role}`}
-      path={path}
+    <button
+      className={`anlyx-map-node${selected ? " is-selected" : ""}${muted ? " is-muted" : ""}`}
+      onClick={() => onSelect(node.id)}
+      style={{ left: node.x, top: node.y, width: node.width, minHeight: node.height }}
+      title={`${node.label}${node.source?.filePath ? ` · ${node.source.filePath}` : ""}`}
+      type="button"
+    >
+      <span className="anlyx-map-node__icon" aria-hidden="true">
+        <Icon size={15} />
+      </span>
+      <span className="anlyx-map-node__body">
+        <span className="anlyx-map-node__layer">{projectArchitectureKindLabel(node.kind)}</span>
+        <strong>{node.displayLabel ?? node.label}</strong>
+        <small>{node.subtitle}</small>
+      </span>
+      <span className={`anlyx-map-evidence anlyx-map-evidence--${node.evidenceStatus}`}>
+        {node.evidenceLabel}
+      </span>
+      {shared ? <span className="anlyx-map-node__degree">{node.connectionCount}</span> : null}
+    </button>
+  );
+}
+
+function ProjectArchitectureMapEdge({
+  edge,
+  focus
+}: {
+  edge: ProjectArchitectureMapEdge;
+  focus: ProjectArchitectureFocus;
+}): JSX.Element {
+  const selected = focus.edgeIds.has(edge.id);
+  const muted = focus.edgeIds.size > 0 && !selected;
+  const sourceX = edge.sourceNode.x + edge.sourceNode.width;
+  const sourceY = edge.sourceNode.y + edge.sourceNode.height / 2;
+  const targetX = edge.targetNode.x;
+  const targetY = edge.targetNode.y + edge.targetNode.height / 2;
+  const path = createProjectArchitectureOrthogonalPath(sourceX, sourceY, edge.routeX, targetX, targetY);
+  const role = edge.role ?? "primary";
+  const status = projectArchitectureEdgeStatus(edge);
+  const visualRole =
+    status === "not-proven" || status === "unknown"
+      ? "unknown"
+      : role === "shared" || edge.targetNode.upstreamCount > 1
+        ? "shared"
+        : "primary";
+
+  return (
+    <path
+      className={`anlyx-map-edge anlyx-map-edge--${visualRole}${selected ? " is-selected" : ""}${
+        muted ? " is-muted" : ""
+      }`}
+      d={path}
     />
   );
+}
+
+function createProjectArchitectureOrthogonalPath(
+  sourceX: number,
+  sourceY: number,
+  routeX: number,
+  targetX: number,
+  targetY: number
+): string {
+  return `M ${sourceX} ${sourceY} H ${routeX} V ${targetY} H ${targetX}`;
+}
+
+function projectArchitectureEdgeStatus(
+  edge: ProjectArchitectureMapEdge
+): ProjectData["evidence"][number]["status"] | "unknown" {
+  if (edge.confidence === "low") return "not-proven";
+  if (edge.sourceNode.evidenceStatus === "not-proven" || edge.targetNode.evidenceStatus === "not-proven") {
+    return "not-proven";
+  }
+  if (edge.sourceNode.evidenceStatus === "unknown" || edge.targetNode.evidenceStatus === "unknown") {
+    return "unknown";
+  }
+  return edge.targetNode.evidenceStatus;
+}
+
+function ProjectArchitectureInspector({
+  focus,
+  node,
+  nodesById,
+  onClose
+}: {
+  focus: ProjectArchitectureFocus;
+  node: ProjectArchitectureMapNode | undefined;
+  nodesById: Map<string, ProjectArchitectureMapNode>;
+  onClose: () => void;
+}): JSX.Element {
+  if (!node) {
+    return (
+      <aside className="anlyx-map-inspector" aria-label="Map inspector">
+        <button className="anlyx-map-inspector__close" onClick={onClose} type="button">
+          Close
+        </button>
+        <h2>No node selected</h2>
+      </aside>
+    );
+  }
+
+  const upstream = focus.upstreamIds.map((id) => nodesById.get(id)).filter(Boolean);
+  const downstream = focus.downstreamIds.map((id) => nodesById.get(id)).filter(Boolean);
+  const contract = projectArchitectureNodeContract(node);
+
+  return (
+    <aside className="anlyx-map-inspector" aria-label="Map inspector">
+      <header>
+        <div>
+          <span>Selected</span>
+          <h2>{node.displayLabel ?? node.label}</h2>
+        </div>
+        <button className="anlyx-map-inspector__close" onClick={onClose} type="button">
+          Close
+        </button>
+      </header>
+      <dl className="anlyx-map-inspector__meta">
+        <div>
+          <dt>Layer</dt>
+          <dd>{projectArchitectureKindLabel(node.kind)}</dd>
+        </div>
+        <div>
+          <dt>Title</dt>
+          <dd>{node.label}</dd>
+        </div>
+        <div>
+          <dt>Path</dt>
+          <dd>{formatProjectArchitectureSource(node.source) ?? "Not authored"}</dd>
+        </div>
+        <div>
+          <dt>Evidence</dt>
+          <dd>{node.evidenceLabel}</dd>
+        </div>
+      </dl>
+      <ProjectArchitectureContractSection contract={contract} />
+      <section>
+        <h3>Upstream</h3>
+        <ProjectArchitectureInspectorList emptyLabel="No upstream nodes." nodes={upstream} />
+      </section>
+      <section>
+        <h3>Downstream path</h3>
+        <ProjectArchitectureInspectorList emptyLabel="No downstream nodes." nodes={downstream} ordered />
+      </section>
+    </aside>
+  );
+}
+
+type ProjectArchitectureDataShape = Record<string, string>;
+type ProjectArchitectureNodeContract = {
+  endpoint: string | undefined;
+  inputName: string | undefined;
+  inputKind: string | undefined;
+  inputShape: ProjectArchitectureDataShape | undefined;
+  outputName: string | undefined;
+  outputKind: string | undefined;
+  outputShape: ProjectArchitectureDataShape | undefined;
+  relatedModels: string[];
+  transforms: string[];
+  mapping: string | undefined;
+};
+
+function ProjectArchitectureContractSection({
+  contract
+}: {
+  contract: ProjectArchitectureNodeContract;
+}): JSX.Element {
+  const hasContract =
+    Boolean(contract.endpoint) ||
+    Boolean(contract.inputName) ||
+    Boolean(contract.outputName) ||
+    contract.relatedModels.length > 0 ||
+    contract.transforms.length > 0 ||
+    Boolean(contract.mapping) ||
+    Boolean(contract.inputShape) ||
+    Boolean(contract.outputShape);
+
+  return (
+    <section className="anlyx-map-contract">
+      <h3>Data Contract</h3>
+      {hasContract ? (
+        <div className="anlyx-map-contract__body">
+          {contract.endpoint ? (
+            <ProjectArchitectureContractField label="Endpoint" value={contract.endpoint} />
+          ) : null}
+          <ProjectArchitectureContractField
+            label="Input"
+            value={formatProjectArchitectureContractName(contract.inputName, contract.inputKind)}
+          />
+          <ProjectArchitectureContractField
+            label="Output"
+            value={formatProjectArchitectureContractName(contract.outputName, contract.outputKind)}
+          />
+          <ProjectArchitectureShapePreview shape={contract.outputShape ?? contract.inputShape} />
+          {contract.mapping ? (
+            <ProjectArchitectureContractField label="Mapping" value={contract.mapping} />
+          ) : null}
+          {contract.transforms.length > 0 ? (
+            <div className="anlyx-map-contract__group">
+              <span>Transforms</span>
+              <ul>
+                {contract.transforms.slice(0, 6).map((transform) => (
+                  <li key={transform}>{transform}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {contract.relatedModels.length > 0 ? (
+            <div className="anlyx-map-contract__group">
+              <span>Models</span>
+              <ul>
+                {contract.relatedModels.slice(0, 8).map((model) => (
+                  <li key={model}>{model}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <p className="project-muted">No contract authored.</p>
+      )}
+    </section>
+  );
+}
+
+function ProjectArchitectureContractField({
+  label,
+  value
+}: {
+  label: string;
+  value: string | undefined;
+}): JSX.Element {
+  return (
+    <div className="anlyx-map-contract__field">
+      <span>{label}</span>
+      <strong>{value ?? "No contract authored"}</strong>
+    </div>
+  );
+}
+
+function ProjectArchitectureShapePreview({
+  shape
+}: {
+  shape: ProjectArchitectureDataShape | undefined;
+}): JSX.Element | null {
+  if (!shape) {
+    return null;
+  }
+
+  const entries = Object.entries(shape).slice(0, 8);
+  if (entries.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="anlyx-map-contract__shape">
+      <span>Shape</span>
+      <pre>
+        {entries.map(([key, value]) => `${key}: ${value}`).join("\n")}
+        {Object.keys(shape).length > entries.length ? "\n..." : ""}
+      </pre>
+    </div>
+  );
+}
+
+function ProjectArchitectureInspectorList({
+  emptyLabel,
+  nodes,
+  ordered = false
+}: {
+  emptyLabel: string;
+  nodes: Array<ProjectArchitectureMapNode | undefined>;
+  ordered?: boolean;
+}): JSX.Element {
+  const visibleNodes = nodes.filter((node): node is ProjectArchitectureMapNode => Boolean(node));
+
+  if (visibleNodes.length === 0) {
+    return <p className="project-muted">{emptyLabel}</p>;
+  }
+
+  return (
+    <ol className={ordered ? "anlyx-map-path-list" : "anlyx-map-node-list"}>
+      {visibleNodes.slice(0, 8).map((node) => (
+        <li key={node.id}>
+          <strong>{node.displayLabel ?? node.label}</strong>
+          <span>{projectArchitectureKindLabel(node.kind)}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function projectArchitectureNodeContract(
+  node: ProjectArchitectureMapNode
+): ProjectArchitectureNodeContract {
+  const metadata = recordFromUnknown(node.metadata);
+  const contractRoot = recordFromUnknown(metadata?.["contracts"]) ?? metadata;
+  const input = contractItemFromUnknown(contractRoot?.["input"]);
+  const output = contractItemFromUnknown(contractRoot?.["output"]);
+
+  return {
+    endpoint: metadataString(contractRoot?.["endpoint"]),
+    inputName: input.name,
+    inputKind: input.kind,
+    inputShape: input.shape,
+    outputName: output.name,
+    outputKind: output.kind,
+    outputShape: output.shape,
+    relatedModels:
+      getStringList(contractRoot?.["relatedModels"]).length > 0
+        ? getStringList(contractRoot?.["relatedModels"])
+        : getStringList(contractRoot?.["models"]),
+    transforms: getStringList(contractRoot?.["transforms"]),
+    mapping: metadataString(contractRoot?.["mapping"])
+  };
+}
+
+function contractItemFromUnknown(value: unknown): {
+  name: string | undefined;
+  kind: string | undefined;
+  shape: ProjectArchitectureDataShape | undefined;
+} {
+  if (typeof value === "string") {
+    return { name: value, kind: undefined, shape: undefined };
+  }
+
+  const record = recordFromUnknown(value);
+  if (!record) {
+    return { name: undefined, kind: undefined, shape: undefined };
+  }
+
+  return {
+    name: metadataString(record["name"]),
+    kind: metadataString(record["kind"]),
+    shape: shapeFromUnknown(record["shape"])
+  };
+}
+
+function shapeFromUnknown(value: unknown): ProjectArchitectureDataShape | undefined {
+  const record = recordFromUnknown(value);
+  if (!record) {
+    return undefined;
+  }
+
+  const entries = Object.entries(record)
+    .map(([key, item]) => [key, typeof item === "string" ? item : JSON.stringify(item)] as const)
+    .filter((entry): entry is readonly [string, string] => typeof entry[1] === "string");
+
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
+function recordFromUnknown(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function formatProjectArchitectureContractName(name: string | undefined, kind: string | undefined): string | undefined {
+  if (!name) {
+    return undefined;
+  }
+
+  return kind ? `${name} (${kind})` : name;
+}
+
+function projectArchitectureEvidenceStatus(
+  evidenceIds: string[],
+  evidenceById: Map<string, ProjectData["evidence"][number]>
+): ProjectData["evidence"][number]["status"] | "unknown" {
+  const statuses = evidenceIds
+    .map((id) => evidenceById.get(id)?.status)
+    .filter((status): status is ProjectData["evidence"][number]["status"] => Boolean(status));
+
+  if (statuses.includes("source-matched")) return "source-matched";
+  if (statuses.includes("observed")) return "observed";
+  if (statuses.includes("measured")) return "measured";
+  if (statuses.includes("agent-inferred")) return "agent-inferred";
+  if (statuses.includes("not-proven")) return "not-proven";
+  return "unknown";
+}
+
+function projectArchitectureNodeSubtitle(node: ProjectArchitectureSourceNode): string {
+  const module = metadataString(node.metadata?.["module"]);
+  const path = metadataString(node.metadata?.["path"]);
+  const detail = metadataString(node.metadata?.["detail"]);
+  return module ?? path ?? detail ?? node.domain ?? node.id;
+}
+
+function formatProjectArchitectureSource(
+  source: ProjectArchitectureSourceNode["source"] | undefined
+): string | undefined {
+  if (!source) return undefined;
+  const line = source.lineStart ? `:${source.lineStart}` : "";
+  const symbol = source.symbol ? ` ${source.symbol}` : "";
+  return `${source.filePath}${line}${symbol}`;
+}
+
+function projectArchitectureKindLabel(kind: ProjectArchitectureSourceNode["kind"]): string {
+  const labels: Record<ProjectArchitectureSourceNode["kind"], string> = {
+    frontend: "Page",
+    request: "HTTP",
+    api: "API",
+    controller: "CTRL",
+    handler: "Handler",
+    middleware: "Middleware",
+    service: "SRV",
+    policy: "Policy",
+    mapper: "Map",
+    repository: "Repo",
+    database: "Data",
+    cache: "Cache",
+    queue: "Queue",
+    job: "Job",
+    external: "External",
+    result: "UI",
+    unknown: "Unknown"
+  };
+
+  return labels[kind] ?? titleCase(kind);
 }
 
 function projectArchitectureNodeIcon(kind: ProjectArchitectureSourceNode["kind"]): LucideIcon {

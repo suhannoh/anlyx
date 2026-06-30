@@ -253,6 +253,83 @@ Edge roles:
 Avoid disconnected nodes unless they are intentionally important and the missing
 relationship is documented as unknown.
 
+### Optional Map Inspector Data Contracts
+
+The Map canvas should stay focused on the full project structure. If you know
+what a node receives or returns, add compact optional contract metadata so the
+right inspector can explain DTOs, entities, JSON shapes, and transforms.
+
+Do not make this metadata mandatory. Many projects will not expose enough source
+or schema information to prove every DTO. Missing contract metadata is valid and
+will be shown as `No contract authored`.
+
+Recommended shape:
+
+```json
+{
+  "id": "node.project-api",
+  "kind": "api",
+  "label": "GET /api/project-data",
+  "displayLabel": "Project data",
+  "metadata": {
+    "contracts": {
+      "endpoint": "GET /api/project-data",
+      "input": {
+        "name": "None",
+        "shape": null
+      },
+      "output": {
+        "name": "ProjectData",
+        "kind": "dto",
+        "shape": {
+          "schemaVersion": "string",
+          "project": "ProjectInfo",
+          "pages": "ProjectPage[]",
+          "features": "ProjectFeature[]",
+          "architecture": "ArchitectureGraph"
+        }
+      },
+      "relatedModels": [
+        "ProjectData",
+        "ArchitectureNode",
+        "ArchitectureEdge"
+      ]
+    }
+  },
+  "confidence": "high"
+}
+```
+
+For service or mapper nodes, prefer short transform summaries:
+
+```json
+{
+  "metadata": {
+    "contracts": {
+      "input": { "name": "anlyx.project.json" },
+      "output": { "name": "ProjectData", "kind": "dto" },
+      "transforms": [
+        "validate schema",
+        "normalize split files",
+        "build workspace model"
+      ],
+      "mapping": "Raw split files -> normalized project model"
+    }
+  }
+}
+```
+
+Rules:
+
+- Use relative paths, DTO names, entity names, and redacted shape summaries.
+- Keep `shape` to the important 5-8 fields. Do not paste full source types.
+- Use `source-matched` evidence only when the DTO/entity/shape is backed by
+  source, schema, OpenAPI, or generated types.
+- Use `agent-inferred` or omit fields when the model relationship is a reasoned
+  guess.
+- Never include secrets, sample production records, tokens, cookies, or personal
+  data in shapes.
+
 ## Evidence
 
 Evidence keeps Anlyx honest.
