@@ -1,6 +1,6 @@
 {
   "name": "@anlyx/core",
-  "version": "0.1.5",
+  "version": "0.1.6-beta.1",
   "description": "Core Project JSON schemas, validation, normalization, and local data contracts for Anlyx.",
   "license": "MIT",
   "type": "module",
@@ -30,6 +30,11 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./project-validation": {
+      "types": "./dist/project-validation.d.ts",
+      "import": "./dist/project-validation.js",
+      "default": "./dist/project-validation.js"
     }
   },
   "dependencies": {

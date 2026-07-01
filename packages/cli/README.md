@@ -14,7 +14,8 @@ The current primary path is Project JSON first. New setups should start from
 ## Quick Start
 
 ```bash
-npm install -D anlyx
+npm install -D anlyx@beta
+npx anlyx prompt init
 npx anlyx validate anlyx.project.json
 npx anlyx import anlyx.project.json
 npx anlyx dev
@@ -50,6 +51,8 @@ Primary:
 
 ```bash
 npx anlyx init
+npx anlyx prompt init
+npx anlyx prompt refresh
 npx anlyx validate anlyx.project.json
 npx anlyx import anlyx.project.json
 npx anlyx dev

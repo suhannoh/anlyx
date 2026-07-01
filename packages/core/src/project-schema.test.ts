@@ -33,6 +33,57 @@ describe("projectDataSchema", () => {
     expect(parsed.schemaVersion).toBe("0.2.0");
     expect(parsed.project.name).toBe("App");
     expect(parsed.dictionary.defaultLanguage).toBe("en");
+    expect(parsed.overview).toEqual({
+      actors: [],
+      coreEntities: [],
+      mainAreas: [],
+      implementation: [],
+      suggestedReadingPath: [],
+      evidenceIds: []
+    });
+    expect(parsed.capabilities).toEqual([]);
+    expect(parsed.dataLifecycles).toEqual([]);
+    expect(parsed.impactMaps).toEqual([]);
+  });
+
+  it("parses the 0.3.0 project understanding contract", () => {
+    const parsed = parseProjectData({
+      schemaVersion: "0.3.0",
+      project: { id: "app", name: "App" },
+      areas: [],
+      pages: [],
+      features: [],
+      requests: [],
+      flows: [],
+      architecture: { nodes: [], edges: [] },
+      evidence: [],
+      measurements: [],
+      dictionary: { defaultLanguage: "en", terms: [] },
+      overview: {
+        summary: "A local project viewer.",
+        actors: [{ id: "actor.user", name: "User", role: "user" }],
+        coreEntities: [{ id: "entity.project-data", name: "ProjectData", kind: "core-entity" }]
+      },
+      capabilities: [
+        {
+          id: "capability.view-project",
+          actorRole: "user",
+          name: "View project",
+          status: "connected",
+          requestIds: [],
+          flowIds: [],
+          pageIds: [],
+          featureIds: [],
+          dataRefs: [{ kind: "model", name: "ProjectData", operation: "read" }]
+        }
+      ],
+      dataLifecycles: [],
+      impactMaps: []
+    });
+
+    expect(parsed.schemaVersion).toBe("0.3.0");
+    expect(parsed.overview.actors[0]?.name).toBe("User");
+    expect(parsed.capabilities[0]?.dataRefs[0]?.name).toBe("ProjectData");
   });
 
   it("keeps generated defaults isolated between parses", () => {

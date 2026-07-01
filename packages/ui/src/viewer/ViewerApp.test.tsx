@@ -103,11 +103,21 @@ describe("ViewerApp", () => {
   it("renders project workspace after successful project data fetch", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: true,
-        status: 200,
-        json: async () => mockProjectData
-      }))
+      vi.fn(async (url: string) => {
+        if (url === "/api/validation-report") {
+          return {
+            ok: false,
+            status: 404,
+            json: async () => ({})
+          };
+        }
+
+        return {
+          ok: true,
+          status: 200,
+          json: async () => mockProjectData
+        };
+      })
     );
 
     render(<ViewerApp />);

@@ -45,7 +45,7 @@ async function runBuiltCli(
 
 describe("built CLI entrypoint", () => {
   beforeAll(async () => {
-    await execFileAsync("corepack", ["pnpm", "-r", "--sort", "run", "build"], {
+    await execFileAsync("corepack", ["pnpm", "--filter", "anlyx", "build"], {
       cwd: repositoryRoot,
       timeout: 60_000
     });
@@ -179,7 +179,7 @@ describe("built CLI entrypoint", () => {
 
       expect(result.code).toBe(1);
       expect(result.stdout).toContain("Unknown command: scan");
-      expect(result.stdout).toContain("Available commands: init, validate, import, dev");
+      expect(result.stdout).toContain("Available commands: init, prompt, validate, import, dev");
       expect(result.stdout).not.toContain("scan (legacy)");
       expect(result.stderr).not.toContain("unsettled top-level await");
     });
@@ -289,6 +289,17 @@ function createValidProjectFile(): ProjectData {
     dictionary: {
       defaultLanguage: "en",
       terms: []
-    }
+    },
+    overview: {
+      actors: [],
+      coreEntities: [],
+      mainAreas: [],
+      implementation: [],
+      suggestedReadingPath: [],
+      evidenceIds: []
+    },
+    capabilities: [],
+    dataLifecycles: [],
+    impactMaps: []
   };
 }

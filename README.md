@@ -2,10 +2,11 @@
   <img src="./docs/assets/brand/anlyx-logo-card.png" alt="Anlyx" width="460" />
 </p>
 
-<h3 align="center">Agent writes project JSON. Anlyx makes it readable.</h3>
+<h3 align="center">Review AI-generated codebase maps locally.</h3>
 
 <p align="center">
-  A local architecture viewer for AI-agent-authored project maps, page stories, request flows, evidence, and optional timing.
+  Anlyx validates <code>anlyx.project.json</code> from your coding agent and opens
+  a local workspace for pages, API flows, architecture paths, evidence, and unknowns.
 </p>
 
 <p align="center">
@@ -31,11 +32,11 @@
 
 ## What It Does
 
-Anlyx is a local viewer for `anlyx.project.json`.
+Anlyx is a local viewer for reviewing AI-generated codebase maps.
 
-It is built for the AI Agent era: the user's coding agent inspects whatever
-framework the project uses, writes a structured project file, and Anlyx renders
-that file as a readable product workspace.
+It is built for the AI Agent era: ask your coding agent to inspect a repository
+and write `anlyx.project.json`. Anlyx validates that file and renders it as a
+local review workspace on `localhost:4777`.
 
 Anlyx answers:
 
@@ -44,28 +45,59 @@ What pages exist, what do they do, which requests do they trigger,
 how do those requests travel through the system, and what evidence supports it?
 ```
 
-Anlyx does not need to own every framework scanner. Instead:
+Anlyx is not an automatic deep scanner for every framework. Instead:
 
 - The user's AI Agent owns project analysis.
 - Anlyx owns the schema, validation, local viewer, and visual language.
 - Real project facts come from `anlyx.project.json`, not demo mocks.
 - Optional runtime measurements are shown only when measured data exists.
 
+## Fastest Start: Ask Your Coding Agent
+
+The recommended first run is not to hand-write JSON. Paste this into Codex,
+Claude Code, Cursor, or another coding agent inside the project you want to map:
+
+```txt
+Install Anlyx with npm install -D anlyx@beta.
+Read https://github.com/suhannoh/anlyx and the Project JSON agent guide.
+Analyze this repository and create anlyx.project.json.
+Include pages, requests, flows, architecture nodes, evidence, overview, and capabilities when you can support them.
+Do not invent facts. Mark uncertain links as agent-inferred, not-proven, or unknown.
+Run:
+  npx anlyx validate anlyx.project.json
+  npx anlyx import anlyx.project.json
+  npx anlyx dev
+Open http://localhost:4777 and report what is source-matched, inferred, or still unknown.
+
+Remember this shortcut for later:
+When I type "anlyx refresh", update the existing anlyx.project.json from current repository changes instead of recreating everything.
+```
+
+This is the core Anlyx workflow:
+
+```txt
+AI Agent analyzes your repo
+-> writes anlyx.project.json
+-> Anlyx validates and imports it
+-> localhost:4777 shows the local review workspace
+```
+
 ## Why Developers Use It
 
-| Instead of...                                      | Anlyx gives you...                                                        |
-| -------------------------------------------------- | ------------------------------------------------------------------------- |
-| Asking an agent for prose that disappears          | A validated project JSON file that can be reopened locally                |
-| Reading code before understanding the product      | Pages, features, requests, flows, evidence, and architecture in one place |
-| Mixing guessed paths with real evidence            | Explicit `observed`, `source-matched`, `agent-inferred`, and unknown data |
-| Waiting for one scanner to support every framework | Agent-authored JSON for any stack the user's agent can inspect            |
-| Sending architecture data to a remote service      | A local-only 4777 viewer                                                  |
-| Trusting fake timing                               | Timing disabled unless real `measurements` are present                    |
+| Instead of...                                                | Anlyx gives you...                                                        |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| Asking an agent for prose that disappears                    | A validated project JSON file that can be reopened locally                |
+| Reading code before understanding the product                | Pages, features, requests, flows, evidence, and architecture in one place |
+| Mixing guessed paths with real evidence                      | Explicit `observed`, `source-matched`, `agent-inferred`, and unknown data |
+| Waiting for one built-in analyzer to support every framework | Agent-authored JSON for any stack the user's agent can inspect            |
+| Sending architecture data to a remote service                | A local-only 4777 viewer                                                  |
+| Trusting fake timing                                         | Timing disabled unless real `measurements` are present                    |
 
 ## Quick Start
 
 ```bash
-npm install -D anlyx
+npm install -D anlyx@beta
+npx anlyx prompt init
 npx anlyx validate anlyx.project.json
 npx anlyx import anlyx.project.json
 npx anlyx dev
@@ -83,30 +115,53 @@ The primary file is:
 anlyx.project.json
 ```
 
+For later updates, ask your coding agent to run the refresh shortcut:
+
+```txt
+anlyx refresh
+```
+
+Or print a copy-ready refresh prompt from the CLI:
+
+```bash
+npx anlyx prompt refresh
+```
+
+The refresh workflow reads the existing `anlyx.project.json`, checks changed
+files first, preserves stable IDs, updates only affected sections, then runs
+validate/import again.
+
 For large projects, agents may split it under:
 
 ```txt
 .anlyx/project/
   index.json
+  project.json
+  overview.json
   pages.json
   features.json
+  capabilities.json
   requests.json
   flows.json
   architecture.json
   evidence.json
+  dataLifecycles.json
+  impactMaps.json
   measurements.json
   dictionary.json
 ```
 
 ## Current Viewer
 
-The local 4777 viewer is organized around three surfaces:
+The local 4777 viewer is organized around five surfaces:
 
-| Surface | Purpose                                                                                 |
-| ------- | --------------------------------------------------------------------------------------- |
-| Pages   | Product-readable page index, page story, features, requests, flow summary, and evidence |
-| Map     | Agent-authored architecture map from frontend/page/request to backend/data nodes        |
-| JSON    | Readable raw `anlyx.project.json` inspection surface                                    |
+| Surface      | Purpose                                                                                 |
+| ------------ | --------------------------------------------------------------------------------------- |
+| Pages        | Product-readable page index, page story, features, requests, flow summary, and evidence |
+| Map          | Agent-authored architecture map from frontend/page/request to backend/data nodes        |
+| Overview     | README-like project introduction from authored overview and stack facts                 |
+| Capabilities | Product behavior verification surface from authored capabilities                        |
+| JSON         | Readable raw `anlyx.project.json` inspection surface                                    |
 
 Timing is intentionally optional. If the project file has no real
 `measurements`, the UI shows timing as disabled rather than pretending that
@@ -132,9 +187,8 @@ Open http://localhost:4777.
 ```
 
 The agent may analyze Spring Boot, Next.js, Express, NestJS, FastAPI, Rails,
-Laravel, Django, or another stack. Anlyx does not require the framework to match
-Zup or any sample project. The output must match the Anlyx project JSON
-contract.
+Laravel, Django, or another stack. Anlyx does not require the project to match
+any sample app. The output must match the Anlyx Project JSON contract.
 
 ## Data Contract
 
@@ -142,15 +196,19 @@ The top-level shape is:
 
 ```json
 {
-  "schemaVersion": "0.2.0",
+  "schemaVersion": "0.3.0",
   "project": {},
+  "overview": {},
   "areas": [],
   "pages": [],
   "features": [],
+  "capabilities": [],
   "requests": [],
   "flows": [],
   "architecture": {},
   "evidence": [],
+  "dataLifecycles": [],
+  "impactMaps": [],
   "measurements": [],
   "dictionary": { "defaultLanguage": "en", "terms": [] }
 }
@@ -212,3 +270,6 @@ See [`CONTRIBUTING.md`](./CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](./CODE_OF_CON
 the [`Adapter Development Guide`](./docs/adapters/adapter-development.md).
 
 ## Release Notes
+
+See [`docs/release/v0.1.6-beta.1.md`](./docs/release/v0.1.6-beta.1.md) for the
+current beta release notes draft.

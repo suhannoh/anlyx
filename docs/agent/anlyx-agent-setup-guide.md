@@ -30,7 +30,9 @@ Anlyx provides:
 
 - Local viewer/runtime on port `4777`.
 - JSON schema and validation.
-- Pages, Map, and JSON viewer surfaces.
+- Pages, Map, Overview, Capabilities, and JSON viewer surfaces.
+- Optional Data Lifecycle and Impact Map contract data may exist, but they are
+  not primary navigation surfaces in the default viewer.
 - Evidence, confidence, and timing-disabled states.
 
 The installing AI Agent provides:
@@ -54,10 +56,11 @@ Agents MUST report the completed level.
 Complete when:
 
 - `anlyx.project.json` exists in the project root.
-- It follows schema version `0.2.0`.
+- It follows schema version `0.2.0` or `0.3.0`.
 - Validation/import succeeds.
 - `anlyx dev` opens the 4777 viewer.
-- The viewer shows Pages, Map, and JSON from the authored project file.
+- The viewer shows authored project surfaces from the project file. Pages, Map,
+  Overview, Capabilities, and JSON should render in the default viewer.
 
 This is the default expected setup.
 
@@ -94,6 +97,8 @@ Before writing files, inspect the target project and identify:
 - Frameworks and routing systems.
 - Source directories.
 - Page/route list.
+- Detected page/route count, frontend API usage count, and backend endpoint
+  count.
 - API clients, route handlers, controllers, services, repositories, jobs,
   database models/tables, and external systems.
 - Whether the project contains sensitive data that should be excluded.
@@ -129,6 +134,7 @@ For large projects, split files may be used:
   evidence.json
   measurements.json
   dictionary.json
+  coverage.json
 ```
 
 The CLI may normalize split files into `anlyx.project.json`.
@@ -138,8 +144,9 @@ The CLI may normalize split files into `anlyx.project.json`.
 Preferred local setup:
 
 ```bash
-npm install -D anlyx
+npm install -D anlyx@beta
 npx anlyx init
+npx anlyx prompt init
 npx anlyx validate anlyx.project.json
 npx anlyx import anlyx.project.json
 npx anlyx dev
@@ -154,6 +161,21 @@ http://localhost:4777
 If the published npm package is behind the repository, report that directly.
 Do not fall back to removed scanner commands or invent project data.
 
+Prompt helpers:
+
+```bash
+npx anlyx prompt init
+npx anlyx prompt refresh
+```
+
+`prompt init` prints the copy-ready first setup prompt. `prompt refresh` prints
+the update prompt for an existing `anlyx.project.json`.
+
+When the user later types `anlyx refresh` in an AI coding Agent, treat that as
+the shortcut for the refresh workflow: read the existing project file, inspect
+only relevant changed files first, preserve stable IDs, update only affected
+sections, validate, import, and report remaining uncertainty.
+
 ## Authoring Workflow
 
 1. Discover project pages/routes.
@@ -167,8 +189,9 @@ Do not fall back to removed scanner commands or invent project data.
 7. Attach evidence and confidence to important claims.
 8. Leave `measurements: []` unless real measurements exist.
 9. Validate and import.
-10. Open the 4777 viewer and confirm Pages, Map, and JSON match the authored
-    file.
+10. Open the 4777 viewer and confirm the authored surfaces match the file.
+    Pages, Map, and JSON should always be checked; optional `0.3.0` surfaces
+    should be checked when authored.
 
 ## Request Role Rules
 
@@ -207,6 +230,16 @@ unknown
 ```
 
 Source evidence is not measured runtime evidence.
+
+`source-matched` requires a real file path, a real symbol or endpoint match, and
+an actual line number. Do not use `lineStart: 1` as a placeholder. If the Agent
+cannot verify the file, symbol, endpoint, or line, use `agent-inferred`,
+`not-proven`, or `unknown` instead.
+
+If the authored JSON covers only part of the detected project, add
+`coverage.status = "partial"` with detected and modeled counts. Import writes
+`.anlyx/validation-report.json`; review its source and coverage warnings before
+claiming setup is complete.
 
 ## Timing Rules
 

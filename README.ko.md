@@ -2,11 +2,11 @@
   <img src="./docs/assets/brand/anlyx-logo-card.png" alt="Anlyx" width="460" />
 </p>
 
-<h3 align="center">AI Agent가 작성한 Project JSON을 로컬 아키텍처 뷰어로 봅니다.</h3>
+<h3 align="center">AI가 만든 코드베이스 지도를 로컬에서 검토합니다.</h3>
 
 <p align="center">
-  Anlyx는 사용자의 AI Agent가 분석한 프로젝트 구조를 <code>anlyx.project.json</code>으로 받아
-  <code>localhost:4777</code>에서 Pages, Map, JSON 화면으로 시각화합니다.
+  Anlyx는 코딩 에이전트가 작성한 <code>anlyx.project.json</code>을 검증하고,
+  <code>localhost:4777</code>에서 페이지, API 흐름, 아키텍처, 근거, 불확실성을 검토할 수 있게 보여줍니다.
 </p>
 
 <p align="center">
@@ -32,19 +32,50 @@
 
 ## 무엇을 하나요?
 
-Anlyx는 framework scanner가 아닙니다. 사용자의 AI Agent가 프로젝트를 읽고,
-정해진 계약에 맞춰 `anlyx.project.json`을 작성하면 Anlyx가 그 데이터를
-로컬 4777 viewer에서 이해하기 쉬운 제품 화면으로 렌더링합니다.
+Anlyx는 모든 프레임워크를 직접 자동 분석하는 도구가 아닙니다. 사용자의
+코딩 에이전트가 프로젝트를 읽고 `anlyx.project.json`을 작성하면, Anlyx가
+그 파일을 검증한 뒤 로컬 4777 viewer에서 검토 가능한 화면으로 보여줍니다.
 
 ```txt
 Project JSON -> validate -> import -> localhost:4777 viewer
 ```
 
-viewer는 세 가지 화면을 제공합니다.
+viewer는 다섯 가지 화면을 제공합니다.
 
 - `Pages`: 페이지별 목적, 기능, 요청, 대표 backend path를 읽습니다.
 - `Map`: frontend request에서 API, Controller, Service, Repository, DB까지 이어지는 구조를 봅니다.
+- `Overview`: 프로젝트 소개, authored stack, 핵심 사용 흐름을 간결하게 봅니다.
+- `Capabilities`: 제품 행동이 어떤 entry, request, data, evidence와 연결되는지 확인합니다.
 - `JSON`: 현재 로딩된 Project JSON과 split JSON 파일을 확인합니다.
+
+## 가장 빠른 시작: 코딩 에이전트에게 맡기기
+
+처음부터 사람이 JSON을 직접 작성할 필요는 없습니다. 분석하려는 프로젝트에서
+Codex, Claude Code, Cursor 같은 코딩 에이전트에게 아래 프롬프트를 붙여넣으세요.
+
+```txt
+npm install -D anlyx@beta로 Anlyx를 설치해 주세요.
+https://github.com/suhannoh/anlyx 문서와 Project JSON agent guide를 확인해 주세요.
+이 저장소를 분석해서 anlyx.project.json을 작성해 주세요.
+근거가 있는 범위에서 pages, requests, flows, architecture, evidence, overview, capabilities를 채워 주세요.
+확실하지 않은 연결은 agent-inferred, not-proven, unknown으로 남겨 주세요.
+아래 명령을 실행해 주세요.
+  npx anlyx validate anlyx.project.json
+  npx anlyx import anlyx.project.json
+  npx anlyx dev
+http://localhost:4777을 열고 무엇이 근거 확인됐고, 무엇이 추정이며, 무엇이 아직 불확실한지 보고해 주세요.
+
+나중에 제가 "anlyx refresh"라고 말하면 기존 anlyx.project.json을 다시 만들지 말고 현재 변경분만 반영해 주세요.
+```
+
+Anlyx의 기본 흐름은 이렇습니다.
+
+```txt
+AI Agent가 저장소 분석
+-> anlyx.project.json 작성
+-> Anlyx가 검증하고 가져오기
+-> localhost:4777에서 로컬 검토
+```
 
 ## 왜 쓰나요?
 
@@ -52,14 +83,15 @@ viewer는 세 가지 화면을 제공합니다.
 | ------------------------------------------- | ------------------------------------------------------------------- |
 | AI Agent 설명이 긴 텍스트로만 남았습니다    | Agent가 작성한 JSON을 검증 가능한 화면으로 렌더링합니다             |
 | 프론트 요청과 백엔드 레이어를 따로 봤습니다 | 요청, API, Controller, Service, Repository, DB를 한 흐름으로 봅니다 |
-| 프로젝트마다 framework가 달라 막혔습니다    | 분석은 사용자의 AI Agent가 맡고, Anlyx는 공통 JSON 계약만 봅니다    |
+| 프로젝트마다 기술 스택이 달라 막혔습니다    | 분석은 사용자의 AI Agent가 맡고, Anlyx는 공통 JSON 계약만 봅니다    |
 | 개발자가 아니면 구조 파악이 어려웠습니다    | 기획자, 신입, 리뷰어도 Pages/Map으로 구조를 읽을 수 있습니다        |
 | 근거와 추정이 섞였습니다                    | source-matched, agent-inferred, observed, not-proven을 분리합니다   |
 
 ## 빠른 시작
 
 ```bash
-npm install -D anlyx
+npm install -D anlyx@beta
+npx anlyx prompt init
 npx anlyx validate anlyx.project.json
 npx anlyx import anlyx.project.json
 npx anlyx dev
@@ -71,6 +103,21 @@ Agent 작성 가이드는
 [`docs/agent/anlyx-project-json-agent-guide.md`](./docs/agent/anlyx-project-json-agent-guide.md)에 있습니다.
 데이터 계약은 [`docs/contracts/data-contract.md`](./docs/contracts/data-contract.md)를 기준으로 합니다.
 
+나중에 프로젝트가 바뀌면 AI Agent에게 이렇게 말하면 됩니다.
+
+```txt
+anlyx refresh
+```
+
+또는 CLI에서 업데이트용 프롬프트를 출력할 수 있습니다.
+
+```bash
+npx anlyx prompt refresh
+```
+
+refresh 흐름은 기존 `anlyx.project.json`을 먼저 읽고, 변경된 파일을 우선 확인한 뒤,
+기존 ID를 유지하면서 바뀐 pages, requests, flows, architecture, evidence만 갱신합니다.
+
 ## 핵심 원칙
 
 - Anlyx는 프로젝트 데이터를 추측하지 않습니다.
@@ -78,7 +125,7 @@ Agent 작성 가이드는
 - Anlyx는 `anlyx.project.json`과 `.anlyx/project/*.json`을 읽어 시각화합니다.
 - 확실하지 않은 정보는 `unknown`, `not-proven`, `agent-inferred`로 남깁니다.
 - timing은 실제 measurement가 있을 때만 활성화합니다. 1차 버전에서는 기본 비활성입니다.
-- secret, token, cookie, 실제 개인정보 payload는 JSON에 넣지 않습니다.
+- 비밀값, token, cookie, 운영 데이터, 실제 개인정보는 JSON에 넣지 않습니다.
 - 모든 처리는 로컬 중심입니다. GitHub나 외부 서비스 업로드를 요구하지 않습니다.
 
 ## Project JSON 구조
@@ -87,15 +134,19 @@ Agent 작성 가이드는
 
 ```json
 {
-  "schemaVersion": "0.2.0",
+  "schemaVersion": "0.3.0",
   "project": {},
+  "overview": {},
   "areas": [],
   "pages": [],
   "features": [],
+  "capabilities": [],
   "requests": [],
   "flows": [],
   "architecture": {},
   "evidence": [],
+  "dataLifecycles": [],
+  "impactMaps": [],
   "measurements": [],
   "dictionary": { "defaultLanguage": "en", "terms": [] }
 }
@@ -105,12 +156,16 @@ Agent 작성 가이드는
 
 ```txt
 .anlyx/project/project.json
+.anlyx/project/overview.json
 .anlyx/project/pages.json
 .anlyx/project/features.json
+.anlyx/project/capabilities.json
 .anlyx/project/requests.json
 .anlyx/project/flows.json
 .anlyx/project/architecture.json
 .anlyx/project/evidence.json
+.anlyx/project/dataLifecycles.json
+.anlyx/project/impactMaps.json
 .anlyx/project/dictionary.json
 ```
 
@@ -122,6 +177,8 @@ Agent 작성 가이드는
 | ------------ | --------------------------------------------------------- |
 | Pages        | 페이지 인덱스, 페이지 설명, 기능, 요청, 대표 Flow Summary |
 | Map          | frontend-to-data layered architecture map                 |
+| Overview     | 프로젝트 소개, authored stack, 핵심 검사 흐름             |
+| Capabilities | 제품 행동, entry/request/data/evidence 연결 확인          |
 | JSON         | Project JSON 파일 목록, raw JSON, schema/count metadata   |
 | Status strip | source file, AI Agent, confidence, last analysis          |
 
@@ -188,3 +245,7 @@ corepack pnpm -r build
 
 [`CONTRIBUTING.md`](./CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md),
 [`SECURITY.md`](./SECURITY.md), [`Roadmap`](./docs/product/roadmap.md)을 참고하세요.
+
+## 릴리즈 노트
+
+현재 베타 릴리즈 초안은 [`docs/release/v0.1.6-beta.1.md`](./docs/release/v0.1.6-beta.1.md)를 참고하세요.

@@ -155,11 +155,17 @@ anlyx.project.json
 -> localhost:4777
 ```
 
-The viewer is organized around `Pages`, `Map`, and `JSON`:
+The viewer is organized around `Pages`, `Map`, `Overview`, `Capabilities`, and `JSON`:
 
-- `Pages` is the default product-readable workspace.
+- `Pages` remains the default page-by-page technical workspace.
 - `Map` shows agent-authored architecture relationships.
+- `Overview` is a README-like project introduction surface.
+- `Capabilities` is a product behavior verification surface.
 - `JSON` exposes the raw Project JSON for agent/human inspection.
+
+`Data Lifecycle` and `Impact Map` may remain in the Project JSON contract as
+optional authored data, but they are not primary navigation surfaces in the
+default viewer.
 
 Previous live-capture experiments are historical work. They must not be
 described as the primary path.
@@ -172,7 +178,7 @@ Project JSON is the primary support path.
 
 Anlyx must:
 
-- Validate schema version `0.2.0`
+- Validate schema versions `0.2.0` and `0.3.0`
 - Validate page, feature, request, flow, architecture, evidence, and measurement relationships
 - Render Project JSON in the 4777 viewer
 - Show pages, requests, flows, architecture, evidence, and optional measurements

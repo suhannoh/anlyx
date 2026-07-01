@@ -7,21 +7,34 @@ import {
   parseAnlyxFlowFile,
   type ProjectData,
   type ProjectInput,
+  type ProjectValidationReport,
   validateAnlyxFlowFile,
   type FlowValidationIssue
 } from "@anlyx/core";
+import { validateProjectData } from "@anlyx/core/project-validation";
 
-export type ValidateCommandResult = {
-  kind: "project" | "flow";
+export type ProjectValidateCommandResult = {
+  kind: "project";
   valid: boolean;
   errors: FlowValidationIssue[];
   warnings: FlowValidationIssue[];
+  report: ProjectValidationReport;
 };
+
+export type ValidateCommandResult =
+  | ProjectValidateCommandResult
+  | {
+      kind: "flow";
+      valid: boolean;
+      errors: FlowValidationIssue[];
+      warnings: FlowValidationIssue[];
+    };
 
 export type ImportCommandResult =
   | {
       kind: "project";
       projectDataPath: string;
+      validationReportPath: string;
       warnings: FlowValidationIssue[];
     }
   | {
@@ -63,7 +76,7 @@ export async function runValidateCommand(options: {
   const input = await readAnlyxJson(cwd, options.filePath);
 
   if (input.kind === "project") {
-    return validateProjectJson(input.value);
+    return validateProjectJson(input.value, cwd);
   }
 
   return {
@@ -81,7 +94,7 @@ export async function runImportCommand(options: {
   const input = await readAnlyxJson(cwd, options.filePath);
 
   if (input.kind === "project") {
-    const validation = validateProjectJson(input.value);
+    const validation = await validateProjectJson(input.value, cwd);
 
     if (!validation.valid) {
       throw new ProjectImportValidationError(validation.errors, validation.warnings);
@@ -92,11 +105,16 @@ export async function runImportCommand(options: {
       "anlyx.project.json",
       "Project JSON output path"
     );
+    const outputRoot = resolveOutputRoot(cwd, options.outputDir);
+    const validationReportPath = join(outputRoot, "validation-report.json");
+    await mkdir(outputRoot, { recursive: true });
     await writeFile(projectDataPath, `${JSON.stringify(input.value, null, 2)}\n`, "utf8");
+    await writeFile(validationReportPath, `${JSON.stringify(validation.report, null, 2)}\n`, "utf8");
 
     return {
       kind: "project",
       projectDataPath,
+      validationReportPath,
       warnings: validation.warnings
     };
   }
@@ -234,13 +252,15 @@ function resolveWithinRoot(cwd: string, targetPath: string, label: string): stri
   throw new Error(`${label} must stay inside the working directory: ${targetPath}`);
 }
 
-function validateProjectJson(_projectData: ProjectData): ValidateCommandResult {
-  void _projectData;
+async function validateProjectJson(
+  projectData: ProjectData,
+  cwd: string
+): Promise<ProjectValidateCommandResult> {
+  const validation = await validateProjectData(projectData, { cwd });
+
   return {
     kind: "project",
-    valid: true,
-    errors: [],
-    warnings: []
+    ...validation
   };
 }
 
@@ -249,7 +269,7 @@ function isProjectJsonInput(value: unknown): boolean {
     return false;
   }
 
-  if ("schemaVersion" in value && value.schemaVersion === "0.2.0") {
+  if ("schemaVersion" in value && isSupportedProjectSchemaVersion(value.schemaVersion)) {
     return true;
   }
 
@@ -263,8 +283,12 @@ function isProjectJsonInput(value: unknown): boolean {
     typeof index === "object" &&
     index !== null &&
     "schemaVersion" in index &&
-    index.schemaVersion === "0.2.0"
+    isSupportedProjectSchemaVersion(index.schemaVersion)
   );
+}
+
+function isSupportedProjectSchemaVersion(value: unknown): boolean {
+  return value === "0.2.0" || value === "0.3.0";
 }
 
 function formatValidationError(error: unknown): string {

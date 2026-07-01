@@ -1035,6 +1035,55 @@ describe("dev command", () => {
     }
   });
 
+  it("serves validation report from /api/validation-report when available", async () => {
+    const port = await findFreePort();
+    const viewerRoot = await mkdtemp(join(tmpdir(), "anlyx-viewer-root-"));
+    const validationReport = {
+      schemaVersion: "0.1" as const,
+      generatedAt: "2026-07-01T00:00:00.000Z",
+      valid: true,
+      summary: {
+        sourceIssueCount: 1,
+        coverageStatus: "partial" as const,
+        modeled: {
+          pages: 1,
+          requests: 1,
+          flows: 1,
+          architectureNodes: 1
+        },
+        detected: {
+          pages: 3
+        }
+      },
+      issues: [
+        {
+          severity: "warning" as const,
+          code: "coverage_pages_partial",
+          path: "coverage.detected.pages",
+          message: "Only 1 of 3 detected pages are modeled."
+        }
+      ]
+    };
+    const server = await createLocalUiServer({
+      port,
+      projectData: createMinimalProjectData(),
+      validationReport,
+      viewerRoot,
+      frontendBaseUrl: "http://localhost:3000",
+      mode: "viewer"
+    });
+
+    try {
+      const response = await fetch(`${server.url}/api/validation-report`);
+
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual(validationReport);
+    } finally {
+      await server.close?.();
+      await rm(viewerRoot, { recursive: true, force: true });
+    }
+  });
+
   it("returns 404 for /api/project-data in legacy report mode", async () => {
     const port = await findFreePort();
     const viewerRoot = await mkdtemp(join(tmpdir(), "anlyx-viewer-root-"));
@@ -1415,6 +1464,7 @@ describe("dev command", () => {
     const help = getHelpText();
 
     expect(help).toContain("anlyx init");
+    expect(help).toContain("anlyx prompt <init|refresh>");
     expect(help).toContain("anlyx validate <file>");
     expect(help).toContain("anlyx import <file> [--out <dir>]");
     expect(help).not.toContain("anlyx scan");
@@ -1432,7 +1482,7 @@ describe("dev command", () => {
 
       expect(exitCode).toBe(1);
       expect(writes.join("\n")).toContain("Unknown command: unknown");
-      expect(writes.join("\n")).toContain("Available commands: init, validate, import, dev");
+      expect(writes.join("\n")).toContain("Available commands: init, prompt, validate, import, dev");
     });
   });
 
@@ -1590,7 +1640,18 @@ function createMinimalProjectData(): ProjectData {
     architecture: { nodes: [], edges: [] },
     evidence: [],
     measurements: [],
-    dictionary: { defaultLanguage: "en", terms: [] }
+    dictionary: { defaultLanguage: "en", terms: [] },
+    overview: {
+      actors: [],
+      coreEntities: [],
+      mainAreas: [],
+      implementation: [],
+      suggestedReadingPath: [],
+      evidenceIds: []
+    },
+    capabilities: [],
+    dataLifecycles: [],
+    impactMaps: []
   };
 }
 

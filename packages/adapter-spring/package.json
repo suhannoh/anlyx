@@ -1,6 +1,6 @@
 {
   "name": "@anlyx/adapter-spring",
-  "version": "0.1.5",
+  "version": "0.1.6-beta.1",
   "description": "Spring source metadata producer adapter for Anlyx Project JSON.",
   "license": "MIT",
   "type": "module",

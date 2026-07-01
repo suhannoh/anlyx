@@ -52,12 +52,24 @@ export function getHelpText(): string {
 
 Usage:
   anlyx init [--force]
+  anlyx prompt <init|refresh>
   anlyx validate <file>
   anlyx import <file> [--out <dir>]
   anlyx dev [--out <dir>] [--port <port>] [--no-open]
   anlyx --help
 
-Available commands: init, validate, import, dev
+Available commands: init, prompt, validate, import, dev
+`;
+}
+
+export function getPromptHelpText(): string {
+  return `Anlyx prompt
+
+Usage:
+  anlyx prompt init
+  anlyx prompt refresh
+
+Print a copy-ready prompt for your coding agent.
 `;
 }
 
@@ -109,6 +121,24 @@ export async function runCli(args: string[] = process.argv.slice(2), options: Cl
     }
 
     write(`Created ${result.path}`);
+    return 0;
+  }
+
+  if (command === "prompt") {
+    const parsed = parsePromptArgs(args.slice(1));
+
+    if (parsed.help) {
+      write(getPromptHelpText());
+      return 0;
+    }
+
+    if (parsed.error) {
+      write(parsed.error);
+      write(getPromptHelpText());
+      return 1;
+    }
+
+    write(getAgentPrompt(parsed.kind));
     return 0;
   }
 
@@ -331,6 +361,109 @@ function parseDevArgs(args: string[]): {
   }
 
   return parsed;
+}
+
+function parsePromptArgs(args: string[]): {
+  kind: "init" | "refresh";
+  help: boolean;
+  error?: string;
+} {
+  const parsed: {
+    kind: "init" | "refresh";
+    help: boolean;
+    error?: string;
+  } = {
+    kind: "init",
+    help: false
+  };
+
+  for (const arg of args) {
+    if (arg === "--help" || arg === "-h") {
+      parsed.help = true;
+      continue;
+    }
+
+    if (arg.startsWith("-")) {
+      parsed.error = `Unknown option for prompt: ${arg}`;
+      return parsed;
+    }
+
+    if (arg !== "init" && arg !== "refresh") {
+      parsed.error = `Unknown prompt type: ${arg}`;
+      return parsed;
+    }
+
+    parsed.kind = arg;
+  }
+
+  return parsed;
+}
+
+function getAgentPrompt(kind: "init" | "refresh"): string {
+  if (kind === "refresh") {
+    return `anlyx refresh
+
+Update the existing anlyx.project.json from the current repository changes.
+
+Rules:
+- Read the existing anlyx.project.json first.
+- Use git diff, recent commits, and changed files before scanning unrelated code.
+- Preserve stable ids for pages, requests, flows, architecture nodes, evidence, overview, and capabilities.
+- Update only affected sections.
+- Do not recreate the whole file unless it is missing or invalid.
+- Keep observed, measured, source-matched, agent-inferred, manual, not-proven, and unknown evidence distinct.
+- Use source-matched only when the file exists, the symbol or endpoint is present, and lineStart points to the real source line. Do not use lineStart: 1 as a placeholder.
+- Update coverage when detected pages, API usages, endpoints, or modeled scope changed. Mark partial analysis honestly.
+- Do not invent measured timing.
+- Do not include secrets, production records, or raw personal data.
+
+After updating, run:
+  npx anlyx validate anlyx.project.json
+  npx anlyx import anlyx.project.json
+  npx anlyx dev
+
+Before finishing, report what changed, what stayed uncertain, and whether validation/import/dev succeeded.`;
+  }
+
+  return `Create a safe Anlyx Project JSON file and verify it locally.
+
+Anlyx install and reference:
+- npm package: anlyx
+- install or upgrade command: npm install -D anlyx@beta
+- public repository and docs: https://github.com/suhannoh/anlyx
+- agent guide: https://github.com/suhannoh/anlyx/blob/main/docs/agent/anlyx-project-json-agent-guide.md
+- local viewer URL after running dev: http://localhost:4777
+
+Goal:
+- Produce anlyx.project.json as the primary Anlyx input.
+- Explain what pages exist, what they do, which requests they trigger, how architecture nodes connect, and what evidence supports each claim.
+- Clearly separate observed, measured, source-matched, agent-inferred, manual, not-proven, and unknown evidence.
+- Use source-matched only when the file exists, the symbol or endpoint is present, and lineStart points to the real source line.
+- Do not use lineStart: 1 as a placeholder. If the exact source location is not verified, downgrade the claim to agent-inferred, not-proven, or unknown.
+- Count detected pages/routes, frontend API usages, and backend endpoints before choosing the modeled scope.
+- Add coverage with detected, modeled, and unmodeled counts. If the JSON covers only representative flows, mark coverage.status as partial.
+- Write authored explanations in the user's language and product UI language. Keep API paths, file paths, symbols, DTOs, and enum values unchanged.
+- Do not invent measured timing.
+- Do not include secrets, production records, or raw personal data.
+
+Steps:
+1. Install or upgrade Anlyx in this project: npm install -D anlyx@beta
+2. Check the installed package: npm ls anlyx @anlyx/core @anlyx/ui
+3. Read the public Anlyx docs if you need the contract.
+4. Inspect the repository and identify detected counts, pages, requests, flows, architecture nodes, evidence, overview, and capabilities.
+5. Write anlyx.project.json with schemaVersion "0.3.0".
+6. Mark uncertain relationships as agent-inferred, not-proven, or unknown instead of overclaiming.
+7. Validate the file: npx anlyx validate anlyx.project.json
+8. If validate reports "Invalid Flow JSON" or expects schemaVersion "0.1.5", the installed Anlyx package is stale. Upgrade Anlyx and rerun validate.
+9. Import it: npx anlyx import anlyx.project.json
+10. Start the viewer: npx anlyx dev
+11. If port 4777 is already in use, start Anlyx on another local port and report the actual URL.
+12. Open http://localhost:4777, or the actual local URL you started, and check Pages, Map, Overview, Capabilities, and JSON.
+
+Remember this shortcut for future updates:
+- When I later type "anlyx refresh", update the existing anlyx.project.json from current repository changes instead of recreating everything.
+
+Before finishing, report the authored pages, primary requests, architecture layers, evidence levels, coverage status, validation report issues, and remaining uncertainty.`;
 }
 
 function parseValidateArgs(args: string[]): {

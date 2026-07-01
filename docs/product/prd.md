@@ -119,7 +119,9 @@ Anlyx is responsible for:
 - Schema and validation.
 - Local import.
 - Local 4777 viewer.
-- Pages, Map, and JSON rendering.
+- Pages, Map, Overview, Capabilities, and JSON rendering from authored data.
+- Optional Data Lifecycle and Impact Map contract data may exist, but they are
+  not primary navigation surfaces in the default viewer.
 - Clear empty states for missing sections.
 - Local-only behavior by default.
 - Multi-language viewer chrome for Korean, English, Chinese, Japanese, and
@@ -132,7 +134,7 @@ Phase 1 is complete when:
 - `anlyx.project.json` is the primary documented path.
 - `npx anlyx validate/import/dev` supports the Project JSON workflow.
 - The viewer opens at `localhost:4777`.
-- Pages, Map, and JSON render from authored data.
+- Pages, Map, Overview, Capabilities, and JSON render from authored data.
 - Timing is hidden or disabled when `measurements` is empty.
 - Agent setup and authoring instructions are current.
 - Older analysis experiments no longer define the product direction.

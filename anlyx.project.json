@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "0.2.0",
+  "schemaVersion": "0.3.0",
   "project": {
     "id": "anlyx",
     "name": "Anlyx",
@@ -27,21 +27,29 @@
       "name": "Viewer",
       "description": "Local workspace UI rendered from Project JSON.",
       "order": 1,
-      "evidenceIds": ["ev.viewer-app", "ev.workspace-app"]
+      "evidenceIds": [
+        "ev.viewer-app",
+        "ev.workspace-app"
+      ]
     },
     {
       "id": "runtime",
       "name": "Runtime",
       "description": "Local CLI server that serves Project JSON and viewer assets.",
       "order": 2,
-      "evidenceIds": ["ev.dev-command"]
+      "evidenceIds": [
+        "ev.dev-command"
+      ]
     },
     {
       "id": "contract",
       "name": "Contract",
       "description": "Schema, normalization, and documentation that AI Agents follow.",
       "order": 3,
-      "evidenceIds": ["ev.project-schema", "ev.project-normalize"]
+      "evidenceIds": [
+        "ev.project-schema",
+        "ev.project-normalize"
+      ]
     }
   ],
   "pages": [
@@ -55,8 +63,12 @@
         "filePath": "packages/ui/src/workspace/WorkspaceApp.tsx",
         "symbol": "WorkspaceApp"
       },
-      "featureIds": ["feature.pages"],
-      "evidenceIds": ["ev.workspace-app"],
+      "featureIds": [
+        "feature.pages"
+      ],
+      "evidenceIds": [
+        "ev.workspace-app"
+      ],
       "confidence": "high"
     },
     {
@@ -69,8 +81,12 @@
         "filePath": "packages/ui/src/workspace/ScanTreeMap.tsx",
         "symbol": "ScanTreeMap"
       },
-      "featureIds": ["feature.map"],
-      "evidenceIds": ["ev.scan-tree-map"],
+      "featureIds": [
+        "feature.map"
+      ],
+      "evidenceIds": [
+        "ev.scan-tree-map"
+      ],
       "confidence": "high"
     },
     {
@@ -83,8 +99,12 @@
         "filePath": "packages/ui/src/workspace/WorkspaceApp.tsx",
         "symbol": "WorkspaceApp"
       },
-      "featureIds": ["feature.json"],
-      "evidenceIds": ["ev.workspace-app"],
+      "featureIds": [
+        "feature.json"
+      ],
+      "evidenceIds": [
+        "ev.workspace-app"
+      ],
       "confidence": "high"
     }
   ],
@@ -94,8 +114,14 @@
       "pageId": "page.workspace",
       "name": "Project pages",
       "description": "Shows project areas, pages, feature summaries, request roles, and evidence status from anlyx.project.json.",
-      "requestIds": ["req.project-data"],
-      "evidenceIds": ["ev.workspace-app"],
+      "requests": [],
+      "requestIds": [
+        "req.project-data",
+        "req.project-summary"
+      ],
+      "evidenceIds": [
+        "ev.workspace-app"
+      ],
       "confidence": "high"
     },
     {
@@ -103,8 +129,14 @@
       "pageId": "page.map",
       "name": "Architecture map",
       "description": "Renders frontend-to-data dependencies from Project JSON architecture nodes and edges.",
-      "requestIds": ["req.project-data"],
-      "evidenceIds": ["ev.scan-tree-map"],
+      "requests": [],
+      "requestIds": [
+        "req.project-data",
+        "req.map-graph"
+      ],
+      "evidenceIds": [
+        "ev.scan-tree-map"
+      ],
       "confidence": "high"
     },
     {
@@ -112,8 +144,15 @@
       "pageId": "page.json",
       "name": "Project JSON reader",
       "description": "Displays the active Project JSON, schema metadata, and timing disabled state when measurements are absent.",
-      "requestIds": ["req.project-data"],
-      "evidenceIds": ["ev.project-schema", "ev.workspace-app"],
+      "requests": [],
+      "requestIds": [
+        "req.project-data",
+        "req.project-summary"
+      ],
+      "evidenceIds": [
+        "ev.project-schema",
+        "ev.workspace-app"
+      ],
       "confidence": "high"
     }
   ],
@@ -127,8 +166,45 @@
       "purpose": "data-load",
       "description": "The 4777 viewer loads the current anlyx.project.json from the local Anlyx runtime.",
       "flowId": "flow.project-data",
-      "evidenceIds": ["ev.viewer-app", "ev.dev-command"],
+      "evidenceIds": [
+        "ev.viewer-app",
+        "ev.dev-command"
+      ],
       "confidence": "high"
+    },
+    {
+      "id": "req.project-summary",
+      "method": "GET",
+      "path": "/api/project-summary",
+      "label": "Load Project Summary",
+      "role": "supporting",
+      "purpose": "data-load",
+      "description": "Example branch used to inspect how another viewer request shares the same runtime service.",
+      "flowId": "flow.project-summary",
+      "evidenceIds": [
+        "ev.example-shared-branches"
+      ],
+      "confidence": "medium",
+      "metadata": {
+        "samplePurpose": "map-shared-service"
+      }
+    },
+    {
+      "id": "req.map-graph",
+      "method": "GET",
+      "path": "/api/map-graph",
+      "label": "Load Map Graph",
+      "role": "supporting",
+      "purpose": "data-load",
+      "description": "Example branch used to inspect how a map-specific request shares the same repository.",
+      "flowId": "flow.map-graph",
+      "evidenceIds": [
+        "ev.example-shared-branches"
+      ],
+      "confidence": "medium",
+      "metadata": {
+        "samplePurpose": "map-shared-repository"
+      }
     }
   ],
   "flows": [
@@ -145,7 +221,9 @@
             "filePath": "packages/ui/src/viewer/ViewerApp.tsx",
             "symbol": "fetchViewerData"
           },
-          "evidenceIds": ["ev.viewer-app"],
+          "evidenceIds": [
+            "ev.viewer-app"
+          ],
           "status": "source-matched",
           "confidence": "high"
         },
@@ -157,7 +235,9 @@
             "filePath": "packages/cli/src/dev-command.ts",
             "symbol": "createLocalUiServer"
           },
-          "evidenceIds": ["ev.dev-command"],
+          "evidenceIds": [
+            "ev.dev-command"
+          ],
           "status": "source-matched",
           "confidence": "high"
         },
@@ -169,7 +249,9 @@
             "filePath": "packages/cli/src/dev-command.ts",
             "symbol": "readProjectData"
           },
-          "evidenceIds": ["ev.dev-command"],
+          "evidenceIds": [
+            "ev.dev-command"
+          ],
           "status": "source-matched",
           "confidence": "high"
         },
@@ -181,7 +263,9 @@
             "filePath": "packages/core/src/project-normalize.ts",
             "symbol": "normalizeProjectInput"
           },
-          "evidenceIds": ["ev.project-normalize"],
+          "evidenceIds": [
+            "ev.project-normalize"
+          ],
           "status": "source-matched",
           "confidence": "high"
         },
@@ -193,25 +277,122 @@
             "filePath": "packages/core/src/project-schema.ts",
             "symbol": "projectDataSchema"
           },
-          "evidenceIds": ["ev.project-schema"],
+          "evidenceIds": [
+            "ev.project-schema"
+          ],
           "status": "source-matched",
           "confidence": "high"
         },
         {
           "id": "layer.workspace-render",
           "kind": "result",
-          "label": "WorkspaceApp renders Pages, Map, and JSON",
+          "label": "WorkspaceApp renders project surfaces",
           "source": {
             "filePath": "packages/ui/src/workspace/WorkspaceApp.tsx",
             "symbol": "WorkspaceApp"
           },
-          "evidenceIds": ["ev.workspace-app"],
+          "evidenceIds": [
+            "ev.workspace-app"
+          ],
           "status": "source-matched",
           "confidence": "high"
         }
       ],
-      "evidenceIds": ["ev.viewer-app", "ev.dev-command", "ev.project-schema"],
+      "layerIds": [],
+      "evidenceIds": [
+        "ev.viewer-app",
+        "ev.dev-command",
+        "ev.project-schema"
+      ],
       "confidence": "high"
+    },
+    {
+      "id": "flow.project-summary",
+      "requestId": "req.project-summary",
+      "name": "Load project summary",
+      "layers": [
+        {
+          "id": "layer.summary-route",
+          "kind": "api",
+          "label": "GET /api/project-summary",
+          "evidenceIds": [
+            "ev.example-shared-branches"
+          ],
+          "status": "agent-inferred",
+          "confidence": "medium"
+        },
+        {
+          "id": "layer.summary-runtime",
+          "kind": "service",
+          "label": "runDevCommand",
+          "source": {
+            "filePath": "packages/cli/src/dev-command.ts",
+            "symbol": "runDevCommand"
+          },
+          "evidenceIds": [
+            "ev.dev-command"
+          ],
+          "status": "source-matched",
+          "confidence": "high"
+        },
+        {
+          "id": "layer.summary-repository",
+          "kind": "repository",
+          "label": "ProjectJsonRepository",
+          "evidenceIds": [
+            "ev.example-shared-branches"
+          ],
+          "status": "agent-inferred",
+          "confidence": "medium"
+        }
+      ],
+      "layerIds": [],
+      "evidenceIds": [
+        "ev.example-shared-branches"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "id": "flow.map-graph",
+      "requestId": "req.map-graph",
+      "name": "Load map graph",
+      "layers": [
+        {
+          "id": "layer.map-graph-route",
+          "kind": "api",
+          "label": "GET /api/map-graph",
+          "evidenceIds": [
+            "ev.example-shared-branches"
+          ],
+          "status": "agent-inferred",
+          "confidence": "medium"
+        },
+        {
+          "id": "layer.map-projection",
+          "kind": "service",
+          "label": "MapProjectionService",
+          "evidenceIds": [
+            "ev.example-shared-branches"
+          ],
+          "status": "agent-inferred",
+          "confidence": "medium"
+        },
+        {
+          "id": "layer.map-repository",
+          "kind": "repository",
+          "label": "ProjectJsonRepository",
+          "evidenceIds": [
+            "ev.example-shared-branches"
+          ],
+          "status": "agent-inferred",
+          "confidence": "medium"
+        }
+      ],
+      "layerIds": [],
+      "evidenceIds": [
+        "ev.example-shared-branches"
+      ],
+      "confidence": "medium"
     }
   ],
   "architecture": {
@@ -226,7 +407,9 @@
           "filePath": "packages/ui/src/viewer/ViewerApp.tsx",
           "symbol": "ViewerApp"
         },
-        "evidenceIds": ["ev.viewer-app"],
+        "evidenceIds": [
+          "ev.viewer-app"
+        ],
         "confidence": "high"
       },
       {
@@ -239,8 +422,70 @@
           "filePath": "packages/cli/src/dev-command.ts",
           "symbol": "createLocalUiServer"
         },
-        "evidenceIds": ["ev.dev-command"],
-        "confidence": "high"
+        "evidenceIds": [
+          "ev.dev-command"
+        ],
+        "confidence": "high",
+        "metadata": {
+          "contracts": {
+            "endpoint": "GET /api/project-data",
+            "input": {
+              "name": "None",
+              "shape": null
+            },
+            "output": {
+              "name": "ProjectData",
+              "kind": "dto",
+              "shape": {
+                "schemaVersion": "string",
+                "project": "ProjectInfo",
+                "pages": "ProjectPage[]",
+                "features": "ProjectFeature[]",
+                "architecture": "ArchitectureGraph",
+                "overview": "ProjectOverview",
+                "capabilities": "ProjectCapability[]",
+                "dataLifecycles": "DataLifecycle[]",
+                "impactMaps": "ImpactMap[]"
+              }
+            },
+            "relatedModels": [
+              "ProjectData",
+              "ArchitectureNode",
+              "ArchitectureEdge",
+              "ProjectCapability",
+              "DataLifecycle",
+              "ImpactMap"
+            ]
+          }
+        }
+      },
+      {
+        "id": "node.project-summary-api",
+        "kind": "api",
+        "label": "GET /api/project-summary",
+        "displayLabel": "Project summary",
+        "domain": "Runtime",
+        "evidenceIds": [
+          "ev.example-shared-branches"
+        ],
+        "confidence": "medium",
+        "metadata": {
+          "samplePurpose": "map-shared-service"
+        }
+      },
+      {
+        "id": "node.map-graph-api",
+        "kind": "api",
+        "label": "GET /api/map-graph",
+        "displayLabel": "Map graph",
+        "domain": "Runtime",
+        "evidenceIds": [
+          "ev.example-shared-branches"
+        ],
+        "confidence": "medium",
+        "metadata": {
+          "samplePurpose": "map-shared-repository"
+        }
       },
       {
         "id": "node.dev-command",
@@ -252,8 +497,70 @@
           "filePath": "packages/cli/src/dev-command.ts",
           "symbol": "runDevCommand"
         },
-        "evidenceIds": ["ev.dev-command"],
-        "confidence": "high"
+        "evidenceIds": [
+          "ev.dev-command"
+        ],
+        "confidence": "high",
+        "metadata": {
+          "contracts": {
+            "input": {
+              "name": "anlyx.project.json"
+            },
+            "output": {
+              "name": "ProjectData",
+              "kind": "dto"
+            },
+            "transforms": [
+              "read project JSON",
+              "validate ProjectData schema",
+              "serve local viewer response"
+            ],
+            "relatedModels": [
+              "ProjectData"
+            ]
+          }
+        }
+      },
+      {
+        "id": "node.map-projection-service",
+        "kind": "service",
+        "label": "MapProjectionService",
+        "displayLabel": "Map projection",
+        "domain": "Viewer",
+        "evidenceIds": [
+          "ev.example-shared-branches"
+        ],
+        "confidence": "medium",
+        "metadata": {
+          "samplePurpose": "map-shared-repository"
+        }
+      },
+      {
+        "id": "node.project-json-repository",
+        "kind": "repository",
+        "label": "ProjectJsonRepository",
+        "displayLabel": "Project JSON repo",
+        "domain": "Runtime",
+        "evidenceIds": [
+          "ev.example-shared-branches"
+        ],
+        "confidence": "medium",
+        "metadata": {
+          "samplePurpose": "map-shared-repository",
+          "contracts": {
+            "input": {
+              "name": "Project JSON files"
+            },
+            "output": {
+              "name": "RawProjectInput",
+              "kind": "json"
+            },
+            "relatedModels": [
+              "ProjectData",
+              "RawProjectInput"
+            ]
+          }
+        }
       },
       {
         "id": "node.project-schema",
@@ -265,8 +572,37 @@
           "filePath": "packages/core/src/project-schema.ts",
           "symbol": "projectDataSchema"
         },
-        "evidenceIds": ["ev.project-schema"],
-        "confidence": "high"
+        "evidenceIds": [
+          "ev.project-schema"
+        ],
+        "confidence": "high",
+        "metadata": {
+          "contracts": {
+            "input": {
+              "name": "RawProjectInput"
+            },
+            "output": {
+              "name": "ProjectData",
+              "kind": "dto",
+              "shape": {
+                "schemaVersion": "0.2.0 | 0.3.0",
+                "project": "ProjectInfo",
+                "areas": "ProjectArea[]",
+                "requests": "ProjectRequest[]",
+                "evidence": "ProjectEvidence[]",
+                "overview": "ProjectOverview",
+                "capabilities": "ProjectCapability[]",
+                "dataLifecycles": "DataLifecycle[]",
+                "impactMaps": "ImpactMap[]"
+              }
+            },
+            "relatedModels": [
+              "ProjectData",
+              "ProjectEvidence",
+              "ProjectMeasurement"
+            ]
+          }
+        }
       },
       {
         "id": "node.project-normalize",
@@ -278,8 +614,32 @@
           "filePath": "packages/core/src/project-normalize.ts",
           "symbol": "normalizeProjectInput"
         },
-        "evidenceIds": ["ev.project-normalize"],
-        "confidence": "high"
+        "evidenceIds": [
+          "ev.project-normalize"
+        ],
+        "confidence": "high",
+        "metadata": {
+          "contracts": {
+            "input": {
+              "name": "RawProjectInput",
+              "kind": "json"
+            },
+            "output": {
+              "name": "ProjectData",
+              "kind": "dto"
+            },
+            "mapping": "Raw split files -> normalized project model",
+            "transforms": [
+              "fill default arrays",
+              "normalize split files",
+              "preserve authored evidence states"
+            ],
+            "relatedModels": [
+              "ProjectData",
+              "ArchitectureGraph"
+            ]
+          }
+        }
       },
       {
         "id": "node.workspace-app",
@@ -291,7 +651,9 @@
           "filePath": "packages/ui/src/workspace/WorkspaceApp.tsx",
           "symbol": "WorkspaceApp"
         },
-        "evidenceIds": ["ev.workspace-app"],
+        "evidenceIds": [
+          "ev.workspace-app"
+        ],
         "confidence": "high"
       },
       {
@@ -304,7 +666,9 @@
           "filePath": "packages/ui/src/workspace/ScanTreeMap.tsx",
           "symbol": "ScanTreeMap"
         },
-        "evidenceIds": ["ev.scan-tree-map"],
+        "evidenceIds": [
+          "ev.scan-tree-map"
+        ],
         "confidence": "high"
       }
     ],
@@ -314,31 +678,100 @@
         "source": "node.viewer-app",
         "target": "node.project-api",
         "role": "primary",
-        "evidenceIds": ["ev.viewer-app"],
+        "evidenceIds": [
+          "ev.viewer-app"
+        ],
         "confidence": "high"
+      },
+      {
+        "id": "edge.viewer.project-summary-api",
+        "source": "node.viewer-app",
+        "target": "node.project-summary-api",
+        "role": "primary",
+        "evidenceIds": [
+          "ev.example-shared-branches"
+        ],
+        "confidence": "medium"
+      },
+      {
+        "id": "edge.viewer.map-graph-api",
+        "source": "node.viewer-app",
+        "target": "node.map-graph-api",
+        "role": "primary",
+        "evidenceIds": [
+          "ev.example-shared-branches"
+        ],
+        "confidence": "medium"
       },
       {
         "id": "edge.project-api.dev-command",
         "source": "node.project-api",
         "target": "node.dev-command",
         "role": "primary",
-        "evidenceIds": ["ev.dev-command"],
+        "evidenceIds": [
+          "ev.dev-command"
+        ],
         "confidence": "high"
       },
       {
-        "id": "edge.dev-command.normalize",
+        "id": "edge.project-summary.dev-command",
+        "source": "node.project-summary-api",
+        "target": "node.dev-command",
+        "role": "primary",
+        "evidenceIds": [
+          "ev.example-shared-branches"
+        ],
+        "confidence": "medium"
+      },
+      {
+        "id": "edge.map-graph.map-projection",
+        "source": "node.map-graph-api",
+        "target": "node.map-projection-service",
+        "role": "primary",
+        "evidenceIds": [
+          "ev.example-shared-branches"
+        ],
+        "confidence": "medium"
+      },
+      {
+        "id": "edge.dev-command.project-repository",
         "source": "node.dev-command",
+        "target": "node.project-json-repository",
+        "role": "shared",
+        "evidenceIds": [
+          "ev.example-shared-branches"
+        ],
+        "confidence": "medium"
+      },
+      {
+        "id": "edge.map-projection.project-repository",
+        "source": "node.map-projection-service",
+        "target": "node.project-json-repository",
+        "role": "shared",
+        "evidenceIds": [
+          "ev.example-shared-branches"
+        ],
+        "confidence": "medium"
+      },
+      {
+        "id": "edge.repository.normalize",
+        "source": "node.project-json-repository",
         "target": "node.project-normalize",
         "role": "primary",
-        "evidenceIds": ["ev.project-normalize"],
-        "confidence": "high"
+        "evidenceIds": [
+          "ev.example-shared-branches",
+          "ev.project-normalize"
+        ],
+        "confidence": "medium"
       },
       {
         "id": "edge.normalize.schema",
         "source": "node.project-normalize",
         "target": "node.project-schema",
         "role": "primary",
-        "evidenceIds": ["ev.project-schema"],
+        "evidenceIds": [
+          "ev.project-schema"
+        ],
         "confidence": "high"
       },
       {
@@ -346,7 +779,9 @@
         "source": "node.project-schema",
         "target": "node.workspace-app",
         "role": "primary",
-        "evidenceIds": ["ev.workspace-app"],
+        "evidenceIds": [
+          "ev.workspace-app"
+        ],
         "confidence": "high"
       },
       {
@@ -354,7 +789,9 @@
         "source": "node.workspace-app",
         "target": "node.scan-tree-map",
         "role": "shared",
-        "evidenceIds": ["ev.scan-tree-map"],
+        "evidenceIds": [
+          "ev.scan-tree-map"
+        ],
         "confidence": "high"
       }
     ]
@@ -369,7 +806,10 @@
         "filePath": "packages/ui/src/viewer/ViewerApp.tsx",
         "symbol": "fetchViewerData"
       },
-      "targetIds": ["node.viewer-app", "req.project-data"],
+      "targetIds": [
+        "node.viewer-app",
+        "req.project-data"
+      ],
       "confidence": "high"
     },
     {
@@ -381,19 +821,24 @@
         "filePath": "packages/cli/src/dev-command.ts",
         "symbol": "runDevCommand"
       },
-      "targetIds": ["node.dev-command", "node.project-api"],
+      "targetIds": [
+        "node.dev-command",
+        "node.project-api"
+      ],
       "confidence": "high"
     },
     {
       "id": "ev.project-schema",
       "status": "source-matched",
-      "label": "Project schema version 0.2.0",
-      "detail": "projectDataSchema validates the current Project JSON contract.",
+      "label": "Project schema versions 0.2.0 and 0.3.0",
+      "detail": "projectDataSchema validates the Project JSON contract, including optional project-understanding sections.",
       "source": {
         "filePath": "packages/core/src/project-schema.ts",
         "symbol": "projectDataSchema"
       },
-      "targetIds": ["node.project-schema"],
+      "targetIds": [
+        "node.project-schema"
+      ],
       "confidence": "high"
     },
     {
@@ -405,19 +850,23 @@
         "filePath": "packages/core/src/project-normalize.ts",
         "symbol": "normalizeProjectInput"
       },
-      "targetIds": ["node.project-normalize"],
+      "targetIds": [
+        "node.project-normalize"
+      ],
       "confidence": "high"
     },
     {
       "id": "ev.workspace-app",
       "status": "source-matched",
       "label": "Workspace renders project surfaces",
-      "detail": "WorkspaceApp presents Pages, Map, and JSON from ProjectData.",
+      "detail": "WorkspaceApp presents Overview, Capabilities, Data Lifecycle, Impact Map, Pages, Map, and JSON from ProjectData.",
       "source": {
         "filePath": "packages/ui/src/workspace/WorkspaceApp.tsx",
         "symbol": "WorkspaceApp"
       },
-      "targetIds": ["node.workspace-app"],
+      "targetIds": [
+        "node.workspace-app"
+      ],
       "confidence": "high"
     },
     {
@@ -429,8 +878,37 @@
         "filePath": "packages/ui/src/workspace/ScanTreeMap.tsx",
         "symbol": "ScanTreeMap"
       },
-      "targetIds": ["node.scan-tree-map"],
+      "targetIds": [
+        "node.scan-tree-map"
+      ],
       "confidence": "high"
+    },
+    {
+      "id": "ev.example-shared-branches",
+      "status": "agent-inferred",
+      "label": "Example shared Map branches",
+      "detail": "Additional sample requests show shared service and repository routing for visual Map review.",
+      "targetIds": [
+        "req.project-summary",
+        "req.map-graph",
+        "flow.project-summary",
+        "flow.map-graph",
+        "node.project-summary-api",
+        "node.map-graph-api",
+        "node.map-projection-service",
+        "node.project-json-repository",
+        "edge.viewer.project-summary-api",
+        "edge.viewer.map-graph-api",
+        "edge.project-summary.dev-command",
+        "edge.map-graph.map-projection",
+        "edge.dev-command.project-repository",
+        "edge.map-projection.project-repository",
+        "edge.repository.normalize"
+      ],
+      "confidence": "medium",
+      "metadata": {
+        "samplePurpose": "map-layout-validation"
+      }
     }
   ],
   "measurements": [],
@@ -440,18 +918,686 @@
       {
         "id": "term.project-json",
         "term": "Project JSON",
-        "definition": "The Agent-authored anlyx.project.json file that contains project pages, requests, flows, architecture, and evidence."
+        "definition": "The Agent-authored anlyx.project.json file that contains project pages, requests, flows, architecture, and evidence.",
+        "relatedIds": []
       },
       {
         "id": "term.local-viewer",
         "term": "Local viewer",
-        "definition": "The Anlyx UI served on localhost:4777 for inspecting Project JSON without sending source data to a remote service."
+        "definition": "The Anlyx UI served on localhost:4777 for inspecting Project JSON without sending source data to a remote service.",
+        "relatedIds": []
       },
       {
         "id": "term.timing-disabled",
         "term": "Timing disabled",
-        "definition": "Runtime measurements are absent, so the viewer shows architecture and evidence without claiming measured durations."
+        "definition": "Runtime measurements are absent, so the viewer shows architecture and evidence without claiming measured durations.",
+        "relatedIds": []
       }
     ]
-  }
+  },
+  "overview": {
+    "summary": "Anlyx is a local Project JSON viewer that helps humans inspect AI Agent-authored project understanding.",
+    "projectType": "Local developer documentation viewer",
+    "mainPurpose": "Validate and render anlyx.project.json so users can understand pages, requests, architecture, evidence, and authored project meaning without uploading source code.",
+    "actors": [
+      {
+        "id": "actor.agent",
+        "name": "AI Agent",
+        "role": "external",
+        "description": "Inspects a project and authors anlyx.project.json.",
+        "evidenceIds": [
+          "ev.agent-guide"
+        ],
+        "confidence": "high"
+      },
+      {
+        "id": "actor.user",
+        "name": "Developer",
+        "role": "user",
+        "description": "Runs the local viewer and reviews the generated project map.",
+        "evidenceIds": [
+          "ev.dev-command",
+          "ev.workspace-app"
+        ],
+        "confidence": "high"
+      },
+      {
+        "id": "actor.runtime",
+        "name": "Local runtime",
+        "role": "system",
+        "description": "Serves project data and UI assets on localhost.",
+        "evidenceIds": [
+          "ev.dev-command"
+        ],
+        "confidence": "high"
+      }
+    ],
+    "coreEntities": [
+      {
+        "id": "entity.project-data",
+        "name": "ProjectData",
+        "kind": "core-entity",
+        "description": "Normalized project understanding rendered by the viewer.",
+        "dataRefs": [
+          {
+            "kind": "model",
+            "name": "ProjectData",
+            "operation": "read"
+          }
+        ],
+        "evidenceIds": [
+          "ev.project-schema"
+        ],
+        "confidence": "high"
+      },
+      {
+        "id": "entity.architecture-graph",
+        "name": "ArchitectureGraph",
+        "kind": "model",
+        "description": "Authored nodes and edges used by the Map tab.",
+        "dataRefs": [
+          {
+            "kind": "model",
+            "name": "ArchitectureGraph",
+            "operation": "read"
+          }
+        ],
+        "evidenceIds": [
+          "ev.project-schema"
+        ],
+        "confidence": "high"
+      },
+      {
+        "id": "entity.evidence",
+        "name": "ProjectEvidence",
+        "kind": "model",
+        "description": "Evidence records that qualify project claims.",
+        "dataRefs": [
+          {
+            "kind": "model",
+            "name": "ProjectEvidence",
+            "operation": "read"
+          }
+        ],
+        "evidenceIds": [
+          "ev.project-schema"
+        ],
+        "confidence": "high"
+      }
+    ],
+    "mainAreas": [
+      {
+        "id": "overview.area.viewer",
+        "name": "Viewer surfaces",
+        "description": "Pages, Map, JSON, and project understanding tabs rendered from ProjectData.",
+        "pageIds": [
+          "page.workspace",
+          "page.map",
+          "page.json"
+        ],
+        "featureIds": [
+          "feature.pages",
+          "feature.map",
+          "feature.json"
+        ],
+        "evidenceIds": [
+          "ev.workspace-app"
+        ],
+        "confidence": "high"
+      },
+      {
+        "id": "overview.area.runtime",
+        "name": "Local runtime",
+        "description": "CLI command that reads project JSON and serves it to the UI.",
+        "pageIds": [],
+        "featureIds": [],
+        "evidenceIds": [
+          "ev.dev-command"
+        ],
+        "confidence": "high"
+      },
+      {
+        "id": "overview.area.contract",
+        "name": "Project contract",
+        "description": "Schema, normalizer, and Agent guide that keep project facts data-driven.",
+        "pageIds": [],
+        "featureIds": [],
+        "evidenceIds": [
+          "ev.project-schema",
+          "ev.project-normalize",
+          "ev.agent-guide"
+        ],
+        "confidence": "high"
+      }
+    ],
+    "implementation": [
+      {
+        "id": "impl.react-viewer",
+        "name": "React workspace viewer",
+        "kind": "frontend",
+        "description": "Renders the local Project JSON workspace.",
+        "source": {
+          "filePath": "packages/ui/src/workspace/WorkspaceApp.tsx",
+          "symbol": "WorkspaceApp"
+        },
+        "evidenceIds": [
+          "ev.workspace-app"
+        ],
+        "confidence": "high"
+      },
+      {
+        "id": "impl.cli-runtime",
+        "name": "CLI dev runtime",
+        "kind": "backend",
+        "description": "Serves /api/project-data and static viewer assets.",
+        "source": {
+          "filePath": "packages/cli/src/dev-command.ts",
+          "symbol": "runDevCommand"
+        },
+        "evidenceIds": [
+          "ev.dev-command"
+        ],
+        "confidence": "high"
+      },
+      {
+        "id": "impl.core-schema",
+        "name": "Project JSON schema",
+        "kind": "tooling",
+        "description": "Validates and normalizes AI Agent-authored project data.",
+        "source": {
+          "filePath": "packages/core/src/project-schema.ts",
+          "symbol": "projectDataSchema"
+        },
+        "evidenceIds": [
+          "ev.project-schema"
+        ],
+        "confidence": "high"
+      }
+    ],
+    "suggestedReadingPath": [
+      {
+        "id": "reading.capabilities",
+        "label": "Capabilities",
+        "target": "capabilities",
+        "description": "Start with what the project can do."
+      },
+      {
+        "id": "reading.pages",
+        "label": "Pages",
+        "target": "pages",
+        "description": "Inspect page-level requests and flows."
+      },
+      {
+        "id": "reading.map",
+        "label": "Map",
+        "target": "map",
+        "description": "Review the full authored architecture graph."
+      }
+    ],
+    "evidenceIds": [
+      "ev.workspace-app",
+      "ev.project-schema",
+      "ev.dev-command"
+    ],
+    "confidence": "high"
+  },
+  "capabilities": [
+    {
+      "id": "capability.load-project-json",
+      "actorRole": "user",
+      "name": "Load Project JSON",
+      "description": "The local viewer loads the current anlyx.project.json from the CLI runtime.",
+      "entry": {
+        "type": "page",
+        "label": "Viewer workspace",
+        "pageId": "page.workspace",
+        "path": "/"
+      },
+      "pageIds": [
+        "page.workspace"
+      ],
+      "featureIds": [
+        "feature.pages"
+      ],
+      "requestIds": [
+        "req.project-data"
+      ],
+      "flowIds": [
+        "flow.project-data"
+      ],
+      "dataRefs": [
+        {
+          "kind": "model",
+          "name": "ProjectData",
+          "operation": "read"
+        }
+      ],
+      "status": "connected",
+      "visibleResult": "Pages, Map, JSON, and project understanding tabs render from the loaded ProjectData.",
+      "evidenceIds": [
+        "ev.dev-command",
+        "ev.workspace-app"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "capability.inspect-pages",
+      "actorRole": "user",
+      "name": "Inspect page behavior",
+      "description": "A user can inspect authored pages, primary requests, selected flow layers, evidence, and unknowns.",
+      "entry": {
+        "type": "page",
+        "label": "Pages tab",
+        "pageId": "page.workspace",
+        "path": "/"
+      },
+      "pageIds": [
+        "page.workspace"
+      ],
+      "featureIds": [
+        "feature.pages"
+      ],
+      "requestIds": [
+        "req.project-data"
+      ],
+      "flowIds": [
+        "flow.project-data"
+      ],
+      "dataRefs": [
+        {
+          "kind": "model",
+          "name": "ProjectPage[]",
+          "operation": "read"
+        },
+        {
+          "kind": "model",
+          "name": "ProjectFlow[]",
+          "operation": "read"
+        }
+      ],
+      "status": "connected",
+      "visibleResult": "The selected page explains its purpose, requests, backend path, trust breakdown, and details rail.",
+      "evidenceIds": [
+        "ev.workspace-app"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "capability.inspect-architecture-map",
+      "actorRole": "user",
+      "name": "Inspect architecture map",
+      "description": "A user can click authored architecture nodes and inspect upstream, downstream, and data contract details.",
+      "entry": {
+        "type": "page",
+        "label": "Map tab",
+        "pageId": "page.map",
+        "path": "/map"
+      },
+      "pageIds": [
+        "page.map"
+      ],
+      "featureIds": [
+        "feature.map"
+      ],
+      "requestIds": [
+        "req.map-graph"
+      ],
+      "flowIds": [
+        "flow.map-graph"
+      ],
+      "dataRefs": [
+        {
+          "kind": "model",
+          "name": "ArchitectureGraph",
+          "operation": "read"
+        }
+      ],
+      "status": "connected",
+      "visibleResult": "The Map shows layered nodes and edge relationships, with DTO/entity contract details in the inspector.",
+      "evidenceIds": [
+        "ev.workspace-app",
+        "ev.scan-tree-map",
+        "ev.example-shared-branches"
+      ],
+      "confidence": "high"
+    },
+    {
+      "id": "capability.inspect-raw-json",
+      "actorRole": "user",
+      "name": "Inspect raw authored JSON",
+      "description": "A user can inspect the normalized JSON sections that the AI Agent authored.",
+      "entry": {
+        "type": "page",
+        "label": "JSON tab",
+        "pageId": "page.json",
+        "path": "/json"
+      },
+      "pageIds": [
+        "page.json"
+      ],
+      "featureIds": [
+        "feature.json"
+      ],
+      "requestIds": [
+        "req.project-data"
+      ],
+      "flowIds": [
+        "flow.project-data"
+      ],
+      "dataRefs": [
+        {
+          "kind": "model",
+          "name": "ProjectData",
+          "operation": "read"
+        }
+      ],
+      "status": "connected",
+      "visibleResult": "The JSON tab lists project sections and shows raw formatted JSON for inspection.",
+      "evidenceIds": [
+        "ev.workspace-app"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "dataLifecycles": [
+    {
+      "id": "lifecycle.project-data",
+      "entity": {
+        "id": "entity.project-data",
+        "name": "ProjectData",
+        "kind": "core-entity",
+        "dataRefs": [
+          {
+            "kind": "model",
+            "name": "ProjectData"
+          }
+        ]
+      },
+      "name": "ProjectData lifecycle",
+      "description": "How AI Agent-authored project facts move from local JSON into validated viewer surfaces.",
+      "stageIds": [
+        "stage.project-data.authored",
+        "stage.project-data.loaded",
+        "stage.project-data.normalized",
+        "stage.project-data.validated",
+        "stage.project-data.rendered"
+      ],
+      "stages": [
+        {
+          "id": "stage.project-data.authored",
+          "name": "Authored JSON",
+          "description": "The user's AI Agent writes anlyx.project.json.",
+          "actorRole": "external",
+          "state": "authored",
+          "pageIds": [],
+          "requestIds": [],
+          "flowIds": [],
+          "dataRefs": [
+            {
+              "kind": "model",
+              "name": "ProjectData",
+              "operation": "create"
+            }
+          ],
+          "evidenceIds": [
+            "ev.agent-guide"
+          ],
+          "confidence": "high"
+        },
+        {
+          "id": "stage.project-data.loaded",
+          "name": "Loaded by runtime",
+          "description": "The CLI reads the project JSON from the local workspace.",
+          "actorRole": "system",
+          "state": "loaded",
+          "pageIds": [],
+          "requestIds": [
+            "req.project-data"
+          ],
+          "flowIds": [],
+          "dataRefs": [
+            {
+              "kind": "model",
+              "name": "RawProjectInput",
+              "operation": "read"
+            }
+          ],
+          "evidenceIds": [
+            "ev.dev-command"
+          ],
+          "confidence": "high"
+        },
+        {
+          "id": "stage.project-data.normalized",
+          "name": "Normalized",
+          "description": "Single-file or split project input is normalized into ProjectData.",
+          "actorRole": "system",
+          "state": "normalized",
+          "pageIds": [],
+          "requestIds": [],
+          "flowIds": [],
+          "dataRefs": [
+            {
+              "kind": "model",
+              "name": "ProjectData",
+              "operation": "validate"
+            }
+          ],
+          "evidenceIds": [
+            "ev.project-normalize"
+          ],
+          "confidence": "high"
+        },
+        {
+          "id": "stage.project-data.validated",
+          "name": "Validated",
+          "description": "The Project JSON contract validates structure, evidence states, and optional authored sections.",
+          "actorRole": "system",
+          "state": "valid",
+          "pageIds": [],
+          "requestIds": [],
+          "flowIds": [],
+          "dataRefs": [
+            {
+              "kind": "model",
+              "name": "ProjectData",
+              "operation": "validate"
+            }
+          ],
+          "evidenceIds": [
+            "ev.project-schema"
+          ],
+          "confidence": "high"
+        },
+        {
+          "id": "stage.project-data.rendered",
+          "name": "Rendered in viewer",
+          "description": "Workspace UI renders Pages, Map, JSON, and added project understanding surfaces.",
+          "actorRole": "user",
+          "state": "visible",
+          "pageIds": [
+            "page.workspace",
+            "page.map",
+            "page.json"
+          ],
+          "requestIds": [],
+          "flowIds": [],
+          "dataRefs": [
+            {
+              "kind": "model",
+              "name": "ProjectData",
+              "operation": "read"
+            }
+          ],
+          "evidenceIds": [
+            "ev.workspace-app"
+          ],
+          "confidence": "high"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "transition.project-data.author-load",
+          "fromStageId": "stage.project-data.authored",
+          "toStageId": "stage.project-data.loaded",
+          "label": "Run local dev viewer",
+          "trigger": {
+            "type": "request",
+            "label": "Viewer requests /api/project-data",
+            "requestIds": [
+              "req.project-data"
+            ]
+          },
+          "dataChanges": [
+            {
+              "operation": "read",
+              "target": "anlyx.project.json"
+            }
+          ],
+          "evidenceIds": [
+            "ev.dev-command"
+          ],
+          "confidence": "high",
+          "status": "source-matched"
+        },
+        {
+          "id": "transition.project-data.load-normalize",
+          "fromStageId": "stage.project-data.loaded",
+          "toStageId": "stage.project-data.normalized",
+          "label": "Normalize project input",
+          "dataChanges": [
+            {
+              "operation": "validate",
+              "target": "ProjectData"
+            }
+          ],
+          "evidenceIds": [
+            "ev.project-normalize"
+          ],
+          "confidence": "high",
+          "status": "source-matched"
+        },
+        {
+          "id": "transition.project-data.normalize-render",
+          "fromStageId": "stage.project-data.validated",
+          "toStageId": "stage.project-data.rendered",
+          "label": "Render workspace",
+          "dataChanges": [
+            {
+              "operation": "read",
+              "target": "ProjectData"
+            }
+          ],
+          "evidenceIds": [
+            "ev.workspace-app"
+          ],
+          "confidence": "high",
+          "status": "source-matched"
+        }
+      ],
+      "evidenceIds": [
+        "ev.dev-command",
+        "ev.project-normalize",
+        "ev.project-schema",
+        "ev.workspace-app"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "impactMaps": [
+    {
+      "id": "impact.project-data-schema",
+      "target": {
+        "id": "target.project-data-schema",
+        "kind": "entity",
+        "label": "ProjectData",
+        "refId": "entity.project-data",
+        "dataRef": {
+          "kind": "model",
+          "name": "ProjectData"
+        },
+        "source": {
+          "filePath": "packages/core/src/project-schema.ts",
+          "symbol": "projectDataSchema"
+        }
+      },
+      "name": "ProjectData schema impact",
+      "description": "Shows which viewer and runtime areas are affected when the ProjectData contract changes.",
+      "impactLevel": "high",
+      "affected": {
+        "pageIds": [
+          "page.workspace",
+          "page.map",
+          "page.json"
+        ],
+        "featureIds": [
+          "feature.pages",
+          "feature.map",
+          "feature.json"
+        ],
+        "requestIds": [
+          "req.project-data",
+          "req.project-summary",
+          "req.map-graph"
+        ],
+        "flowIds": [
+          "flow.project-data",
+          "flow.project-summary",
+          "flow.map-graph"
+        ],
+        "areaIds": [
+          "viewer",
+          "runtime",
+          "contract"
+        ],
+        "dataRefs": [
+          {
+            "kind": "model",
+            "name": "ProjectData"
+          },
+          {
+            "kind": "model",
+            "name": "ArchitectureGraph"
+          },
+          {
+            "kind": "model",
+            "name": "ProjectEvidence"
+          }
+        ],
+        "businessEffects": [
+          {
+            "id": "effect.viewer-rendering",
+            "label": "Viewer rendering changes",
+            "description": "Pages, Map, JSON, and added understanding surfaces may need to display new or changed fields.",
+            "severity": "high"
+          },
+          {
+            "id": "effect.agent-authoring",
+            "label": "Agent authoring rules change",
+            "description": "AI Agents need updated guidance to author valid project JSON.",
+            "severity": "high"
+          },
+          {
+            "id": "effect-legacy-compatibility",
+            "label": "Legacy compatibility risk",
+            "description": "0.2.0 Project JSON files must still import with safe defaults.",
+            "severity": "medium"
+          }
+        ]
+      },
+      "edges": [],
+      "summary": [
+        "Changing ProjectData affects validation, import, and every viewer surface.",
+        "Agent documentation must stay aligned with any new top-level field.",
+        "Legacy 0.2.0 files should continue to render with empty optional sections."
+      ],
+      "evidenceIds": [
+        "ev.project-schema",
+        "ev.project-normalize",
+        "ev.workspace-app",
+        "ev.agent-guide"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

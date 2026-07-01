@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { projectDataSchema, type ProjectData } from "@anlyx/core";
+import {
+  projectDataSchema,
+  projectValidationReportSchema,
+  type ProjectData,
+  type ProjectValidationReport
+} from "@anlyx/core";
 
 import { WorkspaceApp } from "../workspace/WorkspaceApp.js";
 
@@ -8,7 +13,11 @@ type ViewerState =
   | { status: "error"; detail: string }
   | { status: "success"; viewerData: ViewerData };
 
-type ViewerData = { kind: "project"; data: ProjectData };
+type ViewerData = {
+  kind: "project";
+  data: ProjectData;
+  validationReport?: ProjectValidationReport;
+};
 
 export function ViewerApp(): JSX.Element {
   const [state, setState] = useState<ViewerState>({ status: "loading" });
@@ -62,17 +71,44 @@ export function ViewerApp(): JSX.Element {
     );
   }
 
-  return <WorkspaceApp projectData={state.viewerData.data} />;
+  return (
+    <WorkspaceApp
+      projectData={state.viewerData.data}
+      {...(state.viewerData.validationReport
+        ? { projectValidationReport: state.viewerData.validationReport }
+        : {})}
+    />
+  );
 }
 
 async function fetchViewerData(): Promise<ViewerData> {
   const projectResponse = await fetch("/api/project-data");
 
   if (projectResponse.ok) {
-    return { kind: "project", data: projectDataSchema.parse(await projectResponse.json()) };
+    const validationReport = await fetchValidationReport();
+
+    return {
+      kind: "project",
+      data: projectDataSchema.parse(await projectResponse.json()),
+      ...(validationReport ? { validationReport } : {})
+    };
   }
 
   throw new Error(`/api/project-data returned ${projectResponse.status}`);
+}
+
+async function fetchValidationReport(): Promise<ProjectValidationReport | undefined> {
+  const response = await fetch("/api/validation-report");
+
+  if (response.status === 404) {
+    return undefined;
+  }
+
+  if (!response.ok) {
+    throw new Error(`/api/validation-report returned ${response.status}`);
+  }
+
+  return projectValidationReportSchema.parse(await response.json());
 }
 
 function ViewerStateCard({

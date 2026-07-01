@@ -20,7 +20,7 @@ timing measurements as real observations.
 The app shell contains:
 
 - Header with Anlyx wordmark, version, OSS badge, active project selector, and language selector.
-- Top navigation tabs: `Pages`, `Map`, and `JSON`.
+- Left project navigation with `Pages`, `Map`, `Overview`, `Capabilities`, and `JSON`.
 - Left page index where relevant.
 - Main content area.
 - Visible footer/status strip with source file, AI Agent, confidence, and last analysis metadata.
@@ -36,6 +36,75 @@ Header and footer metadata MUST come from Project JSON when present:
 The shell supports Korean, English, Chinese, Japanese, and French labels. The
 project content itself is authored by the user's AI Agent in the user's chosen
 language.
+
+## Overview
+
+`Overview` is a README-like project introduction surface. It renders optional
+`overview` data authored by the AI Agent, but it must stay lightweight and
+readable rather than becoming a dashboard.
+
+It MUST show:
+
+- A short `Anlyx overview` introduction.
+- Built-with stack items such as React, TypeScript, Node.js, Express, and Project JSON / JSON Schema when authored.
+- What-it-does blocks for inspecting pages, tracing request flows, reviewing authored JSON, and checking evidence or unknowns.
+
+It MUST NOT:
+
+- Invent project purpose, actors, entities, or stack items.
+- Fill stack items from viewer defaults when the project did not author them.
+- Replace Pages, Map, or JSON as the evidence-oriented surfaces.
+- Show generic KPI cards such as Total capabilities, Connected flows, Core entities, or Main areas.
+- Repeat project metadata in a right rail when the shell/status bar already provides it.
+
+## Capabilities
+
+`Capabilities` is a primary product behavior verification surface generated from
+optional `capabilities` data.
+
+It MUST show:
+
+- Summary cards for Total capabilities, Connected, User-facing, and Unresolved.
+- Filters for All, User, Entry surface, and Connected only.
+- Actor, capability, entry, request, data, status, visible result, and confidence when authored.
+- A details rail for the selected capability.
+- Honest `connected`, `ui-only`, `api-only`, `data-only`, `inferred`, or `unknown` status.
+
+It MUST NOT:
+
+- Treat internal function names as product capabilities by default.
+- Promote inferred relationships as connected behavior.
+
+## Data Lifecycle
+
+`Data Lifecycle` is optional `0.3.0` project-understanding data. It is not a
+primary navigation surface in the default viewer.
+
+It MUST show:
+
+- Entity selector when multiple lifecycles are authored.
+- Lifecycle stages, transitions, trigger, data changes, evidence, and confidence when available.
+- Empty state when no lifecycle is authored.
+
+It MUST NOT:
+
+- Generate lifecycle maps for every table.
+- Fill unclear transitions with confident invented steps.
+
+## Impact Map
+
+`Impact Map` is optional `0.3.0` project-understanding data. It is not a
+primary navigation surface in the default viewer.
+
+It MUST show:
+
+- Target, affected pages, requests, data refs, business effects, summary, evidence, and confidence.
+- Empty state when no impact map is authored.
+
+It MUST NOT:
+
+- Become a raw source dependency graph.
+- Show an `Evidence` tab; evidence remains supporting data.
 
 ## Pages
 
@@ -80,8 +149,9 @@ Map MUST:
 - Render from Project JSON `architecture.nodes`, `architecture.edges`, `requests`, and `flows`.
 - Keep the graph as the main content.
 - Use deterministic layered placement.
-- Show primary request paths by default.
-- Hide noisy secondary/shared dependencies until hover or focus when needed.
+- Show all visible authored nodes clearly in the default state.
+- Highlight selected paths only after the user selects or focuses a node.
+- Keep noisy secondary/shared dependencies quiet until hover or focus when needed.
 - Collapse repeated or low-priority frontend/database details into group nodes.
 - Avoid orphan dots, ghost edges, and unexplained lane labels.
 - Use connected node-edge rendering so edges attach cleanly to nodes.
@@ -89,7 +159,7 @@ Map MUST:
 
 Map SHOULD:
 
-- Make request paths visually stronger than contextual shared edges.
+- Make selected request paths visually stronger than contextual shared edges after focus.
 - Keep DB terminals meaningful with labels or collapsed table groups.
 - Use display labels on the canvas and full labels in tooltips.
 - Keep controls compact and secondary.
@@ -108,8 +178,10 @@ the AI Agent wrote and what the viewer is rendering.
 It MUST show:
 
 - Available JSON files: `anlyx.project.json` and split files under `.anlyx/project/*.json` when present.
+- `.anlyx/validation-report.json` when import has produced a validation report.
 - The selected JSON file content.
 - Schema version and validation status.
+- Source issue count and coverage status when available.
 - Project metadata.
 - Section counts for areas, pages, features, requests, flows, architecture, evidence, measurements, and dictionary.
 - Timing disabled state only as metadata when `measurements` is empty.

@@ -62,7 +62,7 @@ describe("normalizeProjectInput", () => {
     expect(data.dictionary.terms[0]?.term).toBe("홈");
   });
 
-  it("fills missing measurements, architecture, and dictionary with defaults", () => {
+  it("fills missing measurements, architecture, dictionary, and understanding surfaces with defaults", () => {
     const data = normalizeProjectInput({
       index: {
         schemaVersion: "0.2.0",
@@ -79,6 +79,58 @@ describe("normalizeProjectInput", () => {
     expect(data.measurements).toEqual([]);
     expect(data.architecture).toEqual({ nodes: [], edges: [] });
     expect(data.dictionary).toEqual({ defaultLanguage: "en", terms: [] });
+    expect(data.overview).toEqual({
+      actors: [],
+      coreEntities: [],
+      mainAreas: [],
+      implementation: [],
+      suggestedReadingPath: [],
+      evidenceIds: []
+    });
+    expect(data.capabilities).toEqual([]);
+    expect(data.dataLifecycles).toEqual([]);
+    expect(data.impactMaps).toEqual([]);
+  });
+
+  it("normalizes split project understanding files", () => {
+    const data = normalizeProjectInput({
+      index: {
+        schemaVersion: "0.3.0",
+        project: { id: "app", name: "App" }
+      },
+      overview: {
+        summary: "Project summary",
+        actors: [{ id: "actor.user", name: "User", role: "user" }]
+      },
+      capabilities: [
+        {
+          id: "capability.view",
+          actorRole: "user",
+          name: "View project",
+          status: "connected"
+        }
+      ],
+      dataLifecycles: [
+        {
+          id: "lifecycle.project-data",
+          entity: { name: "ProjectData", kind: "core-entity" },
+          name: "ProjectData lifecycle"
+        }
+      ],
+      impactMaps: [
+        {
+          id: "impact.project-data",
+          target: { id: "target.project-data", kind: "entity", label: "ProjectData" },
+          name: "ProjectData impact",
+          affected: {}
+        }
+      ]
+    });
+
+    expect(data.overview.summary).toBe("Project summary");
+    expect(data.capabilities[0]?.name).toBe("View project");
+    expect(data.dataLifecycles[0]?.entity.name).toBe("ProjectData");
+    expect(data.impactMaps[0]?.target.label).toBe("ProjectData");
   });
 
   it("fails schema parsing for invalid split child data", () => {
