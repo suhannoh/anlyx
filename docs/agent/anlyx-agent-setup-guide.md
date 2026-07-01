@@ -144,7 +144,7 @@ The CLI may normalize split files into `anlyx.project.json`.
 Preferred local setup:
 
 ```bash
-npm install -D anlyx@latest
+npm install -D anlyx@beta
 npx anlyx init
 npx anlyx prompt init
 npx anlyx validate anlyx.project.json

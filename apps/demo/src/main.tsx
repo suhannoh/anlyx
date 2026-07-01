@@ -133,7 +133,7 @@ const landingCopy = {
     docsPromptCardTitle: "AI setup prompt",
     docsPromptCardBody:
       "Paste this into your coding agent. It installs the npm package, uses the public GitHub repo as reference, and starts the local viewer.",
-    docsPromptStepInstall: "Install npm package: npm install -D anlyx@latest",
+    docsPromptStepInstall: "Install npm package: npm install -D anlyx@beta",
     docsPromptStepRepo: "Review the GitHub docs",
     docsPromptStepAnalyze: "Analyze repository structure",
     docsPromptStepAuthor: "Author anlyx.project.json",
@@ -293,7 +293,7 @@ const landingCopy = {
     docsPromptCardTitle: "AI 세팅 프롬프트",
     docsPromptCardBody:
       "분석할 저장소에서 코딩 에이전트에게 그대로 붙여넣으세요. npm 패키지를 설치하고, 공개 GitHub 문서를 기준으로 로컬 viewer까지 실행하게 합니다.",
-    docsPromptStepInstall: "npm 패키지 설치: npm install -D anlyx@latest",
+    docsPromptStepInstall: "npm 패키지 설치: npm install -D anlyx@beta",
     docsPromptStepRepo: "GitHub 문서 확인",
     docsPromptStepAnalyze: "저장소 구조 분석",
     docsPromptStepAuthor: "anlyx.project.json 작성",
@@ -682,7 +682,7 @@ function DocsPage({
   const [isAgentPromptOpen, setIsAgentPromptOpen] = useState(false);
   const prompts = getAgentPrompts(language);
   const quickCommand =
-    "npm install -D anlyx@latest\nnpx anlyx prompt init\nnpx anlyx validate anlyx.project.json\nnpx anlyx import anlyx.project.json\nnpx anlyx dev";
+    "npm install -D anlyx@beta\nnpx anlyx prompt init\nnpx anlyx validate anlyx.project.json\nnpx anlyx import anlyx.project.json\nnpx anlyx dev";
   const agentPrompt = prompts.find((prompt) => prompt.id === "next-spring")?.prompt ?? "";
   const refreshPrompt = prompts.find((prompt) => prompt.id === "refresh")?.prompt ?? "";
   const promptSteps = [
@@ -888,7 +888,7 @@ function getAgentPrompts(language: Language): Array<{
 
 Anlyx install and reference:
 - npm package: anlyx
-- install or upgrade command: npm install -D anlyx@latest
+- install or upgrade command: npm install -D anlyx@beta
 - public repository and docs: https://github.com/suhannoh/anlyx
 - agent guide: https://github.com/suhannoh/anlyx/blob/main/docs/agent/anlyx-project-json-agent-guide.md
 - local viewer URL after running dev: http://localhost:4777
@@ -907,7 +907,7 @@ Goal:
 
 Steps:
 1. Read the public Anlyx docs if you need the contract: https://github.com/suhannoh/anlyx
-2. Install or upgrade Anlyx in this project: npm install -D anlyx@latest
+2. Install or upgrade Anlyx in this project: npm install -D anlyx@beta
 3. Check the installed package: npm ls anlyx @anlyx/core @anlyx/ui
 4. Inspect the repository and identify detected counts, pages, requests, flows, architecture nodes, evidence, overview, and capabilities.
 5. Write anlyx.project.json with schemaVersion "0.3.0".
@@ -940,7 +940,7 @@ Before finishing, report:
 
 Anlyx install and reference:
 - npm package: anlyx
-- install or upgrade command: npm install -D anlyx@latest
+- install or upgrade command: npm install -D anlyx@beta
 - public repository and docs: https://github.com/suhannoh/anlyx
 - agent guide: https://github.com/suhannoh/anlyx/blob/main/docs/agent/anlyx-project-json-agent-guide.md
 - local viewer URL after running dev: http://localhost:4777
@@ -955,7 +955,7 @@ Goal:
 
 Steps:
 1. Read the public Anlyx docs if you need the contract: https://github.com/suhannoh/anlyx
-2. Install or upgrade Anlyx in this project: npm install -D anlyx@latest
+2. Install or upgrade Anlyx in this project: npm install -D anlyx@beta
 3. Check the installed package: npm ls anlyx @anlyx/core @anlyx/ui
 4. Collect only local, non-secret evidence.
 5. Create anlyx.project.json with schemaVersion "0.3.0".
@@ -993,7 +993,7 @@ You are working inside my local repository. Refresh the existing Anlyx Project J
 
 Anlyx reference:
 - npm package: anlyx
-- upgrade command if needed: npm install -D anlyx@latest
+- upgrade command if needed: npm install -D anlyx@beta
 - public repository and docs: https://github.com/suhannoh/anlyx
 - agent guide: https://github.com/suhannoh/anlyx/blob/main/docs/agent/anlyx-project-json-agent-guide.md
 - local viewer URL after running dev: http://localhost:4777

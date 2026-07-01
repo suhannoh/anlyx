@@ -79,4 +79,4 @@ document explicitly reintroduces them.
 - [x] `corepack pnpm test` passes after the beta release documentation update.
 - [x] `corepack pnpm --filter anlyx pack --dry-run` verifies publish contents.
 - [x] Local tarball install can run `npx anlyx --help`, `prompt`, `validate`, `import`, and `dev`.
-- [ ] Fresh npm install verifies the published `0.1.6-beta.0` package after npm publish.
+- [x] Fresh npm install verifies the published `0.1.6-beta.1` package after npm publish.

@@ -1,6 +1,6 @@
 {
   "name": "@anlyx/adapter-manual",
-  "version": "0.1.6-beta.0",
+  "version": "0.1.6-beta.1",
   "description": "Manual project metadata producer adapter for Anlyx Project JSON.",
   "license": "MIT",
   "type": "module",

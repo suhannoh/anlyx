@@ -1,6 +1,6 @@
 {
   "name": "anlyx",
-  "version": "0.1.6-beta.0",
+  "version": "0.1.6-beta.1",
   "description": "CLI for Anlyx Project JSON validation, import, and local 4777 viewing.",
   "license": "MIT",
   "type": "module",
@@ -40,6 +40,8 @@
     "@anlyx/core": "workspace:*",
     "@anlyx/ui": "workspace:*",
     "jiti": "^2.7.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "vite": "^8.0.16"
   },
   "peerDependencies": {

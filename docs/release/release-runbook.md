@@ -27,7 +27,7 @@ runtime timing as the default product path.
 5. Validate/import a real `anlyx.project.json`.
 6. Open the local 4777 viewer.
 7. Confirm the working tree is clean.
-8. Prepare the release notes from `docs/release/v0.1.6-beta.0.md`.
+8. Prepare the release notes from `docs/release/v0.1.6-beta.1.md`.
 
 ## Package Order
 

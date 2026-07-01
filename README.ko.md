@@ -54,7 +54,7 @@ viewer는 다섯 가지 화면을 제공합니다.
 Codex, Claude Code, Cursor 같은 코딩 에이전트에게 아래 프롬프트를 붙여넣으세요.
 
 ```txt
-npm install -D anlyx@latest로 Anlyx를 설치해 주세요.
+npm install -D anlyx@beta로 Anlyx를 설치해 주세요.
 https://github.com/suhannoh/anlyx 문서와 Project JSON agent guide를 확인해 주세요.
 이 저장소를 분석해서 anlyx.project.json을 작성해 주세요.
 근거가 있는 범위에서 pages, requests, flows, architecture, evidence, overview, capabilities를 채워 주세요.
@@ -90,7 +90,7 @@ AI Agent가 저장소 분석
 ## 빠른 시작
 
 ```bash
-npm install -D anlyx@latest
+npm install -D anlyx@beta
 npx anlyx prompt init
 npx anlyx validate anlyx.project.json
 npx anlyx import anlyx.project.json
@@ -248,4 +248,4 @@ corepack pnpm -r build
 
 ## 릴리즈 노트
 
-현재 베타 릴리즈 초안은 [`docs/release/v0.1.6-beta.0.md`](./docs/release/v0.1.6-beta.0.md)를 참고하세요.
+현재 베타 릴리즈 초안은 [`docs/release/v0.1.6-beta.1.md`](./docs/release/v0.1.6-beta.1.md)를 참고하세요.

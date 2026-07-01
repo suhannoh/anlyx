@@ -38,9 +38,9 @@ describe("local package install helper", () => {
       expect(stdout).toContain("@anlyx/ui");
       expect(stdout).toContain("anlyx");
       expect(stdout).toContain("npm install --save-dev");
-      expect(stdout).toContain(join(dir, "anlyx-core-0.1.6-beta.0.tgz"));
-      expect(stdout).toContain(join(dir, "anlyx-ui-0.1.6-beta.0.tgz"));
-      expect(stdout).toContain(join(dir, "anlyx-0.1.6-beta.0.tgz"));
+      expect(stdout).toContain(join(dir, "anlyx-core-0.1.6-beta.1.tgz"));
+      expect(stdout).toContain(join(dir, "anlyx-ui-0.1.6-beta.1.tgz"));
+      expect(stdout).toContain(join(dir, "anlyx-0.1.6-beta.1.tgz"));
       expect(stdout).not.toContain("@anlyx/adapter-spring");
       expect(stdout).not.toContain("@anlyx/capture");
       expect(stdout).not.toContain("zup");

@@ -58,7 +58,7 @@ The recommended first run is not to hand-write JSON. Paste this into Codex,
 Claude Code, Cursor, or another coding agent inside the project you want to map:
 
 ```txt
-Install Anlyx with npm install -D anlyx@latest.
+Install Anlyx with npm install -D anlyx@beta.
 Read https://github.com/suhannoh/anlyx and the Project JSON agent guide.
 Analyze this repository and create anlyx.project.json.
 Include pages, requests, flows, architecture nodes, evidence, overview, and capabilities when you can support them.
@@ -96,7 +96,7 @@ AI Agent analyzes your repo
 ## Quick Start
 
 ```bash
-npm install -D anlyx@latest
+npm install -D anlyx@beta
 npx anlyx prompt init
 npx anlyx validate anlyx.project.json
 npx anlyx import anlyx.project.json
@@ -271,5 +271,5 @@ the [`Adapter Development Guide`](./docs/adapters/adapter-development.md).
 
 ## Release Notes
 
-See [`docs/release/v0.1.6-beta.0.md`](./docs/release/v0.1.6-beta.0.md) for the
+See [`docs/release/v0.1.6-beta.1.md`](./docs/release/v0.1.6-beta.1.md) for the
 current beta release notes draft.

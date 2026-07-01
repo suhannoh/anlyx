@@ -429,7 +429,7 @@ Before finishing, report what changed, what stayed uncertain, and whether valida
 
 Anlyx install and reference:
 - npm package: anlyx
-- install or upgrade command: npm install -D anlyx@latest
+- install or upgrade command: npm install -D anlyx@beta
 - public repository and docs: https://github.com/suhannoh/anlyx
 - agent guide: https://github.com/suhannoh/anlyx/blob/main/docs/agent/anlyx-project-json-agent-guide.md
 - local viewer URL after running dev: http://localhost:4777
@@ -447,7 +447,7 @@ Goal:
 - Do not include secrets, production records, or raw personal data.
 
 Steps:
-1. Install or upgrade Anlyx in this project: npm install -D anlyx@latest
+1. Install or upgrade Anlyx in this project: npm install -D anlyx@beta
 2. Check the installed package: npm ls anlyx @anlyx/core @anlyx/ui
 3. Read the public Anlyx docs if you need the contract.
 4. Inspect the repository and identify detected counts, pages, requests, flows, architecture nodes, evidence, overview, and capabilities.
