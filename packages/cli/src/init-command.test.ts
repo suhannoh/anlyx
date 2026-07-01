@@ -117,8 +117,21 @@ describe("init command", () => {
 
       expect(exitCode).toBe(1);
       expect(writes.join("\n")).toContain("Unknown command: unknown");
-      expect(writes.join("\n")).toContain("Available commands: init, validate, import, dev");
+      expect(writes.join("\n")).toContain("Available commands: init, prompt, validate, import, dev");
       await expect(readFile(join(dir, "anlyx.config.ts"), "utf8")).rejects.toThrow();
     });
+  });
+
+  it("prompt refresh prints the agent shortcut prompt", async () => {
+    const writes: string[] = [];
+    const exitCode = await runCli(["prompt", "refresh"], {
+      cwd: "/tmp",
+      write: (message) => writes.push(message)
+    });
+
+    expect(exitCode).toBe(0);
+    expect(writes.join("\n")).toContain("anlyx refresh");
+    expect(writes.join("\n")).toContain("Preserve stable ids");
+    expect(writes.join("\n")).toContain("npx anlyx validate anlyx.project.json");
   });
 });

@@ -25,8 +25,8 @@ The target project is ready for Anlyx when the Agent can answer:
 - Which relationships are unknown, inferred, or not proven?
 - Can the Agent run validation/import for `anlyx.project.json`?
 - Can the Agent open the 4777 viewer?
-- Can the Agent confirm the viewer renders Pages, Map, and JSON from the
-  authored file?
+- Can the Agent confirm the viewer renders authored surfaces from the file,
+  including Pages, Map, JSON, and any optional `0.3.0` sections?
 - If measurements are requested, can the Agent provide real measured evidence?
 
 If any answer is missing, the Agent may still write partial project JSON, but it
@@ -193,7 +193,7 @@ Agent response:
 Before reporting completion:
 
 - `anlyx.project.json` exists.
-- `schemaVersion` is `0.2.0`.
+- `schemaVersion` is `0.2.0` or `0.3.0`.
 - `project.id` and `project.name` exist.
 - `areas`, `pages`, `features`, `requests`, `flows`, `evidence`, and
   `measurements` are arrays.

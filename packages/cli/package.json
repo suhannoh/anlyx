@@ -1,6 +1,6 @@
 {
   "name": "anlyx",
-  "version": "0.1.5",
+  "version": "0.1.6-beta.0",
   "description": "CLI for Anlyx Project JSON validation, import, and local 4777 viewing.",
   "license": "MIT",
   "type": "module",

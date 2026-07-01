@@ -27,19 +27,26 @@ runtime timing as the default product path.
 5. Validate/import a real `anlyx.project.json`.
 6. Open the local 4777 viewer.
 7. Confirm the working tree is clean.
+8. Prepare the release notes from `docs/release/v0.1.6-beta.0.md`.
 
 ## Package Order
 
-Publish package dependencies before the CLI package. Current package names are:
+Publish package dependencies before the CLI package. The beta install path
+requires at least these packages at the same version:
 
 - `@anlyx/core`
 - `@anlyx/ui`
+- `anlyx`
+
+The adapter and capture packages are publishable workspace packages, but they
+are not required for `npm install -D anlyx` unless they are included in a
+specific release:
+
 - `@anlyx/adapter-openapi`
 - `@anlyx/adapter-manual`
 - `@anlyx/adapter-next`
 - `@anlyx/adapter-spring`
 - `@anlyx/capture`
-- `anlyx`
 
 Use `corepack pnpm publish` so workspace dependency ranges are converted
 correctly.
@@ -56,5 +63,7 @@ correctly.
 
 - Verify `npx anlyx --help` from a fresh temporary directory.
 - Verify `npx anlyx init --force`.
+- Verify `npx anlyx prompt init`.
+- Verify `npx anlyx prompt refresh`.
 - Verify Project JSON validate/import.
 - Record the published version and npm package URLs in a release note.

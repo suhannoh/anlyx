@@ -9,6 +9,7 @@ import {
   buildFlowRecordFromBrowserEvent,
   mergeBackendSpansIntoFlowRecord,
   normalizeProjectInput,
+  parseProjectValidationReport,
   parseProjectData,
   scanResultSchema,
   type BackendObservedSpan,
@@ -17,6 +18,7 @@ import {
   type FlowRecord,
   type NormalizedAnlyxConfig,
   type ProjectData,
+  type ProjectValidationReport,
   type ScanResult
 } from "@anlyx/core";
 import { createServer, type ViteDevServer } from "vite";
@@ -49,6 +51,7 @@ export type DevCommandDependencies = {
   loadConfig?: typeof loadConfig;
   readProjectData?: (path: string) => Promise<ProjectData>;
   readReportData?: (path: string) => Promise<ScanResult>;
+  readValidationReport?: (path: string) => Promise<ProjectValidationReport | undefined>;
   createLocalUiServer?: (options: LocalUiServerOptions) => Promise<LocalUiServer>;
   isFrontendReachable?: (url: string) => Promise<boolean>;
   startFrontendDevServer?: (options: StartFrontendDevServerOptions) => FrontendDevServerProcess;
@@ -58,6 +61,7 @@ export type DevCommandDependencies = {
 export type LocalUiServerOptions = {
   port: number;
   projectData?: ProjectData;
+  validationReport?: ProjectValidationReport;
   reportData?: ScanResult;
   viewerRoot: string;
   frontendBaseUrl: string;
@@ -93,6 +97,7 @@ export async function runDevCommand(options: DevCommandOptions = {}): Promise<De
   const projectDataPath = join(cwd, "anlyx.project.json");
   const splitProjectDataPath = join(outputDir, "project", "index.json");
   const reportDataPath = join(outputDir, "report-data.json");
+  const validationReportPath = join(outputDir, "validation-report.json");
   const loadedData = await ensureProjectData({
     projectDataPath,
     splitProjectDataPath,
@@ -104,13 +109,20 @@ export async function runDevCommand(options: DevCommandOptions = {}): Promise<De
     dependencies
   });
   const port = options.port ?? getConfiguredPort(config);
-  const server = await dependencies.createLocalUiServer({
+  const validationReport = await dependencies.readValidationReport(validationReportPath);
+  const serverOptions: LocalUiServerOptions = {
     port,
     projectData: loadedData.data,
     viewerRoot: getViewerRoot(),
     frontendBaseUrl: config.frontend.baseUrl,
     mode: config.server.mode
-  });
+  };
+
+  if (validationReport) {
+    serverOptions.validationReport = validationReport;
+  }
+
+  const server = await dependencies.createLocalUiServer(serverOptions);
   activeLocalUiServers.add(server);
   const shouldOpenBrowser = options.open ?? config.server.openBrowser;
 
@@ -285,7 +297,12 @@ async function readSplitProjectData(indexPath: string, index: unknown): Promise<
     architecture,
     evidence,
     measurements,
-    dictionary
+    dictionary,
+    coverage,
+    overview,
+    capabilities,
+    dataLifecycles,
+    impactMaps
   ] = await Promise.all([
     readOptionalProjectJson(join(projectDir, "areas.json")),
     readOptionalProjectJson(join(projectDir, "pages.json")),
@@ -295,7 +312,12 @@ async function readSplitProjectData(indexPath: string, index: unknown): Promise<
     readOptionalProjectJson(join(projectDir, "architecture.json")),
     readOptionalProjectJson(join(projectDir, "evidence.json")),
     readOptionalProjectJson(join(projectDir, "measurements.json")),
-    readOptionalProjectJson(join(projectDir, "dictionary.json"))
+    readOptionalProjectJson(join(projectDir, "dictionary.json")),
+    readOptionalProjectJson(join(projectDir, "coverage.json")),
+    readOptionalProjectJson(join(projectDir, "overview.json")),
+    readOptionalProjectJson(join(projectDir, "capabilities.json")),
+    readOptionalProjectJson(join(projectDir, "data-lifecycles.json")),
+    readOptionalProjectJson(join(projectDir, "impact-maps.json"))
   ]);
 
   return normalizeProjectInput({
@@ -308,7 +330,12 @@ async function readSplitProjectData(indexPath: string, index: unknown): Promise<
     ...(architecture === undefined ? {} : { architecture }),
     ...(evidence === undefined ? {} : { evidence }),
     ...(measurements === undefined ? {} : { measurements }),
-    ...(dictionary === undefined ? {} : { dictionary })
+    ...(dictionary === undefined ? {} : { dictionary }),
+    ...(coverage === undefined ? {} : { coverage }),
+    ...(overview === undefined ? {} : { overview }),
+    ...(capabilities === undefined ? {} : { capabilities }),
+    ...(dataLifecycles === undefined ? {} : { dataLifecycles }),
+    ...(impactMaps === undefined ? {} : { impactMaps })
   });
 }
 
@@ -377,6 +404,36 @@ export async function readReportData(path: string): Promise<ScanResult> {
   }
 
   return result.data;
+}
+
+export async function readValidationReport(
+  path: string
+): Promise<ProjectValidationReport | undefined> {
+  let content: string;
+
+  try {
+    content = await readFile(path, "utf8");
+  } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") {
+      return undefined;
+    }
+
+    throw error;
+  }
+
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(content) as unknown;
+  } catch (error) {
+    throw new Error(
+      `Failed to parse Anlyx validation report JSON at ${path}: ${
+        error instanceof Error ? error.message : "invalid JSON"
+      }`
+    );
+  }
+
+  return parseProjectValidationReport(parsed);
 }
 
 export async function createLocalUiServer(options: LocalUiServerOptions): Promise<LocalUiServer> {
@@ -485,6 +542,16 @@ function createAnlyxDevPlugin(options: LocalUiServerOptions) {
           }
 
           sendJson(response, options.reportData);
+          return;
+        }
+
+        if (request.method === "GET" && isValidationReportPath(requestUrl)) {
+          if (!options.validationReport) {
+            sendJsonError(response, 404, new Error("Anlyx validation report not loaded."));
+            return;
+          }
+
+          sendJson(response, options.validationReport);
           return;
         }
 
@@ -750,6 +817,10 @@ function isReportDataPath(path: string): boolean {
 
 function isProjectDataPath(path: string): boolean {
   return path === "/_anlyx/project-data" || path === "/api/project-data";
+}
+
+function isValidationReportPath(path: string): boolean {
+  return path === "/_anlyx/validation-report" || path === "/api/validation-report";
 }
 
 function isStandaloneViewerPath(path: string): boolean {
@@ -2348,6 +2419,7 @@ function withDefaultDependencies(
     loadConfig: dependencies?.loadConfig ?? loadConfig,
     readProjectData: dependencies?.readProjectData ?? readProjectData,
     readReportData: dependencies?.readReportData ?? readReportData,
+    readValidationReport: dependencies?.readValidationReport ?? readValidationReport,
     createLocalUiServer: dependencies?.createLocalUiServer ?? createLocalUiServer,
     isFrontendReachable: dependencies?.isFrontendReachable ?? isFrontendReachable,
     startFrontendDevServer: dependencies?.startFrontendDevServer ?? startFrontendDevServer,

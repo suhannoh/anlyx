@@ -1,7 +1,11 @@
 import { z } from "zod";
 import {
   architectureGraphSchema,
+  dataLifecycleSchema,
+  impactMapSchema,
   projectAreaSchema,
+  projectCapabilitySchema,
+  projectCoverageSchema,
   projectDataSchema,
   projectDictionarySchema,
   projectEvidenceSchema,
@@ -9,6 +13,7 @@ import {
   projectFlowSchema,
   projectInfoSchema,
   projectMeasurementSchema,
+  projectOverviewSchema,
   projectPageSchema,
   projectRequestSchema,
   projectSchemaVersionSchema,
@@ -30,6 +35,11 @@ export type SplitProjectInput = {
   evidence?: Array<z.input<typeof projectEvidenceSchema>>;
   measurements?: Array<z.input<typeof projectMeasurementSchema>>;
   dictionary?: z.input<typeof projectDictionarySchema>;
+  coverage?: z.input<typeof projectCoverageSchema>;
+  overview?: z.input<typeof projectOverviewSchema>;
+  capabilities?: Array<z.input<typeof projectCapabilitySchema>>;
+  dataLifecycles?: Array<z.input<typeof dataLifecycleSchema>>;
+  impactMaps?: Array<z.input<typeof impactMapSchema>>;
 };
 
 export type ProjectInput = z.input<typeof projectDataSchema> | SplitProjectInput;
@@ -47,7 +57,12 @@ export function normalizeProjectInput(input: unknown): ProjectData {
       architecture: input.architecture ?? { nodes: [], edges: [] },
       evidence: input.evidence ?? [],
       measurements: input.measurements ?? [],
-      dictionary: input.dictionary ?? input.index.dictionary ?? { defaultLanguage: "en", terms: [] }
+      dictionary: input.dictionary ?? input.index.dictionary ?? { defaultLanguage: "en", terms: [] },
+      coverage: input.coverage,
+      overview: input.overview ?? {},
+      capabilities: input.capabilities ?? [],
+      dataLifecycles: input.dataLifecycles ?? [],
+      impactMaps: input.impactMaps ?? []
     });
   }
 

@@ -2,7 +2,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { fireEvent } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { FlowRecord, ProjectData } from "@anlyx/core";
+import type { FlowRecord, ProjectData, ProjectValidationReport } from "@anlyx/core";
 
 import { mockScanResult } from "../mock-data.js";
 import { WorkspaceApp } from "./WorkspaceApp.js";
@@ -60,10 +60,67 @@ describe("WorkspaceApp project workspace", () => {
     vi.unstubAllGlobals();
   });
 
+  it("uses Pages, Map, Overview, Capabilities, and JSON as the primary project navigation", () => {
+    render(<WorkspaceApp projectData={projectDataWithUnderstanding} />);
+
+    expect(screen.getByRole("button", { name: "Pages" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("button", { name: "Map" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Overview" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Capabilities" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "JSON" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Collapse project navigation" })).toBeTruthy();
+    expect(screen.queryByRole("tab")).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Insights" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Data Lifecycle" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Impact Map" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Evidence" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Overview" }));
+    expect(screen.getByRole("heading", { name: "Anlyx overview" })).toBeTruthy();
+    expect(screen.getByText("Project overview summary.")).toBeTruthy();
+    expect(screen.getByText("Built with")).toBeTruthy();
+    expect(screen.getByText("No implementation stack authored.")).toBeTruthy();
+    expect(screen.queryByText("React")).toBeNull();
+    expect(screen.queryByText("TypeScript")).toBeNull();
+    expect(screen.queryByText("Node.js")).toBeNull();
+    expect(screen.queryByText("Express")).toBeNull();
+    expect(screen.queryByText("Project JSON")).toBeNull();
+    expect(screen.queryByText("How to inspect")).toBeNull();
+    expect(screen.queryByText("Architecture at a glance")).toBeNull();
+    expect(screen.queryByText("Project facts")).toBeNull();
+    expect(screen.queryByText("Total capabilities")).toBeNull();
+    expect(screen.queryByText("Core entities")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Capabilities" }));
+    expect(screen.getByText("User-facing")).toBeTruthy();
+    expect(screen.getByText("Unresolved")).toBeTruthy();
+    expect(screen.getAllByText("View project").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Why this matters")).toBeTruthy();
+    expect(screen.getByText("Trace summary")).toBeTruthy();
+    expect(screen.queryByText("Related downstream surfaces")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Collapse project navigation" }));
+    expect(screen.getByRole("button", { name: "Expand project navigation" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Expand project navigation" }));
+    expect(screen.getByRole("button", { name: "Collapse project navigation" })).toBeTruthy();
+  });
+
   it("renders the Pages surface from agent-authored project JSON", () => {
-    const { container } = render(<WorkspaceApp projectData={projectDataWithPages} />);
+    const { container } = render(
+      <WorkspaceApp
+        projectData={projectDataWithPagesWithCoverage}
+        projectValidationReport={projectValidationReportWithIssues}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
 
     expect(screen.getByRole("heading", { name: "Projects" })).toBeTruthy();
+    expect(screen.getAllByText("1 / 3 pages modeled").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Partial analysis").length).toBeGreaterThan(0);
+    expect(screen.getByText("Source issues")).toBeTruthy();
+    expect(screen.getByText("1 missing file / 1 symbol")).toBeTruthy();
+    expect(screen.getByText("Validation issues")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: /Page Brief/i })).toBeNull();
     expect(screen.queryByText("OSS")).toBeNull();
     expect(screen.queryByLabelText("Language")).toBeNull();
@@ -114,7 +171,7 @@ describe("WorkspaceApp project workspace", () => {
   it("renders project architecture from agent-authored project data only", () => {
     const { container } = render(<WorkspaceApp projectData={projectDataWithArchitecture} />);
 
-    fireEvent.click(screen.getByRole("tab", { name: "Map" }));
+    fireEvent.click(screen.getByRole("button", { name: "Map" }));
 
     expect(screen.getByTestId("project-architecture-map")).toBeTruthy();
     expect(screen.getAllByText("HomePage").length).toBeGreaterThan(0);
@@ -178,7 +235,7 @@ describe("WorkspaceApp project workspace", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Map" }));
+    fireEvent.click(screen.getByRole("button", { name: "Map" }));
 
     expect(
       screen.getByText(
@@ -395,7 +452,117 @@ const projectDataWithArchitecture: ProjectData = {
   dictionary: {
     defaultLanguage: "en",
     terms: []
-  }
+  },
+  overview: {
+    actors: [],
+    coreEntities: [],
+    mainAreas: [],
+    implementation: [],
+    suggestedReadingPath: [],
+    evidenceIds: []
+  },
+  capabilities: [],
+  dataLifecycles: [],
+  impactMaps: []
+};
+
+const projectDataWithUnderstanding: ProjectData = {
+  ...projectDataWithArchitecture,
+  schemaVersion: "0.3.0",
+  overview: {
+    summary: "Project overview summary.",
+    projectType: "Local viewer",
+    mainPurpose: "Show authored project data.",
+    actors: [
+      {
+        id: "actor.user",
+        name: "User",
+        role: "user",
+        evidenceIds: []
+      }
+    ],
+    coreEntities: [
+      {
+        id: "entity.project-data",
+        name: "ProjectData",
+        kind: "core-entity",
+        dataRefs: [],
+        evidenceIds: []
+      }
+    ],
+    mainAreas: [],
+    implementation: [],
+    suggestedReadingPath: [],
+    evidenceIds: [],
+    confidence: "high"
+  },
+  capabilities: [
+    {
+      id: "capability.view",
+      actorRole: "user",
+      name: "View project",
+      entry: {
+        type: "page",
+        label: "Workspace"
+      },
+      pageIds: [],
+      featureIds: [],
+      requestIds: [],
+      flowIds: [],
+      dataRefs: [{ kind: "model", name: "ProjectData", operation: "read" }],
+      status: "connected",
+      evidenceIds: []
+    }
+  ],
+  dataLifecycles: [
+    {
+      id: "lifecycle.project-data",
+      entity: {
+        id: "entity.project-data",
+        name: "ProjectData",
+        kind: "core-entity",
+        dataRefs: []
+      },
+      name: "ProjectData lifecycle",
+      stageIds: ["stage.authored"],
+      stages: [
+        {
+          id: "stage.authored",
+          name: "Authored",
+          requestIds: [],
+          pageIds: [],
+          flowIds: [],
+          dataRefs: [],
+          evidenceIds: []
+        }
+      ],
+      transitions: [],
+      evidenceIds: []
+    }
+  ],
+  impactMaps: [
+    {
+      id: "impact.project-data",
+      target: {
+        id: "target.project-data",
+        kind: "entity",
+        label: "ProjectData"
+      },
+      name: "ProjectData impact",
+      affected: {
+        pageIds: ["home"],
+        featureIds: [],
+        requestIds: [],
+        flowIds: [],
+        areaIds: [],
+        dataRefs: [{ kind: "model", name: "ProjectData" }],
+        businessEffects: []
+      },
+      edges: [],
+      summary: ["Changing ProjectData affects the viewer."],
+      evidenceIds: []
+    }
+  ]
 };
 
 const projectDataWithPages: ProjectData = {
@@ -578,6 +745,72 @@ const projectDataWithPages: ProjectData = {
       detail: "Session refresh interval was not found in source.",
       targetIds: ["projects", "request.session"],
       confidence: "low"
+    }
+  ]
+};
+
+const projectDataWithPagesWithCoverage: ProjectData = {
+  ...projectDataWithPages,
+  coverage: {
+    status: "partial",
+    detected: {
+      pages: 3,
+      backendEndpoints: 5
+    },
+    modeled: {
+      pages: 1,
+      requests: 3,
+      flows: 1
+    },
+    unmodeled: {
+      pages: ["/admin"],
+      requests: [],
+      endpoints: ["GET /api/admin"],
+      notes: []
+    },
+    evidenceIds: []
+  }
+};
+
+const projectValidationReportWithIssues: ProjectValidationReport = {
+  schemaVersion: "0.1",
+  generatedAt: "2026-01-01T00:00:00.000Z",
+  valid: true,
+  summary: {
+    sourceIssueCount: 2,
+    sourceIssueBreakdown: {
+      missingSource: 0,
+      missingFiles: 1,
+      unreadableFiles: 0,
+      outsideRoot: 0,
+      placeholderLines: 0,
+      outOfRangeLines: 0,
+      missingSymbols: 1
+    },
+    coverageStatus: "partial",
+    modeled: {
+      pages: 1,
+      requests: 3,
+      flows: 1,
+      architectureNodes: 0
+    },
+    detected: {
+      pages: 3,
+      backendEndpoints: 5
+    }
+  },
+  issues: [
+    {
+      code: "source_file_missing",
+      severity: "warning",
+      message: "Source file does not exist.",
+      path: "src/pages/missing.tsx"
+    },
+    {
+      code: "coverage_pages_partial",
+      severity: "warning",
+      message: "Modeled pages are fewer than detected pages.",
+      path: "coverage.pages"
     }
   ]
 };

@@ -42,6 +42,7 @@ import {
   Workflow,
   Zap
 } from "lucide-react";
+import { siExpress, siNodedotjs, siReact, siTypescript } from "simple-icons";
 import { Fragment, createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
@@ -50,6 +51,7 @@ import type {
   FlowLayer,
   FlowRecord,
   ProjectData,
+  ProjectValidationReport,
   ReportData
 } from "@anlyx/core";
 import { ScanTreeMap } from "./ScanTreeMap.js";
@@ -64,7 +66,7 @@ import {
 
 type WorkspaceTab = "summary" | "timing" | "diagram";
 type WorkspaceView = "flows" | "map" | "json";
-type ProjectWorkspaceTab = "pages" | "map" | "json";
+type ProjectWorkspaceTab = "pages" | "map" | "overview" | "capabilities" | "json";
 type JsonReaderTab = "overview" | "flows" | "raw";
 type WorkspaceLocale = "en" | "ko";
 type ProjectChromeLocale = ProjectData["dictionary"]["defaultLanguage"];
@@ -82,12 +84,25 @@ type ProjectJsonInventoryItem = {
   value: string;
   icon: LucideIcon;
 };
+type ProjectStackIcon =
+  | { kind: "lucide"; icon: LucideIcon }
+  | { kind: "simple"; hex: string; path: string; title: string };
+type ProjectStackItem = {
+  detail: string;
+  icon: ProjectStackIcon;
+  name: string;
+  tone: string;
+};
 type ProjectChromeTranslationKey =
   | "agent"
   | "available"
   | "disabled"
   | "language"
   | "lastAnalysis"
+  | "overview"
+  | "capabilities"
+  | "dataLifecycle"
+  | "impactMap"
   | "map"
   | "pages"
   | "source"
@@ -474,6 +489,10 @@ const projectChromeTranslations: Record<
     disabled: "Disabled",
     language: "Language",
     lastAnalysis: "Last analysis",
+    overview: "Overview",
+    capabilities: "Capabilities",
+    dataLifecycle: "Data Lifecycle",
+    impactMap: "Impact Map",
     map: "Map",
     pages: "Pages",
     source: "Source",
@@ -487,6 +506,10 @@ const projectChromeTranslations: Record<
     disabled: "비활성",
     language: "언어",
     lastAnalysis: "마지막 분석",
+    overview: "Overview",
+    capabilities: "Capabilities",
+    dataLifecycle: "Data Lifecycle",
+    impactMap: "Impact Map",
     map: "맵",
     pages: "페이지",
     source: "소스",
@@ -500,6 +523,10 @@ const projectChromeTranslations: Record<
     disabled: "已停用",
     language: "语言",
     lastAnalysis: "最后分析",
+    overview: "Overview",
+    capabilities: "Capabilities",
+    dataLifecycle: "Data Lifecycle",
+    impactMap: "Impact Map",
     map: "地图",
     pages: "页面",
     source: "来源",
@@ -513,6 +540,10 @@ const projectChromeTranslations: Record<
     disabled: "無効",
     language: "言語",
     lastAnalysis: "最終分析",
+    overview: "Overview",
+    capabilities: "Capabilities",
+    dataLifecycle: "Data Lifecycle",
+    impactMap: "Impact Map",
     map: "マップ",
     pages: "ページ",
     source: "ソース",
@@ -526,6 +557,10 @@ const projectChromeTranslations: Record<
     disabled: "Désactivé",
     language: "Langue",
     lastAnalysis: "Dernière analyse",
+    overview: "Overview",
+    capabilities: "Capabilities",
+    dataLifecycle: "Data Lifecycle",
+    impactMap: "Impact Map",
     map: "Carte",
     pages: "Pages",
     source: "Source",
@@ -546,6 +581,7 @@ function projectDefaultLocale(data: ProjectData): ProjectChromeLocale {
 export type WorkspaceAppProps = {
   data?: ReportData;
   projectData?: ProjectData;
+  projectValidationReport?: ProjectValidationReport;
   streamUrl?: string;
   initialRecords?: FlowRecord[];
 };
@@ -584,11 +620,17 @@ const layerIcons: Partial<Record<FlowLayer["type"], LucideIcon>> = {
 export function WorkspaceApp({
   data,
   projectData,
+  projectValidationReport,
   streamUrl = "/_anlyx/events/stream",
   initialRecords = []
 }: WorkspaceAppProps): JSX.Element {
   if (projectData) {
-    return <ProjectWorkspacePreview data={projectData} />;
+    return (
+      <ProjectWorkspacePreview
+        data={projectData}
+        {...(projectValidationReport ? { validationReport: projectValidationReport } : {})}
+      />
+    );
   }
 
   if (!data) {
@@ -743,8 +785,15 @@ function LegacyWorkspaceApp({
   );
 }
 
-function ProjectWorkspacePreview({ data }: { data: ProjectData }): JSX.Element {
+function ProjectWorkspacePreview({
+  data,
+  validationReport
+}: {
+  data: ProjectData;
+  validationReport?: ProjectValidationReport;
+}): JSX.Element {
   const [activeTab, setActiveTab] = useState<ProjectWorkspaceTab>("pages");
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [projectLocale, setProjectLocale] = useState<ProjectChromeLocale>(() =>
     projectDefaultLocale(data)
   );
@@ -766,20 +815,46 @@ function ProjectWorkspacePreview({ data }: { data: ProjectData }): JSX.Element {
       aria-label="Anlyx project workspace"
     >
       <ProjectTopBar model={model} locale={projectLocale} onLocaleChange={setProjectLocale} />
-      <ProjectTabs activeTab={activeTab} locale={projectLocale} onTabChange={setActiveTab} />
-      {activeTab === "pages" ? (
-        <ProjectPagesWorkspace
-          model={model}
-          selectedPageId={model.selectedPage?.page.id}
-          onPageSelect={setSelectedPageId}
-          onOpenMap={() => setActiveTab("map")}
+      <div className={`project-workspace-shell${isSidebarCollapsed ? " is-sidebar-collapsed" : ""}`}>
+        <ProjectSidebar
+          activeTab={activeTab}
+          isCollapsed={isSidebarCollapsed}
+          locale={projectLocale}
+          onTabChange={setActiveTab}
+          onToggleCollapse={() => setIsSidebarCollapsed((value) => !value)}
         />
-      ) : activeTab === "map" ? (
-        <ProjectMapView data={data} model={model} />
-      ) : (
-        <ProjectJsonView data={data} rawJson={rawJson} model={model} />
-      )}
-      <ProjectStatusBar locale={projectLocale} model={model} />
+        <div className="project-workspace-surface">
+          {activeTab === "pages" ? (
+            <ProjectPagesWorkspace
+              data={data}
+              model={model}
+              {...(validationReport ? { validationReport } : {})}
+              selectedPageId={model.selectedPage?.page.id}
+              onPageSelect={setSelectedPageId}
+              onOpenMap={() => setActiveTab("map")}
+            />
+          ) : activeTab === "map" ? (
+            <ProjectMapView data={data} model={model} />
+          ) : activeTab === "overview" ? (
+            <ProjectOverviewView data={data} />
+          ) : activeTab === "capabilities" ? (
+            <ProjectCapabilitiesView data={data} model={model} />
+          ) : (
+            <ProjectJsonView
+              data={data}
+              rawJson={rawJson}
+              model={model}
+              {...(validationReport ? { validationReport } : {})}
+            />
+          )}
+        </div>
+      </div>
+      <ProjectStatusBar
+        data={data}
+        locale={projectLocale}
+        model={model}
+        {...(validationReport ? { validationReport } : {})}
+      />
     </main>
   );
 }
@@ -824,43 +899,556 @@ function ProjectTopBar({
   );
 }
 
-function ProjectTabs({
+function projectTabLabel(tab: ProjectWorkspaceTab, locale: ProjectChromeLocale): string {
+  if (tab === "pages") return tp(locale, "pages");
+  if (tab === "map") return tp(locale, "map");
+  if (tab === "overview") return tp(locale, "overview");
+  if (tab === "capabilities") return tp(locale, "capabilities");
+  return "JSON";
+}
+
+function ProjectSidebar({
   activeTab,
+  isCollapsed,
   locale,
-  onTabChange
+  onTabChange,
+  onToggleCollapse
 }: {
   activeTab: ProjectWorkspaceTab;
+  isCollapsed: boolean;
   locale: ProjectChromeLocale;
   onTabChange(tab: ProjectWorkspaceTab): void;
+  onToggleCollapse(): void;
+}): JSX.Element {
+  const items: Array<{ icon: LucideIcon; tab: ProjectWorkspaceTab }> = [
+    { icon: FileText, tab: "pages" },
+    { icon: Network, tab: "map" },
+    { icon: Gauge, tab: "overview" },
+    { icon: Workflow, tab: "capabilities" },
+    { icon: Braces, tab: "json" }
+  ];
+
+  return (
+    <aside className={`project-sidebar${isCollapsed ? " is-collapsed" : ""}`} aria-label="Project navigation">
+      <div className="project-sidebar__group">
+        {isCollapsed ? null : <h2>Project</h2>}
+        {items.map(({ icon: Icon, tab }) => (
+          <button
+            aria-current={activeTab === tab ? "page" : undefined}
+            aria-label={isCollapsed ? projectTabLabel(tab, locale) : undefined}
+            className={activeTab === tab ? "is-active" : ""}
+            key={tab}
+            title={isCollapsed ? projectTabLabel(tab, locale) : undefined}
+            type="button"
+            onClick={() => onTabChange(tab)}
+          >
+            <Icon size={17} />
+            {isCollapsed ? null : <span>{projectTabLabel(tab, locale)}</span>}
+          </button>
+        ))}
+      </div>
+      <button
+        aria-label={isCollapsed ? "Expand project navigation" : "Collapse project navigation"}
+        className="project-sidebar__collapse"
+        title={isCollapsed ? "Expand" : undefined}
+        type="button"
+        onClick={onToggleCollapse}
+      >
+        <PanelLeft size={16} />
+        {isCollapsed ? null : <span>Collapse</span>}
+      </button>
+    </aside>
+  );
+}
+
+function ProjectOverviewView({
+  data
+}: {
+  data: ProjectData;
+}): JSX.Element {
+  const overview = data.overview;
+  const stack = projectOverviewStack(overview.implementation);
+  const summary =
+    overview.summary ??
+    "Inspect the authored Project JSON to understand pages, flows, requests, architecture, evidence, and unknowns.";
+
+  return (
+    <section className="anlyx-understanding anlyx-overview" aria-label="Project overview">
+      <div className="anlyx-overview-layout">
+        <div className="anlyx-overview-main">
+          <header className="anlyx-readme-header">
+            <h1>Anlyx overview</h1>
+            <p>{summary}</p>
+          </header>
+
+          <section className="anlyx-readme-section" aria-label="Built with">
+            <h2>Built with</h2>
+            {stack.length > 0 ? (
+              <div className="anlyx-stack-grid">
+                {stack.map((item) => (
+                  <div className="anlyx-stack-item" key={item.name}>
+                    <ProjectStackIconView icon={item.icon} tone={item.tone} />
+                    <div>
+                      <strong>{item.name}</strong>
+                      <small>{item.detail}</small>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="project-muted">No implementation stack authored.</p>
+            )}
+          </section>
+
+          <section className="anlyx-readme-section" aria-label="What it does">
+            <h2>What it does</h2>
+            <div className="anlyx-feature-list">
+              <ProjectReadmeFeature
+                icon={FileText}
+                title="Inspect pages"
+                description="Explore the UI surfaces, components, and states that make up your app."
+              />
+              <ProjectReadmeFeature
+                icon={Workflow}
+                title="Trace request flows"
+                description="Follow the path from UI events to API requests and data responses."
+              />
+              <ProjectReadmeFeature
+                icon={Braces}
+                title="Review authored JSON"
+                description="Open the source Project JSON and understand the modeled structure."
+              />
+              <ProjectReadmeFeature
+                icon={Search}
+                title="Check evidence & unknowns"
+                description="See what’s backed by evidence and what needs review or clarification."
+              />
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProjectStackIconView({
+  icon,
+  tone
+}: {
+  icon: ProjectStackIcon;
+  tone: string;
+}): JSX.Element {
+  if (icon.kind === "lucide") {
+    const Icon = icon.icon;
+
+    return (
+      <span className={`anlyx-stack-icon is-${tone}`} aria-hidden="true">
+        <Icon size={22} />
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`anlyx-stack-icon is-${tone}`}
+      aria-hidden="true"
+      style={{ "--stack-icon-color": `#${icon.hex}` } as CSSProperties}
+    >
+      <svg role="img" viewBox="0 0 24 24" aria-label={icon.title}>
+        <path d={icon.path} />
+      </svg>
+    </span>
+  );
+}
+
+function ProjectReadmeFeature({
+  description,
+  icon: Icon,
+  title
+}: {
+  description: string;
+  icon: LucideIcon;
+  title: string;
 }): JSX.Element {
   return (
-    <div className="project-tabs" role="tablist" aria-label="Project workspace views">
-      {(["pages", "map", "json"] as const).map((tab) => (
-        <button
-          aria-selected={activeTab === tab}
-          className={activeTab === tab ? "is-active" : ""}
-          key={tab}
-          role="tab"
-          type="button"
-          onClick={() => onTabChange(tab)}
-        >
-          {tab === "pages" ? tp(locale, "pages") : tab === "map" ? tp(locale, "map") : "JSON"}
-        </button>
-      ))}
+    <div className="anlyx-readme-feature">
+      <span>
+        <Icon size={20} />
+      </span>
+      <div>
+        <strong>{title}</strong>
+        <p>{description}</p>
+      </div>
     </div>
   );
 }
 
+
+function projectOverviewStack(
+  implementation: ProjectData["overview"]["implementation"]
+): ProjectStackItem[] {
+  return implementation.slice(0, 5).map((item) => ({
+    detail: item.description ?? capitalize(item.kind),
+    icon: stackIcon(item.name, item.kind),
+    name: stackDisplayName(item.name),
+    tone: stackTone(item.name, item.kind)
+  }));
+}
+
+function stackDisplayName(value: string): string {
+  if (/react/i.test(value)) return "React";
+  if (/typescript|ts\b/i.test(value)) return "TypeScript";
+  if (/node|runtime|cli/i.test(value)) return "Node.js";
+  if (/express/i.test(value)) return "Express";
+  if (/schema|project json|contract/i.test(value)) return "Project JSON";
+
+  return value;
+}
+
+function stackIcon(name: string, kind: string): ProjectStackIcon {
+  const value = `${name} ${kind}`;
+  if (/react/i.test(value)) return simpleStackIcon(siReact);
+  if (/typescript|ts\b/i.test(value)) return simpleStackIcon(siTypescript);
+  if (/node|runtime|cli/i.test(value)) return simpleStackIcon(siNodedotjs);
+  if (/express/i.test(value)) return simpleStackIcon(siExpress);
+  if (/schema|json|contract/i.test(value)) return { kind: "lucide", icon: Braces };
+
+  return { kind: "lucide", icon: Code2 };
+}
+
+function simpleStackIcon(icon: { hex: string; path: string; title: string }): ProjectStackIcon {
+  return {
+    hex: icon.hex,
+    kind: "simple",
+    path: icon.path,
+    title: icon.title
+  };
+}
+
+function stackTone(name: string, kind: string): string {
+  const value = `${name} ${kind}`;
+  if (/react/i.test(value)) return "react";
+  if (/typescript|ts\b/i.test(value)) return "typescript";
+  if (/node|runtime|cli/i.test(value)) return "node";
+  if (/express/i.test(value)) return "express";
+  if (/schema|json|contract/i.test(value)) return "json";
+
+  return "json";
+}
+
+function ProjectCapabilitiesView({
+  data
+}: {
+  data: ProjectData;
+  model: ProjectWorkspaceViewModel;
+}): JSX.Element {
+  const defaultCapability =
+    data.capabilities.find((capability) => /inspect page behavior/i.test(capability.name)) ??
+    data.capabilities[0];
+  const [selectedId, setSelectedId] = useState<string | undefined>(defaultCapability?.id);
+  const [capabilityFilter, setCapabilityFilter] = useState<"all" | "connected" | "entry" | "user">("all");
+  const visibleCapabilities = data.capabilities.filter((capability) => {
+    if (capabilityFilter === "connected") return capability.status === "connected";
+    if (capabilityFilter === "entry") return Boolean(capability.entry);
+    if (capabilityFilter === "user") return capability.actorRole === "user";
+
+    return true;
+  });
+  const selected =
+    visibleCapabilities.find((capability) => capability.id === selectedId) ??
+    data.capabilities.find((capability) => capability.id === selectedId) ??
+    defaultCapability;
+  const connected = data.capabilities.filter((capability) => capability.status === "connected").length;
+  const userFacing = data.capabilities.filter((capability) => capability.actorRole !== "system").length;
+  const unresolved = data.capabilities.filter((capability) => capability.status !== "connected").length;
+
+  return (
+    <section className="anlyx-understanding anlyx-capabilities" aria-label="Project capabilities">
+      <div className="anlyx-overview-layout">
+        <div className="anlyx-overview-main">
+          <div className="anlyx-metric-row">
+            <ProjectUnderstandingMetric icon={Workflow} label="Total capabilities" value={String(data.capabilities.length)} detail="Authored" />
+            <ProjectUnderstandingMetric icon={Check} label="Connected" value={String(connected)} detail={`${percentage(connected, data.capabilities.length)}% of total`} />
+            <ProjectUnderstandingMetric icon={MousePointerClick} label="User-facing" value={String(userFacing)} detail={`${percentage(userFacing, data.capabilities.length)}% of total`} />
+            <ProjectUnderstandingMetric icon={Gauge} label="Unresolved" value={String(unresolved)} detail="Requires review" />
+          </div>
+
+          <div className="anlyx-filter-row" aria-label="Filter capabilities by actor">
+            <span>Filter by</span>
+            <button
+              className={capabilityFilter === "all" ? "is-selected" : ""}
+              type="button"
+              onClick={() => setCapabilityFilter("all")}
+            >
+              All
+            </button>
+            <button
+              className={capabilityFilter === "user" ? "is-selected" : ""}
+              type="button"
+              onClick={() => setCapabilityFilter("user")}
+            >
+              User
+            </button>
+            <button
+              className={capabilityFilter === "entry" ? "is-selected" : ""}
+              type="button"
+              onClick={() => setCapabilityFilter("entry")}
+            >
+              Entry surface
+            </button>
+            <button
+              className={capabilityFilter === "connected" ? "is-selected" : ""}
+              type="button"
+              onClick={() => setCapabilityFilter("connected")}
+            >
+              Connected only
+            </button>
+          </div>
+
+          {data.capabilities.length === 0 ? (
+            <ProjectSurfaceEmpty
+              title="No capabilities authored"
+              description="Add capabilities to describe product behavior without opening source code."
+            />
+          ) : (
+            <div className="anlyx-capability-table" role="table" aria-label="Capabilities">
+              <div className="anlyx-capability-row is-header" role="row">
+                <span>Actor</span>
+                <span>Capability</span>
+                <span>Entry surface</span>
+                <span>Request</span>
+                <span>Data touched</span>
+                <span>Status</span>
+              </div>
+              {visibleCapabilities.map((capability) => (
+                <button
+                  className={`anlyx-capability-row${capability.id === selected?.id ? " is-selected" : ""}`}
+                  key={capability.id}
+                  type="button"
+                  onClick={() => setSelectedId(capability.id)}
+                >
+                  <span className={`anlyx-role-badge is-${capability.actorRole}`}>
+                    <span className={`anlyx-role-dot is-${capability.actorRole}`} />
+                    {capitalize(capability.actorRole)}
+                  </span>
+                  <span className="anlyx-capability-name">
+                    <strong>{capability.name}</strong>
+                    <em>{capability.description ?? capability.visibleResult ?? "No capability description authored."}</em>
+                  </span>
+                  <span>{capability.entry?.label ?? "No entry authored"}</span>
+                  <span>{requestSummary(data, capability.requestIds)}</span>
+                  <span>{capability.dataRefs.map((ref) => ref.name).join(", ") || "No data refs"}</span>
+                  <ProjectStatusPill status={capability.status} />
+                </button>
+              ))}
+              <div className="anlyx-capability-footer">
+                Showing {visibleCapabilities.length} of {data.capabilities.length} capabilities
+              </div>
+            </div>
+          )}
+        </div>
+
+        <aside className="anlyx-surface-rail" aria-label="Capability details">
+          {selected ? (
+            <>
+              <div className="anlyx-rail-section is-tinted">
+                <h2>{selected.name}</h2>
+                <ProjectStatusPill status={selected.status} />
+              </div>
+              <div className="anlyx-rail-section">
+                <h3>Why this matters</h3>
+                <p>{capabilityWhyThisMatters(selected)}</p>
+              </div>
+              <div className="anlyx-rail-section">
+                <h3>Trace summary</h3>
+                <dl className="anlyx-capability-compact-facts">
+                  <div>
+                    <dt>Actor</dt>
+                    <dd>{capitalize(selected.actorRole)}</dd>
+                  </div>
+                  <div>
+                    <dt>Request</dt>
+                    <dd>{requestSummary(data, selected.requestIds)}</dd>
+                  </div>
+                  <div>
+                    <dt>Confidence</dt>
+                    <dd>{capitalize(selected.confidence ?? "unknown")}</dd>
+                  </div>
+                </dl>
+              </div>
+              <div className="anlyx-rail-section">
+                <h3>Evidence summary</h3>
+                <ProjectCapabilityEvidenceSummary capability={selected} />
+              </div>
+            </>
+          ) : (
+            <ProjectSurfaceEmpty title="No capability selected" description="Select a capability row." />
+          )}
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+function ProjectCapabilityEvidenceSummary({
+  capability
+}: {
+  capability: ProjectData["capabilities"][number];
+}): JSX.Element {
+  const pageCount = new Set(capability.pageIds).size;
+  const flowCount = new Set(capability.flowIds).size;
+  const dataCount = capability.dataRefs.length;
+
+  return (
+    <div className="anlyx-evidence-summary-list">
+      <span><FileText size={14} />{pageCount} pages analyzed</span>
+      <span><Workflow size={14} />{flowCount} flows connected</span>
+      <span><Database size={14} />{dataCount} data objects referenced</span>
+    </div>
+  );
+}
+
+function ProjectTrustSummary({
+  data,
+  validationReport
+}: {
+  data: ProjectData;
+  validationReport?: ProjectValidationReport;
+}): JSX.Element | null {
+  const coverage = projectPageCoverageSummary(data, validationReport);
+  const coverageStatus = validationReport?.summary.coverageStatus ?? data.coverage?.status;
+  const sourceIssueCount = validationReport?.summary.sourceIssueCount;
+  const sourceIssueDetails = validationReport
+    ? formatSourceIssueDetails(validationReport.summary.sourceIssueBreakdown)
+    : "";
+  const issueCount = validationReport?.issues.length;
+  const shouldShow =
+    Boolean(coverage.detected) ||
+    coverageStatus === "partial" ||
+    coverageStatus === "unknown" ||
+    (sourceIssueCount ?? 0) > 0 ||
+    (issueCount ?? 0) > 0;
+
+  if (!shouldShow) {
+    return null;
+  }
+
+  return (
+    <section className="project-trust-summary" aria-label="Project analysis coverage">
+      <div>
+        <span className="project-trust-summary__eyebrow">Analysis scope</span>
+        <strong>{coverageStatus === "partial" ? "Partial analysis" : "Coverage summary"}</strong>
+      </div>
+      <dl>
+        <div>
+          <dt>Pages</dt>
+          <dd>{coverage.value}</dd>
+        </div>
+        {sourceIssueCount !== undefined ? (
+          <div>
+            <dt>Source issues</dt>
+            <dd className={sourceIssueCount > 0 ? "is-warning" : "is-ok"}>
+              {sourceIssueCount}
+              {sourceIssueDetails ? <small>{sourceIssueDetails}</small> : null}
+            </dd>
+          </div>
+        ) : null}
+        {issueCount !== undefined ? (
+          <div>
+            <dt>Validation issues</dt>
+            <dd className={issueCount > 0 ? "is-warning" : "is-ok"}>{issueCount}</dd>
+          </div>
+        ) : null}
+      </dl>
+    </section>
+  );
+}
+
+function capabilityWhyThisMatters(capability: ProjectData["capabilities"][number]): string {
+  if (/inspect page behavior/i.test(capability.name)) {
+    return "This capability lets a user inspect authored pages, primary requests, selected flow layers, evidence, and unknowns—providing clarity into how data moves and where gaps exist.";
+  }
+
+  return capability.visibleResult ?? capability.description ?? "This capability ties a user-facing action to authored requests, data, evidence, and confidence.";
+}
+
+function ProjectUnderstandingMetric({
+  detail,
+  icon: Icon,
+  label,
+  value
+}: {
+  detail: string;
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}): JSX.Element {
+  return (
+    <div className="anlyx-understanding-metric">
+      <span>
+        <Icon size={20} />
+      </span>
+      <div>
+        <small>{label}</small>
+        <strong>{value}</strong>
+        <em>{detail}</em>
+      </div>
+    </div>
+  );
+}
+
+function ProjectSurfaceEmpty({
+  description,
+  title
+}: {
+  description: string;
+  title: string;
+}): JSX.Element {
+  return (
+    <div className="anlyx-surface-empty">
+      <Minus size={18} />
+      <strong>{title}</strong>
+      <p>{description}</p>
+    </div>
+  );
+}
+
+function ProjectStatusPill({ status }: { status: string }): JSX.Element {
+  return <span className={`anlyx-status-pill is-${status}`}>{status}</span>;
+}
+
+function percentage(value: number, total: number): number {
+  if (total <= 0) return 0;
+  return Math.round((value / total) * 100);
+}
+
+function requestSummary(data: ProjectData, requestIds: string[]): string {
+  const requests = requestIds
+    .map((id) => data.requests.find((request) => request.id === id))
+    .filter((request): request is ProjectData["requests"][number] => Boolean(request));
+
+  if (requests.length === 0) return "No request authored";
+
+  return requests
+    .slice(0, 2)
+    .map((request) => `${request.method ?? "REQ"} ${request.path ?? request.label ?? request.id}`)
+    .join(", ");
+}
+
 function ProjectPagesWorkspace({
+  data,
   model,
   onOpenMap,
   onPageSelect,
-  selectedPageId
+  selectedPageId,
+  validationReport
 }: {
+  data: ProjectData;
   model: ProjectWorkspaceViewModel;
   onOpenMap(): void;
   onPageSelect(pageId: string): void;
   selectedPageId: string | undefined;
+  validationReport?: ProjectValidationReport;
 }): JSX.Element {
   const [isPageIndexCollapsed, setIsPageIndexCollapsed] = useState(false);
 
@@ -871,31 +1459,44 @@ function ProjectPagesWorkspace({
       }`}
     >
       <ProjectPageIndex
+        data={data}
         isCollapsed={isPageIndexCollapsed}
         model={model}
+        {...(validationReport ? { validationReport } : {})}
         selectedPageId={selectedPageId}
         onPageSelect={onPageSelect}
         onToggleCollapse={() => setIsPageIndexCollapsed((value) => !value)}
       />
-      <ProjectPagesView model={model} selectedPage={model.selectedPage} onOpenMap={onOpenMap} />
+      <ProjectPagesView
+        data={data}
+        model={model}
+        {...(validationReport ? { validationReport } : {})}
+        selectedPage={model.selectedPage}
+        onOpenMap={onOpenMap}
+      />
     </div>
   );
 }
 
 function ProjectPageIndex({
+  data,
   isCollapsed,
   model,
   onPageSelect,
   onToggleCollapse,
-  selectedPageId
+  selectedPageId,
+  validationReport
 }: {
+  data: ProjectData;
   isCollapsed: boolean;
   model: ProjectWorkspaceViewModel;
   onPageSelect(pageId: string): void;
   onToggleCollapse(): void;
   selectedPageId: string | undefined;
+  validationReport?: ProjectValidationReport;
 }): JSX.Element {
   const pages = model.pageGroups.flatMap((group) => group.pages);
+  const pageCoverage = projectPageCoverageSummary(data, validationReport);
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
   const visibleGroups = normalizedQuery
@@ -920,7 +1521,7 @@ function ProjectPageIndex({
         {isCollapsed ? null : (
           <div>
             <h2>Page Index</h2>
-            <span>{model.totals.pages} pages analyzed</span>
+            <span>{pageCoverage.label}</span>
           </div>
         )}
         <button
@@ -993,13 +1594,17 @@ function ProjectPageIndex({
 }
 
 function ProjectPagesView({
+  data,
   model,
   onOpenMap,
-  selectedPage
+  selectedPage,
+  validationReport
 }: {
+  data: ProjectData;
   model: ProjectWorkspaceViewModel;
   onOpenMap(): void;
   selectedPage: ProjectSelectedPageView | undefined;
+  validationReport?: ProjectValidationReport;
 }): JSX.Element {
   const defaultRequestId = getDefaultPageRequestId(selectedPage);
   const [selectedRequestId, setSelectedRequestId] = useState<string | undefined>(defaultRequestId);
@@ -1050,6 +1655,10 @@ function ProjectPagesView({
             Details
           </button>
         ) : null}
+        <ProjectTrustSummary
+          data={data}
+          {...(validationReport ? { validationReport } : {})}
+        />
         <PageBrief selectedPage={selectedPage} />
         <div className="project-page-two-up">
           <ProjectSection title="Story">
@@ -2471,19 +3080,38 @@ function projectArchitectureNodeIcon(kind: ProjectArchitectureSourceNode["kind"]
 function ProjectJsonView({
   data,
   model,
-  rawJson
+  rawJson,
+  validationReport
 }: {
   data: ProjectData;
   model: ProjectWorkspaceViewModel;
   rawJson: string;
+  validationReport?: ProjectValidationReport;
 }): JSX.Element {
-  const jsonFiles = useMemo(() => projectJsonFiles(data, model, rawJson), [data, model, rawJson]);
+  const jsonFiles = useMemo(
+    () => projectJsonFiles(data, model, rawJson, validationReport),
+    [data, model, rawJson, validationReport]
+  );
   const [selectedJsonFileId, setSelectedJsonFileId] = useState(jsonFiles[0]?.id ?? "project");
   const selectedJsonFile = jsonFiles.find((file) => file.id === selectedJsonFileId) ?? jsonFiles[0];
   const activeJson = selectedJsonFile?.content ?? rawJson;
   const lines = activeJson.split("\n");
   const inventory = useMemo(() => projectJsonInventoryItems(data, model), [data, model]);
   const EditorFileIcon = selectedJsonFile?.icon ?? Code2;
+  const validationTone = validationReport
+    ? validationReport.valid
+      ? validationReport.issues.length > 0
+        ? "amber"
+        : "green"
+      : "red"
+    : "green";
+  const validationLabel = validationReport
+    ? validationReport.valid
+      ? validationReport.issues.length > 0
+        ? "Valid with warnings"
+        : "Valid"
+      : "Invalid"
+    : "Valid";
 
   return (
     <section className="project-json-workspace" aria-label="Project JSON">
@@ -2545,8 +3173,88 @@ function ProjectJsonView({
       <aside className="project-json-details" aria-label="JSON details">
         <JsonDetailsCard title="Schema">
           <ProjectDetailRow label="Version" value={data.schemaVersion} />
-          <ProjectDetailRow label="Validation" value="Valid" tone="green" />
+          <ProjectDetailRow label="Validation" value={validationLabel} tone={validationTone} />
         </JsonDetailsCard>
+        {validationReport ? (
+          <JsonDetailsCard title="Trust checks">
+            <ProjectDetailRow
+              label="Source issues"
+              value={String(validationReport.summary.sourceIssueCount)}
+              tone={validationReport.summary.sourceIssueCount > 0 ? "amber" : "green"}
+            />
+            {validationReport.summary.sourceIssueBreakdown ? (
+              <>
+                <ProjectDetailRow
+                  label="Missing files"
+                  value={String(validationReport.summary.sourceIssueBreakdown.missingFiles)}
+                  tone={
+                    validationReport.summary.sourceIssueBreakdown.missingFiles > 0
+                      ? "amber"
+                      : "green"
+                  }
+                />
+                <ProjectDetailRow
+                  label="Line issues"
+                  value={String(
+                    validationReport.summary.sourceIssueBreakdown.placeholderLines +
+                      validationReport.summary.sourceIssueBreakdown.outOfRangeLines
+                  )}
+                  tone={
+                    validationReport.summary.sourceIssueBreakdown.placeholderLines +
+                      validationReport.summary.sourceIssueBreakdown.outOfRangeLines >
+                    0
+                      ? "amber"
+                      : "green"
+                  }
+                />
+                <ProjectDetailRow
+                  label="Symbol issues"
+                  value={String(validationReport.summary.sourceIssueBreakdown.missingSymbols)}
+                  tone={
+                    validationReport.summary.sourceIssueBreakdown.missingSymbols > 0
+                      ? "amber"
+                      : "green"
+                  }
+                />
+              </>
+            ) : null}
+            <ProjectDetailRow
+              label="Coverage"
+              value={validationReport.summary.coverageStatus}
+              tone={validationReport.summary.coverageStatus === "partial" ? "amber" : "green"}
+            />
+            <ProjectDetailRow
+              label="Issues"
+              value={String(validationReport.issues.length)}
+              tone={validationReport.issues.length > 0 ? "amber" : "green"}
+            />
+          </JsonDetailsCard>
+        ) : null}
+        {data.coverage || validationReport ? (
+          <JsonDetailsCard title="Coverage">
+            <ProjectDetailRow
+              label="Pages"
+              value={coverageValue(
+                validationReport?.summary.modeled.pages ?? data.pages.length,
+                validationReport?.summary.detected?.pages ?? data.coverage?.detected?.pages
+              )}
+            />
+            <ProjectDetailRow
+              label="Requests"
+              value={coverageValue(
+                validationReport?.summary.modeled.requests ?? data.requests.length,
+                data.coverage?.detected?.requests ?? data.coverage?.detected?.backendEndpoints
+              )}
+            />
+            <ProjectDetailRow
+              label="Flows"
+              value={coverageValue(
+                validationReport?.summary.modeled.flows ?? data.flows.length,
+                validationReport?.summary.detected?.flows ?? data.coverage?.detected?.flows
+              )}
+            />
+          </JsonDetailsCard>
+        ) : null}
         <JsonDetailsCard title="Project">
           <ProjectDetailRow label="Name" value={data.project.name} />
           <ProjectDetailRow label="ID" value={data.project.id} />
@@ -2579,7 +3287,8 @@ function JsonInventoryItem({ item }: { item: ProjectJsonInventoryItem }): JSX.El
 function projectJsonFiles(
   data: ProjectData,
   model: ProjectWorkspaceViewModel,
-  rawJson: string
+  rawJson: string,
+  validationReport?: ProjectValidationReport
 ): ProjectJsonFileView[] {
   const files: ProjectJsonFileView[] = [
     {
@@ -2623,6 +3332,22 @@ function projectJsonFiles(
       icon: FileText
     },
     {
+      id: "overview",
+      name: ".anlyx/project/overview.json",
+      description: "Human project summary",
+      countLabel: data.overview.summary ? "authored" : "empty",
+      content: projectJsonString(data.overview),
+      icon: BookOpen
+    },
+    {
+      id: "capabilities",
+      name: ".anlyx/project/capabilities.json",
+      description: "Readable product capabilities",
+      countLabel: String(data.capabilities.length),
+      content: projectJsonString(data.capabilities),
+      icon: Workflow
+    },
+    {
       id: "requests",
       name: ".anlyx/project/requests.json",
       description: "Frontend and API requests",
@@ -2655,6 +3380,30 @@ function projectJsonFiles(
       icon: ShieldCheck
     },
     {
+      id: "data-lifecycles",
+      name: ".anlyx/project/data-lifecycles.json",
+      description: "Core data lifecycle maps",
+      countLabel: String(data.dataLifecycles.length),
+      content: projectJsonString(data.dataLifecycles),
+      icon: Database
+    },
+    {
+      id: "impact-maps",
+      name: ".anlyx/project/impact-maps.json",
+      description: "Product impact maps",
+      countLabel: String(data.impactMaps.length),
+      content: projectJsonString(data.impactMaps),
+      icon: Network
+    },
+    {
+      id: "coverage",
+      name: ".anlyx/project/coverage.json",
+      description: "Detected and modeled coverage",
+      countLabel: data.coverage?.status ?? "unknown",
+      content: projectJsonString(data.coverage ?? { status: "unknown" }),
+      icon: Gauge
+    },
+    {
       id: "dictionary",
       name: ".anlyx/project/dictionary.json",
       description: "Language and term dictionary",
@@ -2675,7 +3424,39 @@ function projectJsonFiles(
     });
   }
 
+  if (validationReport) {
+    files.push({
+      id: "validation-report",
+      name: ".anlyx/validation-report.json",
+      description: "Source and coverage validation",
+      countLabel: `${validationReport.issues.length} issues`,
+      content: projectJsonString(validationReport),
+      icon: ShieldCheck
+    });
+  }
+
   return files;
+}
+
+function coverageValue(modeled: number, detected: number | undefined): string {
+  return detected === undefined ? String(modeled) : `${modeled} / ${detected}`;
+}
+
+function formatSourceIssueDetails(
+  breakdown: ProjectValidationReport["summary"]["sourceIssueBreakdown"] | undefined
+): string {
+  if (!breakdown) {
+    return "";
+  }
+
+  const lineIssues = breakdown.placeholderLines + breakdown.outOfRangeLines;
+  const parts = [
+    breakdown.missingFiles > 0 ? `${breakdown.missingFiles} missing file` : "",
+    breakdown.missingSymbols > 0 ? `${breakdown.missingSymbols} symbol` : "",
+    lineIssues > 0 ? `${lineIssues} line` : ""
+  ].filter(Boolean);
+
+  return parts.join(" / ");
 }
 
 function projectJsonInventoryItems(
@@ -2688,6 +3469,18 @@ function projectJsonInventoryItems(
     { id: "areas", label: "areas", value: String(model.totals.areas), icon: BriefcaseBusiness },
     { id: "pages", label: "pages", value: String(model.totals.pages), icon: BookOpen },
     { id: "features", label: "features", value: String(model.totals.features), icon: FileText },
+    {
+      id: "overview",
+      label: "overview",
+      value: data.overview.summary ? "authored" : "empty",
+      icon: BookOpen
+    },
+    {
+      id: "capabilities",
+      label: "capabilities",
+      value: String(data.capabilities.length),
+      icon: Workflow
+    },
     { id: "requests", label: "requests", value: String(model.totals.requests), icon: Network },
     { id: "flows", label: "flows", value: String(model.totals.flows), icon: Workflow },
     {
@@ -2697,6 +3490,18 @@ function projectJsonInventoryItems(
       icon: Layers3
     },
     { id: "evidence", label: "evidence", value: String(model.totals.evidence), icon: ShieldCheck },
+    {
+      id: "dataLifecycles",
+      label: "dataLifecycles",
+      value: String(data.dataLifecycles.length),
+      icon: Database
+    },
+    {
+      id: "impactMaps",
+      label: "impactMaps",
+      value: String(data.impactMaps.length),
+      icon: Network
+    },
     {
       id: "measurements",
       label: "measurements",
@@ -2731,26 +3536,34 @@ function ProjectDetailRow({
   value
 }: {
   label: string;
-  tone?: "green";
+  tone?: "green" | "amber" | "red";
   value: string;
 }): JSX.Element {
   return (
     <div className="project-detail-row">
       <dt>{label}</dt>
-      <dd className={tone === "green" ? "is-green" : ""}>{value}</dd>
+      <dd className={tone ? `is-${tone}` : ""}>{value}</dd>
     </div>
   );
 }
 
 function ProjectStatusBar({
+  data,
   locale,
-  model
+  model,
+  validationReport
 }: {
+  data: ProjectData;
   locale: ProjectChromeLocale;
   model: ProjectWorkspaceViewModel;
+  validationReport?: ProjectValidationReport;
 }): JSX.Element {
   const sourceFile = projectSourceFile(model);
   const generatedBy = projectAgentName(model);
+  const pageCoverage = projectPageCoverageSummary(data, validationReport);
+  const coverageStatus = validationReport?.summary.coverageStatus ?? data.coverage?.status;
+  const sourceIssueCount = validationReport?.summary.sourceIssueCount ?? 0;
+  const hasTrustWarning = coverageStatus === "partial" || sourceIssueCount > 0;
 
   return (
     <div className="project-statusbar" aria-label="Project source status">
@@ -2765,9 +3578,13 @@ function ProjectStatusBar({
         </span>
       </div>
       <div className="project-statusbar__summary">
-        <strong>
-          {model.totals.pages} {tp(locale, "pagesAnalyzed")}
-        </strong>
+        <strong>{pageCoverage.label}</strong>
+        {coverageStatus ? (
+          <span className={`project-status ${hasTrustWarning ? "project-status--amber" : "project-status--green"}`}>
+            <ShieldCheck size={15} />
+            {coverageStatus === "partial" ? "Partial analysis" : "Coverage checked"}
+          </span>
+        ) : null}
         <span>
           <Clock3 size={15} />
           {tp(locale, "lastAnalysis")}: {formatDateTime(model.project.analyzedAt)}
@@ -2779,6 +3596,23 @@ function ProjectStatusBar({
       </div>
     </div>
   );
+}
+
+function projectPageCoverageSummary(
+  data: ProjectData,
+  validationReport?: ProjectValidationReport
+): { detected: number | undefined; label: string; modeled: number; value: string } {
+  const modeled =
+    validationReport?.summary.modeled.pages ?? data.coverage?.modeled?.pages ?? data.pages.length;
+  const detected = validationReport?.summary.detected?.pages ?? data.coverage?.detected?.pages;
+  const value = coverageValue(modeled, detected);
+
+  return {
+    detected,
+    label: detected !== undefined ? `${value} pages modeled` : `${modeled} pages analyzed`,
+    modeled,
+    value
+  };
 }
 
 function evidenceStatusLabel(status: ProjectFlowView["layers"][number]["status"]): string {

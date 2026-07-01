@@ -1,0 +1,28 @@
+.public-demo-stage .project-workspace-preview {
+  grid-template-rows: minmax(0, 1fr) 44px;
+  width: 100%;
+  height: 760px;
+  min-height: 720px;
+  max-height: none;
+  overflow: hidden;
+  border: 0;
+}
+
+.public-demo-stage .project-topbar {
+  display: none;
+}
+
+.public-demo-stage .project-workspace-shell {
+  min-height: 0;
+}
+
+.public-demo-stage .project-workspace-surface {
+  background: #ffffff;
+}
+
+@media (max-width: 900px) {
+  .public-demo-stage .project-workspace-preview {
+    height: 720px;
+    min-height: 680px;
+  }
+}

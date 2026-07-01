@@ -21,6 +21,8 @@ Current focus:
 - `anlyx.project.json` as the primary input format.
 - Pages-first workspace for product and onboarding understanding.
 - Map view for agent-authored architecture relationships.
+- Overview surface for a concise README-like project introduction.
+- Capabilities surface for authored product behavior verification.
 - JSON view for direct inspection and debugging.
 - Evidence labels that keep observed, source-matched, agent-inferred,
   measured, not-proven, and unknown claims separate.

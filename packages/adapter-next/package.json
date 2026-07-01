@@ -1,6 +1,6 @@
 {
   "name": "@anlyx/adapter-next",
-  "version": "0.1.5",
+  "version": "0.1.6-beta.0",
   "description": "Next.js source metadata producer adapter for Anlyx Project JSON.",
   "license": "MIT",
   "type": "module",

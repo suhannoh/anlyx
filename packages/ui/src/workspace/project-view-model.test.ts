@@ -166,7 +166,18 @@ const projectData: ProjectData = {
   dictionary: {
     defaultLanguage: "en",
     terms: []
-  }
+  },
+  overview: {
+    actors: [],
+    coreEntities: [],
+    mainAreas: [],
+    implementation: [],
+    suggestedReadingPath: [],
+    evidenceIds: []
+  },
+  capabilities: [],
+  dataLifecycles: [],
+  impactMaps: []
 };
 
 function layer(

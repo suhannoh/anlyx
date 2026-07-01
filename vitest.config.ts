@@ -18,6 +18,9 @@ export default defineConfig({
         new URL("./packages/adapter-spring/src/index.ts", import.meta.url)
       ),
       "@anlyx/capture": fileURLToPath(new URL("./packages/capture/src/index.ts", import.meta.url)),
+      "@anlyx/core/project-validation": fileURLToPath(
+        new URL("./packages/core/src/project-validation.ts", import.meta.url)
+      ),
       "@anlyx/core": fileURLToPath(new URL("./packages/core/src/index.ts", import.meta.url)),
       "@anlyx/ui": fileURLToPath(new URL("./packages/ui/src/index.ts", import.meta.url))
     }

@@ -35,6 +35,7 @@ Optional split files for large projects:
   evidence.json
   measurements.json
   dictionary.json
+  coverage.json
 ```
 
 The normalized output must match the same Project JSON contract.
@@ -42,16 +43,22 @@ The normalized output must match the same Project JSON contract.
 ## Required Workflow
 
 1. Inspect the user's actual project.
-2. Identify pages, routes, or screens.
-3. Identify user-facing features on each page.
-4. Identify meaningful requests and classify their role.
-5. Trace known request paths through API, handler/controller, service,
+2. Count detected routes, API usages, backend endpoints, and important source
+   files before deciding how much to model.
+3. Identify pages, routes, or screens.
+4. Identify user-facing features on each page.
+5. Identify meaningful requests and classify their role.
+6. Trace known request paths through API, handler/controller, service,
    repository, database, external system, and result layers.
-6. Create architecture nodes and edges for the Map tab.
-7. Attach evidence and confidence to important claims.
-8. Leave `measurements: []` unless real measured data exists.
-9. Validate and import the file.
-10. Open the local viewer at `http://localhost:4777`.
+7. Create architecture nodes and edges for the Map tab.
+8. Author `coverage` when the modeled pages/requests/flows are only a subset
+   of the detected project.
+9. Optionally author Overview, Capabilities, Data Lifecycle, and Impact Map
+   sections when you have enough evidence.
+10. Attach evidence and confidence to important claims.
+11. Leave `measurements: []` unless real measured data exists.
+12. Validate and import the file.
+13. Open the local viewer at `http://localhost:4777`.
 
 Commands:
 
@@ -61,11 +68,51 @@ npx anlyx import anlyx.project.json
 npx anlyx dev
 ```
 
+## Shortcut: `anlyx refresh`
+
+When the user says `anlyx refresh` to an AI coding Agent, treat it as a request
+to update the existing `anlyx.project.json` from the current repository changes.
+
+Do not recreate the whole file unless the file is missing, invalid, or the user
+explicitly asks for a full rewrite.
+
+Required refresh workflow:
+
+1. Read the existing `anlyx.project.json` first.
+2. Inspect `git diff`, recently changed files, and recent commits before
+   scanning unrelated code.
+3. Preserve stable IDs for pages, features, capabilities, requests, flows,
+   architecture nodes, architecture edges, evidence, lifecycle data, and impact
+   maps.
+4. Update only affected sections.
+5. Add new evidence for new or changed claims.
+6. Downgrade stale or uncertain relationships to `agent-inferred`,
+   `not-proven`, or `unknown` instead of deleting uncertainty.
+7. Update `coverage` when detected counts or modeled scope changed.
+8. Keep `measurements: []` unless new real measured evidence exists.
+9. Run validation and import.
+10. Start the viewer when useful, or report the command the user should run.
+
+Commands:
+
+```bash
+npx anlyx validate anlyx.project.json
+npx anlyx import anlyx.project.json
+npx anlyx dev
+```
+
+Before finishing a refresh, report:
+
+- Changed pages, requests, flows, architecture nodes, and capabilities.
+- Evidence that was added, removed, or downgraded.
+- Any unresolved validation issues.
+- What remains uncertain.
+
 ## Top-Level Shape
 
 ```json
 {
-  "schemaVersion": "0.2.0",
+  "schemaVersion": "0.3.0",
   "project": {},
   "areas": [],
   "pages": [],
@@ -75,9 +122,18 @@ npx anlyx dev
   "architecture": { "nodes": [], "edges": [] },
   "evidence": [],
   "measurements": [],
-  "dictionary": { "defaultLanguage": "en", "terms": [] }
+  "dictionary": { "defaultLanguage": "en", "terms": [] },
+  "coverage": { "status": "unknown" },
+  "overview": {},
+  "capabilities": [],
+  "dataLifecycles": [],
+  "impactMaps": []
 }
 ```
+
+Anlyx still accepts legacy `schemaVersion: "0.2.0"` files. If the new fields are
+missing, the importer normalizes them to empty values. Use `0.3.0` when you
+author the new project understanding surfaces.
 
 ## Project Metadata
 
@@ -253,6 +309,182 @@ Edge roles:
 Avoid disconnected nodes unless they are intentionally important and the missing
 relationship is documented as unknown.
 
+## Overview
+
+Use `overview` for a light, human-readable project summary. Keep it factual and
+short. It should help a new reader decide where to go next.
+
+```json
+{
+  "overview": {
+    "summary": "Anlyx is a local Project JSON viewer for AI Agent-authored project maps.",
+    "projectType": "Local developer documentation viewer",
+    "mainPurpose": "Render validated project facts without uploading source code.",
+    "actors": [
+      {
+        "id": "actor.agent",
+        "name": "AI Agent",
+        "role": "external",
+        "description": "Authors anlyx.project.json from project inspection.",
+        "evidenceIds": ["ev.agent-guide"],
+        "confidence": "high"
+      }
+    ],
+    "coreEntities": [
+      {
+        "id": "entity.project-data",
+        "name": "ProjectData",
+        "kind": "core-entity",
+        "dataRefs": [{ "kind": "model", "name": "ProjectData" }],
+        "evidenceIds": ["ev.project-schema"],
+        "confidence": "high"
+      }
+    ],
+    "mainAreas": [],
+    "implementation": [],
+    "suggestedReadingPath": [
+      {
+        "id": "reading.pages",
+        "label": "Pages",
+        "target": "pages",
+        "description": "Inspect page-level requests and flows."
+      }
+    ],
+    "evidenceIds": ["ev.project-schema"],
+    "confidence": "high"
+  }
+}
+```
+
+Do not use the Overview to market the project. Prefer concrete purpose, actors,
+data, and implementation facts.
+
+## Capabilities
+
+Use `capabilities` for readable product behavior. A capability should explain
+what an actor can do, where it starts, which request or flow supports it, and
+what data or visible result changes.
+
+```json
+{
+  "capabilities": [
+    {
+      "id": "capability.load-project-json",
+      "actorRole": "user",
+      "name": "Load Project JSON",
+      "description": "The local viewer loads the current anlyx.project.json.",
+      "entry": {
+        "type": "page",
+        "label": "Viewer workspace",
+        "pageId": "page.workspace",
+        "path": "/"
+      },
+      "pageIds": ["page.workspace"],
+      "featureIds": ["feature.pages"],
+      "requestIds": ["request.project-data"],
+      "flowIds": ["flow.project-data"],
+      "dataRefs": [{ "kind": "model", "name": "ProjectData", "operation": "read" }],
+      "status": "connected",
+      "visibleResult": "The workspace renders Pages, Map, Overview, Capabilities, and JSON from ProjectData.",
+      "evidenceIds": ["ev.dev-command"],
+      "confidence": "high"
+    }
+  ]
+}
+```
+
+Status rules:
+
+- `connected`: screen, request/flow, and data are connected.
+- `ui-only`: UI is known, but request/flow is not found.
+- `api-only`: API is known, but product entry is unclear.
+- `data-only`: data is known, but product behavior is unclear.
+- `inferred`: relationship is plausible but not proven.
+- `unknown`: not enough evidence.
+
+## Data Lifecycles
+
+Use `dataLifecycles` for core entities whose product state or visibility changes
+matter. Do not generate a lifecycle for every table.
+
+```json
+{
+  "dataLifecycles": [
+    {
+      "id": "lifecycle.project-data",
+      "entity": {
+        "id": "entity.project-data",
+        "name": "ProjectData",
+        "kind": "core-entity"
+      },
+      "name": "ProjectData lifecycle",
+      "description": "How authored project facts become validated viewer data.",
+      "stageIds": ["stage.authored", "stage.loaded", "stage.rendered"],
+      "stages": [
+        {
+          "id": "stage.authored",
+          "name": "Authored JSON",
+          "description": "The AI Agent writes anlyx.project.json.",
+          "actorRole": "external",
+          "state": "authored",
+          "dataRefs": [{ "kind": "model", "name": "ProjectData", "operation": "create" }],
+          "confidence": "high"
+        }
+      ],
+      "transitions": [],
+      "evidenceIds": ["ev.project-schema"],
+      "confidence": "medium"
+    }
+  ]
+}
+```
+
+When a transition is unclear, omit it or mark its evidence as `unknown` /
+`not-proven`; do not fill gaps with confident fiction.
+
+## Impact Maps
+
+Use `impactMaps` to show product impact scope. It is not a raw source dependency
+graph. Prefer central fields, entities, permissions, status values, or public
+visibility flags whose changes affect multiple surfaces.
+
+```json
+{
+  "impactMaps": [
+    {
+      "id": "impact.project-data",
+      "name": "ProjectData impact",
+      "description": "What changes when the ProjectData contract changes.",
+      "target": {
+        "id": "target.project-data",
+        "kind": "entity",
+        "label": "ProjectData",
+        "dataRef": { "kind": "model", "name": "ProjectData" }
+      },
+      "impactLevel": "high",
+      "affected": {
+        "pageIds": ["page.workspace", "page.map", "page.json"],
+        "requestIds": ["request.project-data"],
+        "dataRefs": [{ "kind": "model", "name": "ArchitectureGraph" }],
+        "businessEffects": [
+          {
+            "id": "effect.viewer-rendering",
+            "label": "Viewer rendering changes",
+            "severity": "high"
+          }
+        ]
+      },
+      "summary": ["Changing ProjectData can affect every viewer surface."],
+      "evidenceIds": ["ev.project-schema"],
+      "confidence": "medium"
+    }
+  ]
+}
+```
+
+Evidence remains support data. Do not add an `Evidence` tab or duplicate all
+evidence details into these human-facing sections.
+
 ### Optional Map Inspector Data Contracts
 
 The Map canvas should stay focused on the full project structure. If you know
@@ -324,7 +556,8 @@ Rules:
 - Use relative paths, DTO names, entity names, and redacted shape summaries.
 - Keep `shape` to the important 5-8 fields. Do not paste full source types.
 - Use `source-matched` evidence only when the DTO/entity/shape is backed by
-  source, schema, OpenAPI, or generated types.
+  source, schema, OpenAPI, or generated types and you can point to the actual
+  file, symbol, and line.
 - Use `agent-inferred` or omit fields when the model relationship is a reasoned
   guess.
 - Never include secrets, sample production records, tokens, cookies, or personal
@@ -340,7 +573,7 @@ Evidence keeps Anlyx honest.
   "status": "source-matched",
   "label": "Route handler defines GET /api/public/home",
   "source": {
-    "file": "src/routes/home.ts",
+    "filePath": "src/routes/home.ts",
     "symbol": "getHome",
     "lineStart": 14,
     "lineEnd": 34
@@ -362,8 +595,55 @@ not-proven
 unknown
 ```
 
-Use `source-matched` for static source evidence. Use `measured` only for real
-runtime or telemetry measurements.
+Use `source-matched` only when all of these are true:
+
+- `filePath` exists in the repository.
+- The named class, function, symbol, endpoint, DTO, or schema appears in that
+  file.
+- `lineStart` points to the actual symbol or endpoint location.
+- Frontend request paths and backend endpoint paths match by real code, not by
+  naming similarity.
+
+Do not use `lineStart: 1` as a placeholder. If you cannot find the real line,
+omit the line or downgrade the claim to `agent-inferred`, `not-proven`, or
+`unknown`.
+
+Use `measured` only for real runtime or telemetry measurements.
+
+## Coverage
+
+Coverage keeps partial analysis honest.
+
+Before writing the final JSON, compare detected project size with modeled
+Project JSON size. If the modeled subset is smaller, set `coverage.status` to
+`partial`.
+
+```json
+{
+  "coverage": {
+    "status": "partial",
+    "detected": {
+      "pages": 46,
+      "backendEndpoints": 89
+    },
+    "modeled": {
+      "pages": 13,
+      "requests": 17,
+      "flows": 7,
+      "architectureNodes": 42
+    },
+    "unmodeled": {
+      "pages": ["/admin/publish", "/admin/import/ai-json"],
+      "requests": [],
+      "endpoints": ["GET /api/admin/reviews"],
+      "notes": ["Admin maintenance and collection flows need a second pass."]
+    }
+  }
+}
+```
+
+Do not imply complete coverage unless detected and modeled counts match, or the
+user explicitly asked for a representative subset.
 
 ## Measurements
 
@@ -389,7 +669,9 @@ ko, en, zh, ja, fr
 
 Project text such as page descriptions, feature names, request explanations,
 and evidence labels should be authored by the user's AI Agent in the user's
-language. If no preference is known, use English.
+language. Prefer the user's conversation language and the product UI language.
+Keep API paths, filenames, class names, functions, enums, and DTO names in their
+original code form. If no preference is known, use English.
 
 ## Security
 

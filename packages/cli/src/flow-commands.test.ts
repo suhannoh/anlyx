@@ -214,6 +214,8 @@ describe("Flow JSON CLI commands", () => {
 
   it("validates a valid Project JSON file", async () => {
     const cwd = await createTempRoot();
+    await mkdir(join(cwd, "src"), { recursive: true });
+    await writeFile(join(cwd, "src/search.ts"), "\nexport function search() {}\n", "utf8");
     await writeProjectFile(cwd, "anlyx.project.json", validProjectFile());
 
     const result = await runValidateCommand({
@@ -221,16 +223,121 @@ describe("Flow JSON CLI commands", () => {
       filePath: "anlyx.project.json"
     });
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       kind: "project",
       valid: true,
       errors: [],
-      warnings: []
+      warnings: [],
+      report: {
+        schemaVersion: "0.1",
+        valid: true,
+        summary: {
+          sourceIssueCount: 0,
+          coverageStatus: "unknown"
+        },
+        issues: []
+      }
     });
+  });
+
+  it("warns when source-matched Project JSON references cannot be trusted", async () => {
+    const cwd = await createTempRoot();
+    await mkdir(join(cwd, "src"), { recursive: true });
+    await writeFile(join(cwd, "src/search.ts"), "\nexport function search() {}\n", "utf8");
+    const project = validProjectFile();
+    project.evidence = [
+      {
+        id: "ev.missing",
+        status: "source-matched",
+        label: "Missing source",
+        targetIds: [],
+        source: {
+          filePath: "src/missing.ts",
+          symbol: "missingHandler",
+          lineStart: 1
+        }
+      },
+      {
+        id: "ev.symbol",
+        status: "source-matched",
+        label: "Wrong symbol",
+        targetIds: [],
+        source: {
+          filePath: "src/search.ts",
+          symbol: "missingHandler",
+          lineStart: 1
+        }
+      }
+    ];
+    project.coverage = {
+      status: "partial",
+      detected: {
+        pages: 4,
+        backendEndpoints: 9
+      },
+      modeled: {
+        pages: 1,
+        requests: 1,
+        flows: 1,
+        architectureNodes: 1
+      },
+      unmodeled: {
+        pages: ["/admin"],
+        requests: [],
+        endpoints: ["GET /api/admin"],
+        notes: []
+      },
+      evidenceIds: []
+    };
+    await writeProjectFile(cwd, "anlyx.project.json", project);
+
+    const result = await runValidateCommand({
+      cwd,
+      filePath: "anlyx.project.json"
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.kind).toBe("project");
+    if (result.kind !== "project") {
+      throw new Error("Expected project validation result.");
+    }
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "source_file_missing",
+          path: "evidence.0.source.filePath"
+        }),
+        expect.objectContaining({
+          code: "source_line_placeholder",
+          path: "evidence.1.source.lineStart"
+        }),
+        expect.objectContaining({
+          code: "source_symbol_not_found",
+          path: "evidence.1.source.symbol"
+        }),
+        expect.objectContaining({
+          code: "coverage_pages_partial",
+          path: "coverage.detected.pages"
+        }),
+        expect.objectContaining({
+          code: "partial_analysis",
+          path: "coverage.status"
+        })
+      ])
+    );
+    expect(result.report.summary.sourceIssueCount).toBeGreaterThanOrEqual(3);
+    expect(result.report.summary.sourceIssueBreakdown).toMatchObject({
+      missingFiles: 1,
+      placeholderLines: 1,
+      missingSymbols: 1
+    });
+    expect(result.report.summary.coverageStatus).toBe("partial");
   });
 
   it("imports a valid Project JSON file as the viewer project data", async () => {
     const cwd = await createTempRoot();
+    await mkdir(join(cwd, "src"), { recursive: true });
+    await writeFile(join(cwd, "src/search.ts"), "\nexport function search() {}\n", "utf8");
     await writeProjectFile(cwd, "source.project.json", validProjectFile());
 
     const result = await runImportCommand({
@@ -248,12 +355,16 @@ describe("Flow JSON CLI commands", () => {
     );
 
     expect(result.projectDataPath).toBe(join(cwd, "anlyx.project.json"));
+    expect(result.validationReportPath).toBe(join(cwd, ".anlyx/validation-report.json"));
     expect(result.warnings).toEqual([]);
     expect(projectData.project.name).toBe("Project Command Fixture");
     expect(projectData.pages[0]).toMatchObject({
       id: "page.home",
       path: "/"
     });
+    await expect(readFile(result.validationReportPath, "utf8")).resolves.toContain(
+      '"schemaVersion": "0.1"'
+    );
   });
 });
 
@@ -391,6 +502,11 @@ function validProjectFile(): ProjectData {
             kind: "api",
             label: "GET /api/search",
             status: "source-matched",
+            source: {
+              filePath: "src/search.ts",
+              lineStart: 2,
+              symbol: "search"
+            },
             evidenceIds: [],
             confidence: "high"
           }
@@ -416,6 +532,17 @@ function validProjectFile(): ProjectData {
     dictionary: {
       defaultLanguage: "en",
       terms: []
-    }
+    },
+    overview: {
+      actors: [],
+      coreEntities: [],
+      mainAreas: [],
+      implementation: [],
+      suggestedReadingPath: [],
+      evidenceIds: []
+    },
+    capabilities: [],
+    dataLifecycles: [],
+    impactMaps: []
   };
 }

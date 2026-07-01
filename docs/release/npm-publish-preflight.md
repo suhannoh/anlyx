@@ -36,6 +36,10 @@ corepack pnpm --filter @anlyx/ui pack --dry-run
 corepack pnpm --filter anlyx pack --dry-run
 ```
 
+The `anlyx` CLI package depends on `@anlyx/core` and `@anlyx/ui` at the same
+version. Publish those dependency packages before publishing `anlyx`, or a fresh
+`npm install -D anlyx` will not be able to resolve the scoped packages.
+
 Additional adapter/helper packages may be packed when they are included in the
 release.
 
@@ -57,11 +61,23 @@ Check that tarballs do not include:
 
 ## Project JSON Smoke
 
-Before publishing, install the packed CLI in a temporary project and verify:
+Before publishing, install the packed packages in a temporary project and verify:
+
+```bash
+corepack pnpm --filter @anlyx/core pack --pack-destination /tmp/anlyx-pack
+corepack pnpm --filter @anlyx/ui pack --pack-destination /tmp/anlyx-pack
+corepack pnpm --filter anlyx pack --pack-destination /tmp/anlyx-pack
+npm init -y
+npm install /tmp/anlyx-pack/anlyx-core-*.tgz /tmp/anlyx-pack/anlyx-ui-*.tgz /tmp/anlyx-pack/anlyx-[0-9]*.tgz
+```
+
+Then verify:
 
 ```bash
 npx anlyx --help
 npx anlyx init --force
+npx anlyx prompt init
+npx anlyx prompt refresh
 npx anlyx validate anlyx.project.json
 npx anlyx import anlyx.project.json
 npx anlyx dev --no-open
